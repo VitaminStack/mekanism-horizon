@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "TODO.md"
+      - "scripts/sync_readme_progress.py"
   workflow_dispatch:
 
 permissions:
@@ -17,40 +18,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Update progress indicator
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
+      - name: Generate progress bars from TODO
+        run: python3 scripts/sync_readme_progress.py
 
-          todo = Path("TODO.md").read_text(encoding="utf-8")
-          choices = re.findall(r"^[ \t]*[-*][ \t]+\[([ xX])\][ \t]", todo, re.MULTILINE)
-          total = len(choices)
-          done = sum(item.lower() == "x" for item in choices)
-          percentage = round(100 * done / total) if total else 0
-          segments = 30
-          filled = round(segments * done / total) if total else 0
-          bar = "█" * filled + "░" * (segments - filled)
-
-          block = (
-              "<!-- progress:start -->\n"
-              f"**{percentage} % · {done} von {total} Aufgaben erledigt**\n\n"
-              f"`{bar}`\n"
-              "<!-- progress:end -->"
-          )
-          readme = Path("README.md")
-          original = readme.read_text(encoding="utf-8")
-          pattern = r"<!-- progress:start -->.*?<!-- progress:end -->"
-          updated, count = re.subn(pattern, lambda _: block, original, count=1, flags=re.DOTALL)
-          if count != 1:
-              raise SystemExit("README progress markers not found")
-          if updated != original:
-              readme.write_text(updated, encoding="utf-8")
-          print(f"TODO progress: {done}/{total} ({percentage}%)")
-          PY
-
-      - name: Commit README when progress changes
+      - name: Commit README if progress changed
         shell: bash
         run: |
           if git diff --quiet -- README.md; then
