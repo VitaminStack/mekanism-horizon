@@ -1,0 +1,8 @@
+id = "mekanism"
+name = "Mekanism Horizon (Prototype)"
+version = "0.1.0"
+description = "Unofficial experimental content foundation: osmium ingot and osmium block. No machine logic yet."
+authors = ["VitaminStack"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]

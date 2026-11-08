@@ -1,0 +1,13 @@
+[package]
+name = "mekanism_energy_core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "Independent energy model prototype for a future Horizon native port"
+
+[lib]
+path = "src/lib.rs"
+
+# Nested crate: don't require editing the existing template's Cargo workspace.
+[workspace]
