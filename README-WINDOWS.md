@@ -1,91 +1,97 @@
-# Mekanism Horizon – Windows-Starter (unoffiziell)
+# Mekanism Horizon – Windows-Entwicklungsanleitung
 
-Diese Dateien **ergänzen** das bereits vorhandene Repository
-`VitaminStack/mekanism-horizon` (Horizon Native Mod Template).
-Den vorhandenen Root-Ordner `mixins/` und die Root-`Cargo.toml` nicht löschen.
-Der Root-Template-Build ist nicht als Windows-Staging-Prozess validiert;
-dieses Paket umgeht ihn fuer die ersten Content-Schritte.
+Getesteter Stand: **Windows / Visual Studio 2026**, **Horizon Nightly `fdc87ae`**, Content-Mod **v0.2.0** und erfolgreich kompilierter nativer Rust-Begleiter. **Die tatsächliche Energiespeicherung ist noch nicht im Spiel geprüft.**
 
-## Status / ehrlich abgegrenzt
+## Voraussetzungen
 
-- Fertig: Content-Mod `mekanism` (API 0.2), Osmiumbarren und Osmiumblock.
-- Provisorisch: Beide benutzen **Vanilla-Eisen-Texturen als Platzhalter**.
-- Fertig: Offline-Strukturtest und Windows-PowerShell-Buildskripte.
-- Vorbereitung: Separates, testbares `logic/energy` mit Rust-Unit-Tests.
-- Noch **nicht** fertig: Maschinen, GUIs, Energienetzwerke, Weltgenerierung,
-  echte Mekanism-Assets und die Anbindung der Energie-Logik ans Spiel.
-- Dieses Paket wurde nicht mit `cargo horizon-mod check` oder dem Spiel
-  getestet. Die offizielle Validierung bitte lokal ausfuehren.
+- [Horizon Launcher](https://github.com/horizon-rust/horizon) mit einer installierten Spielinstanz.
+- Rust und Cargo: `cargo --version` und `rustc --version` prüfen.
+- Horizon-Content-CLI `cargo horizon-mod` (über `scripts/Install-Horizon-Tool.ps1` einrichten).
+- Windows PowerShell und optional Visual Studio 2026 (lokale `Strg+B`-Konfiguration).
 
-## Installation auf Windows 10/11 (Visual Studio 2026)
+Der native Horizon-Build verwendet eine **vom Launcher verwaltete Rust-Toolchain** und erzeugt eine eigene Spielversion. Die Content-Mod (`.hmod`) enthält keinen nativen Rust-Code.
 
-1. Rust fuer Windows (MSVC) von https://rustup.rs installieren.
-   In Visual Studio sollte `Desktopentwicklung mit C++` installiert sein,
-   falls der Linker fehlt. Danach Developer PowerShell **neu starten**.
-2. `cargo --version` und `rustc --version` pruefen.
-   Im Repo liegt eine `rust-toolchain.toml`, die Rust 1.95.0 anfordert.
-3. Im Projekt-Stammverzeichnis die offiziellen Horizon-Werkzeuge installieren:
-
-   ```powershell
-   .\scripts\Install-Horizon-Tool.ps1
-   ```
-
-4. Mod erstellen und offiziell pruefen:
-
-   ```powershell
-   .\scripts\Test-Content.ps1
-   .\scripts\Build-Content.ps1
-   ```
-
-   Ergebnis: `content\mekanism\target\horizon-mod\mekanism.hmod`.
-
-Alternativ ohne Cargo: Die hier beigelegte `mekanism-preview.hmod` kann zum
-lokalen Spielen ausprobiert werden. Sie ist als **Vorschau** manuell als ZIP
-gepackt, nicht mit der Horizon-CLI validiert.
-
-## In Horizon spielen
-
-- In den Spielordner mit `options.txt` gehen; `horizon-mods` erstellen.
-- `mekanism.hmod` aus dem Build dort hinein kopieren (oder die Vorschau testen).
-- Horizon starten, unter `Optionen > Mods` die Mod einschalten und neu starten.
-- In einer Testwelt `mekanism:osmium_ingot` und `mekanism:osmium_block`
-  im Kreativ-Inventar suchen oder per `/give` holen.
-- Teste: 9 Barren -> 1 Block; 1 Block -> 9 Barren; Blockabbau mit Spitzhacke.
-
-**Alternative:** Im Horizon-Launcher unter Einstellungen als Game-Argument
-`--dev-mod "F:\\...\\mekanism-horizon\\content\\mekanism"` angeben,
-dann das Spiel starten. Der Pfad ist nur ein Beispiel.
-
-## Energie auf Windows testen
+## Projekt auschecken und Instanz konfigurieren
 
 ```powershell
+git clone https://github.com/VitaminStack/mekanism-horizon.git
+cd .\mekanism-horizon
+```
+
+Im Horizon Launcher die gewünschte Instanz auswählen und ihren **Spielordner** öffnen. Dort befindet sich `options.txt`. Diesen Pfad in die lokal anzulegende Textdatei `scripts/horizon-game-dir.txt` eintragen, zum Beispiel:
+
+```text
+C:\Pfad\zur\Horizon-Instanz
+```
+
+**Nicht** `horizon-mods` angeben, sondern den **übergeordneten Ordner**. Die Datei wird von Git ignoriert und enthält bewusst keine allgemeingültige Pfadangabe.
+
+## Content-Mod testen, bauen und installieren
+
+Die folgenden Befehle im Stammordner des Repositories ausführen:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Test-Content.ps1"
 cargo test --manifest-path .\logic\energy\Cargo.toml
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content.ps1"
 ```
 
-Das ist vorerst **nur** eine standalone Logik-Bibliothek, keine funktionierende
-Horizon-Maschine. Nächster Schritt: Block-Entity-Hooks und Save/Load-Abbildung.
+Der Build erzeugt `content\mekanism\target\horizon-mod\mekanism.hmod`, prüft die Datei mit `cargo horizon-mod check` und installiert sie unter `<Spielordner>\horizon-mods\mekanism.hmod`.
 
-## Native-Rust-Mod spaeter auf Windows vorbereiten
+**Content-Cache:** Das aktuelle Skript kopiert die Datei beim Build erneut, auch wenn der Inhalt gleich bleibt. Horizon kann dadurch seinen Content-Cache neu erzeugen. Im lokalen Test dauerte ein erster Start rund 46 Sekunden; der zweite Start ohne weiteren Build war schnell. Die geplante Optimierung ist ein SHA-256-Vergleich vor dem Kopieren.
+
+## Native Rust-Mod bauen
+
+Der native Begleiter liegt unter `native/mekanism_native/`. Der Code deklariert eine Block-Entity und eine Energie-Capability. Er läuft **mit den Rechten des angemeldeten Benutzers**. Daher erst den Code kontrollieren und anschließend ausdrücklich freigeben:
 
 ```powershell
-.\scripts\New-Native-Template.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Native.ps1" -TrustNativeCode
 ```
 
-Dieses Skript ruft den **aktuellen offiziellen** Generator auf:
-`cargo horizon-mod new <pfad> --template native`. Nach einer Implementierung
-kompiliert der Launcher die Native-Mod mit
-`horizon-launcher native-build <pfad> --trust-native-code`.
-Der vollstaendige Staging-/Check-Workflow aus dem alten
-`horizon-native-mod-template` nutzt Linux-Werkzeuge; fuer den Windows-Einstieg
-sind diese Schritte nicht erforderlich. Keine Aussage ueber gepruefte
-In-Game-Kompatibilitaet von Native-Mods, bevor der Launcher erfolgreich baut.
+Das Skript verlangt zusätzlich die Bestätigung `BUILD`. Die native Mod wird über `horizon-launcher native-build` in eine eigene Spielversion kompiliert. Der erste vollständige Build dauerte auf dem getesteten System **10 Minuten 50 Sekunden**; Folgebuilds können schneller sein.
 
-## Weitere Hinweise
+### Portabler Launcher unter Windows
 
-- Mekanism-Original: https://github.com/mekanism/Mekanism
-- Horizon Content-API: https://playhorizon.dev/docs/content-mods
-- Horizon Native-Mods: https://playhorizon.dev/docs/make-a-mod
-- Die Basis ist **inoffiziell**; keine Original-Assets oder Java-Dateien
-  wurden uebernommen. Vor spaeterer Uebernahme originaler Assets und Codes
-  Copyright-/Lizenzhinweise des jeweiligen Upstream-Projekts beachten.
-- `.vs/` und untergeordnete `target/`-Ordner werden ignoriert.
+Falls `Horizon Launcher nicht gefunden` erscheint, liegt `horizon-launcher.exe` vermutlich nicht im `PATH` oder am Standardinstallationsort. Beispiel für eine **portabel installierte Version** (Pfad auf deinem System anpassen):
+
+```powershell
+$env:PATH = "F:\Games\Horizon Launcher;$env:PATH"
+Get-Command horizon-launcher.exe
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Native.ps1" -TrustNativeCode
+```
+
+Der `PATH`-Eintrag gilt nur für dieses PowerShell-Fenster.
+
+## Testen im Spiel
+
+Horizon **über den Launcher** mit der zugehörigen Instanz und der neu gebauten nativen Spielversion starten. Content-Mod aktivieren; nach Registry-Änderungen das Spiel neu starten. Ausschließlich eine Testwelt oder eine zuvor gesicherte Welt verwenden.
+
+```mcfunction
+/give @s mekanism:osmium_ingot 64
+/give @s mekanism:osmium_block 64
+/give @s mekanism:basic_energy_cube 1
+```
+
+**Bestätigt:** Osmium-Items und -Block sowie ein platzierter Basic Energy Cube. Der native Rust-Build wurde erfolgreich kompiliert und für die Instanz ausgewählt.
+
+**Noch offen:** Nachweis einer aktiven Block-Entity, Energie einfügen/entnehmen, Eingabe-/Ausgabelimits und sechs Seiten testen, Welt speichern und die Energie nach einem Neustart wieder auslesen. Der Cube hat derzeit **keine GUI** und es gibt noch **keinen Generator oder Debug-Befehl**.
+
+## Häufige Fehler
+
+| Meldung | Lösung |
+| --- | --- |
+| `options.txt fehlt` | Prüfen, ob `horizon-game-dir.txt` auf den **Spielordner** statt auf `horizon-mods` zeigt. |
+| `Horizon Launcher nicht gefunden` | Pfad zur Launcher-EXE wie oben temporär in `PATH` aufnehmen. |
+| PowerShell blockiert Skripte | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File <Skript>` verwenden. |
+| Erster Spielstart langsam | Wahrscheinlich Content-Cache nach dem letzten Build neu aufgebaut; zweiten Start ohne erneuten Build prüfen. |
+| Cube platziert, aber keine GUI | In v0.2.0 erwartet; GUI und vollständige Energiefunktion sind nicht implementiert. |
+| `git apply` meldet bereits existierende Dateien | Patch möglicherweise schon angewendet: zuerst `git status` und `git apply --reverse --check <patch>` prüfen. |
+
+## Weitere Informationen
+
+- [Projektübersicht](README.md)
+- [Energy-Cube-Technik](docs/ENERGY-CUBE.md)
+- [Portierungs-Roadmap](TODO.md)
+- [Horizon Native-Mod-Dokumentation](https://github.com/horizon-rust/horizon/blob/main/docs/native-mods.md)
+
+**Lizenzhinweis:** Inoffizieller Port. Rechte und Copyright-Hinweise des [Mekanism-Originalprojekts](https://github.com/mekanism/Mekanism) bei jeder späteren Übernahme von Code oder Assets bewahren. Siehe [LICENSE](LICENSE).
