@@ -23,8 +23,19 @@ def main():
     block = json.loads((CONTENT/'data/mekanism/horizon/block/osmium_block.json').read_text(encoding='utf-8'))
     assert item['template'].startswith('minecraft:')
     assert block['template'].startswith('minecraft:')
-    for name in ['osmium_ingot', 'osmium_block']:
+    for name in ['osmium_ingot', 'osmium_block', 'basic_energy_cube']:
         assert (CONTENT/f'assets/mekanism/items/{name}.json').exists(), f'Missing item model: {name}'
+    cube = json.loads((CONTENT/'data/mekanism/horizon/block/basic_energy_cube.json').read_text(encoding='utf-8'))
+    assert cube['item'] is True
+    assert cube['template'].startswith('minecraft:')
+    for rel in ['assets/mekanism/blockstates/basic_energy_cube.json',
+                'assets/mekanism/models/block/basic_energy_cube.json',
+                'data/mekanism/loot_table/blocks/basic_energy_cube.json',
+                'data/mekanism/recipe/basic_energy_cube.json']:
+        assert (CONTENT/rel).is_file(), f'Missing Energy Cube file: {rel}'
+    for rel in ['data/minecraft/tags/block/mineable/pickaxe.json',
+                'data/minecraft/tags/block/needs_iron_tool.json']:
+        assert 'mekanism:basic_energy_cube' in json.loads((CONTENT/rel).read_text(encoding='utf-8'))['values']
     print(f'OK: {len(json_files)} JSON-Dateien + Manifest geprueft (nur Strukturtest).')
     print(r'Fuer offizielle Pruefung: .\scripts\Build-Content.ps1')
 

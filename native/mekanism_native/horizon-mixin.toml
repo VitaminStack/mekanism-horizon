@@ -1,0 +1,8 @@
+# Native companion for content/mekanism (independent of the old Linux source-mixin template).
+# The launcher builds this trait mod against the selected Horizon instance.
+[mod]
+id = "mekanism_native"
+version = "0.2.0"
+
+[api]
+path = "api"

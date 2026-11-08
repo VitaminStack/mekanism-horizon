@@ -1,0 +1,10 @@
+[package]
+name = "mod-mekanism_native"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+description = "Mekanism Basic Energy Cube native hooks for Horizon"
+
+[dependencies]
+# The Horizon launcher substitutes its selected source while building.
+horizon-client = { git = "https://github.com/horizon-rust/horizon" }

@@ -1,5 +1,11 @@
 # Run from any current directory: .\scripts\Build-Content.ps1
 $ErrorActionPreference = 'Stop'
+# Horizon Launcher unter Windows
+$LauncherDir = "F:\Games\Horizon Launcher"
+
+if (Test-Path "$LauncherDir\horizon-launcher.exe") {
+    $env:PATH = "$LauncherDir;$env:PATH"
+}
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Content = Join-Path $Root 'content\mekanism'
 if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
