@@ -7,12 +7,22 @@ Inoffizieller Port von [Mekanism](https://github.com/mekanism/Mekanism) für [Mi
 ## Portierungsfortschritt
 
 <!-- progress:start -->
-**3 % · 5 von 150 Aufgaben erledigt**
+```text
+Gesamt                      █░░░░░░░░░░░░░░░░░░░   3%  (5/150)
 
-`█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░`
+Projektbasis                ██████████░░░░░░░░░░  50%  (5/10)
+Energy Cube                 ░░░░░░░░░░░░░░░░░░░░   0%  (0/10)
+Rohstoffe & Energie         ░░░░░░░░░░░░░░░░░░░░   0%  (0/23)
+Maschinen & Chemie          ░░░░░░░░░░░░░░░░░░░░   0%  (0/26)
+Automation & Logistik       ░░░░░░░░░░░░░░░░░░░░   0%  (0/17)
+Multiblocks & Reaktoren     ░░░░░░░░░░░░░░░░░░░░   0%  (0/16)
+Tools & Additions           ░░░░░░░░░░░░░░░░░░░░   0%  (0/19)
+Tests & Releases            ░░░░░░░░░░░░░░░░░░░░   0%  (0/19)
+Naechste Schritte           ░░░░░░░░░░░░░░░░░░░░   0%  (0/10)
+```
 <!-- progress:end -->
 
-[Zur vollständigen Roadmap](TODO.md) · Berechnet aus den abgehakten Aufgaben in `TODO.md`. Der Balken wird bei TODO-Änderungen automatisch aktualisiert.
+[Zur vollständigen Roadmap](TODO.md) · Berechnet aus den abgehakten Aufgaben in `TODO.md`. Die Balken werden bei TODO-Änderungen automatisch aktualisiert.
 
 ## Projekt
 
