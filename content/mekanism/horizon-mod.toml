@@ -1,7 +1,7 @@
 id = "mekanism"
 name = "Mekanism Horizon (Prototype)"
-version = "0.1.0"
-description = "Unofficial experimental content foundation: osmium ingot and osmium block. No machine logic yet."
+version = "0.2.0"
+description = "Unofficial experimental Mekanism port: osmium and a Basic Energy Cube; energy requires the native companion."
 authors = ["VitaminStack"]
 api = "0.2"
 side = "both"

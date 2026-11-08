@@ -11,6 +11,11 @@ impl EnergyStorage {
         Self { stored: 0, capacity }
     }
 
+    /// Create from a saved amount (invalid/old larger values are clamped).
+    pub fn from_saved(capacity: u64, stored: u64) -> Self {
+        Self { stored: stored.min(capacity), capacity }
+    }
+
     pub fn stored(&self) -> u64 { self.stored }
     pub fn capacity(&self) -> u64 { self.capacity }
 
@@ -31,6 +36,40 @@ impl EnergyStorage {
     pub fn set_capacity(&mut self, capacity: u64) {
         self.capacity = capacity;
         self.stored = self.stored.min(capacity);
+    }
+}
+
+// Horizon's block capability works with i32 energy; match the Java defaults.
+pub const BASIC_CUBE_CAPACITY: u64 = 4_000_000;
+pub const BASIC_CUBE_TRANSFER_PER_CALL: u64 = 4_000;
+
+/// Test-only reference model. The native Horizon hook manages live NBT itself.
+pub struct BasicEnergyCube {
+    energy: EnergyStorage,
+}
+
+impl Default for BasicEnergyCube {
+    fn default() -> Self { Self::new() }
+}
+
+impl BasicEnergyCube {
+    pub fn new() -> Self {
+        Self { energy: EnergyStorage::new(BASIC_CUBE_CAPACITY) }
+    }
+
+    pub fn from_saved(stored: u64) -> Self {
+        Self { energy: EnergyStorage::from_saved(BASIC_CUBE_CAPACITY, stored) }
+    }
+
+    pub fn stored(&self) -> u64 { self.energy.stored() }
+    pub fn capacity(&self) -> u64 { self.energy.capacity() }
+
+    pub fn insert(&mut self, offered: u64) -> u64 {
+        self.energy.receive(offered.min(BASIC_CUBE_TRANSFER_PER_CALL))
+    }
+
+    pub fn extract(&mut self, requested: u64) -> u64 {
+        self.energy.extract(requested.min(BASIC_CUBE_TRANSFER_PER_CALL))
     }
 }
 
@@ -70,4 +109,28 @@ mod tests {
         assert_eq!(e.receive(1), 0);
         assert_eq!(e.extract(u64::MAX), u64::MAX);
     }
+    #[test]
+    fn basic_cube_uses_mekanism_default_limits() {
+        let mut cube = BasicEnergyCube::new();
+        assert_eq!(cube.capacity(), 4_000_000);
+        assert_eq!(cube.insert(100_000), 4_000);
+        assert_eq!(cube.stored(), 4_000);
+        assert_eq!(cube.extract(100_000), 4_000);
+        assert_eq!(cube.stored(), 0);
+    }
+
+    #[test]
+    fn basic_cube_restores_saved_energy() {
+        let cube = BasicEnergyCube::from_saved(3_250_000);
+        assert_eq!(cube.stored(), 3_250_000);
+        let mut reloaded = BasicEnergyCube::from_saved(cube.stored());
+        assert_eq!(reloaded.extract(9_000), 4_000);
+    }
+
+    #[test]
+    fn basic_cube_clamps_corrupt_saved_amount() {
+        let cube = BasicEnergyCube::from_saved(u64::MAX);
+        assert_eq!(cube.stored(), BASIC_CUBE_CAPACITY);
+    }
+
 }
