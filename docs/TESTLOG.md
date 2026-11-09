@@ -58,8 +58,9 @@ Build: Native `native-fdc87ae-c77934992415`; Content-Mods `mekanism` und `mekani
 | Lava an den Seiten (auch fließend) hebt die Temperatur (5 Seiten: 285 K auf etwa 337 K); ohne Lava Rückkehr zur Biom-Temperatur | ok |
 | GUI Heat Generator öffnet: Titel, Brennstoff-Slot, Lava-Gauge, Temperatur (285 K), FE/t, Energiebalken | ok (Screenshot) |
 | Lava-Eimer im Slot bei nicht leerem Tank bleibt liegen (passt nicht ganz) | ok |
-| GUI Solar Generator, Tooltips, Nacht/Regen, Nether, Neustart | ausstehend |
+| GUI Solar Generator, Tooltips, Nacht/Regen, Nether, Neustart | ok |
 | Bio Generator mit Bio Fuel | ok |
 | Sounds Maschinen und Generatoren (inkl. Bio, Wind) | ok |
-| Wind Generator Item-Icon | fehlte (Spezial-Renderer), behoben, erneut testen |
-| Advanced Solar Generator: Fuß | fehlte (Root-`transform` ignoriert), behoben, erneut testen |
+| Wind Generator Item-Icon | behoben, ok |
+| Advanced Solar Generator: Fuß | behoben, ok |
+| Advanced Solar, Wind Generator (Multiblock, Rotor), Enrichment Chamber, Crusher | ok |
