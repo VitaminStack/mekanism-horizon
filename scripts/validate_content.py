@@ -27,7 +27,14 @@ def main():
         assert (CONTENT/f'assets/mekanism/items/{name}.json').exists(), f'Missing item model: {name}'
     cube = json.loads((CONTENT/'data/mekanism/horizon/block/basic_energy_cube.json').read_text(encoding='utf-8'))
     assert cube['item'] is True
-    assert cube['template'].startswith('minecraft:')
+    assert cube['template'] == 'minecraft:barrel', 'Energy cubes need a menu-opening template'
+    assert 'facing' not in cube['state_properties'], 'Barrel already defines facing'
+    menu = json.loads((CONTENT/'data/mekanism/horizon/menu/energy_cube.json').read_text(encoding='utf-8'))
+    assert menu == {'slots': 1, 'data_slots': 11, 'results': [0]}
+    for tier in ['basic', 'advanced', 'elite', 'ultimate', 'creative']:
+        tier_data = json.loads((CONTENT/f'data/mekanism/horizon/block/{tier}_energy_cube.json').read_text(encoding='utf-8'))
+        assert tier_data['template'] == 'minecraft:barrel'
+        assert 'facing' not in tier_data['state_properties']
     for rel in ['assets/mekanism/blockstates/basic_energy_cube.json',
                 'assets/mekanism/models/block/basic_energy_cube.json',
                 'data/mekanism/loot_table/blocks/basic_energy_cube.json',

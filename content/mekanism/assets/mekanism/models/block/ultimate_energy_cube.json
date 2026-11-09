@@ -1,6 +1,6 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "mekanism:block/energy_cube/base",
   "textures": {
-    "all": "minecraft:block/emerald_block"
+    "corner": "mekanism:block/models/energy_cube_ultimate_corner"
   }
 }

@@ -1,9 +1,38 @@
 {
-  "template": "minecraft:iron_block",
+  "template": "minecraft:barrel",
   "properties": {
     "hardness": 2.0,
     "explosion_resistance": 2.4,
     "requires_tool": true
+  },
+  "state_properties": {
+    "port_down": {
+      "type": "boolean"
+    },
+    "port_up": {
+      "type": "boolean"
+    },
+    "port_north": {
+      "type": "boolean"
+    },
+    "port_south": {
+      "type": "boolean"
+    },
+    "port_west": {
+      "type": "boolean"
+    },
+    "port_east": {
+      "type": "boolean"
+    }
+  },
+  "default_state": {
+    "facing": "north",
+    "port_down": "true",
+    "port_up": "true",
+    "port_north": "true",
+    "port_south": "true",
+    "port_west": "true",
+    "port_east": "true"
   },
   "item": true
 }

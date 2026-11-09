@@ -1,4 +1,10 @@
 //! Standalone energy logic for tests. Not yet connected to Horizon block entities.
+//!
+//! `cube` is the native mod's own side-config and transfer module, included by
+//! path so its tests run here without building Horizon.
+
+#[path = "../../../native/mekanism_native/api/src/cube.rs"]
+pub mod cube;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {
