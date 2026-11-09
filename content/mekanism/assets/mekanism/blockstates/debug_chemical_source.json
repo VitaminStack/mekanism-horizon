@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "mekanism:block/debug_chemical_source"
+    }
+  }
+}

@@ -38,7 +38,9 @@ VANILLA_RECIPES = {'minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 
 # Assets written elsewhere: the energy cubes by scripts/import_energy_cube.py (custom model loader
 # turned into plain models), the debug blocks by gen_resources.py.
 ASSET_SKIP = {f'{NS}:{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')} | {
-    f'{NS}:debug_energy_source', f'{NS}:debug_energy_sink'}
+    f'{NS}:debug_energy_source', f'{NS}:debug_energy_sink', f'{NS}:debug_chemical_source'}
+# Item definitions written by gen_resources.py (upstream's use a custom item model type).
+ITEM_SKIP = {f'{NS}:{t}_fluid_tank' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')}
 REF = re.compile(r'"(#?)(mekanism|mekanismgenerators):([a-z0-9_/.]+)"')
 # Mekanism machine recipe types whose machine exists here.
 MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversion', 'mekanism:enriching',
@@ -136,6 +138,8 @@ def main(up):
     for full in sorted(known - ASSET_SKIP):
         ns, id_ = split(full)
         for kind in ('blockstates', 'items'):
+            if kind == 'items' and full in ITEM_SKIP:
+                continue
             src = copy_asset(ns, f'{kind}/{id_}.json')
             if src:
                 walk_models(json.loads(src.read_text(encoding='utf-8')))

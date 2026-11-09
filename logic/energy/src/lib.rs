@@ -22,6 +22,12 @@ pub mod energy;
 #[path = "../../../native/mekanism_native/api/src/generator.rs"]
 pub mod generator;
 
+/// Fluids, chemicals and the tanks (M06).
+#[path = "../../../native/mekanism_native/api/src/chemicals.rs"]
+pub mod chemicals;
+#[path = "../../../native/mekanism_native/api/src/tank.rs"]
+pub mod tank;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {
     stored: u64,

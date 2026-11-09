@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:fluid_tank",
+  "key": {
+    "A": "#mekanism:alloys/basic",
+    "I": "#c:ingots/iron"
+  },
+  "pattern": [
+    "AIA",
+    "I I",
+    "AIA"
+  ],
+  "result": {
+    "id": "mekanism:basic_fluid_tank"
+  }
+}

@@ -76,3 +76,26 @@ Build: `scripts/Build-Content.ps1`, `scripts/Build-Native.ps1 -TrustNativeCode`.
 | Wind/Advanced Solar abbauen: Bounding-Blöcke verschwinden sofort (`set_block` statt `edit_blocks`) | ok |
 | Abbau eines Bounding-Blocks im Kreativmodus droppt nichts | ok |
 | GUI über jeden Bounding-Block (gespiegeltes Menü `mekanism:bounding_block`) | ok |
+
+## M06 Tanks (09.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-482f2e77aeb3` (Branch `feat/m06-chemistry-foundation` nach Rebase auf P0), Content aus demselben Stand, Kreativwelt `TankTest`.
+
+| Test | Ergebnis |
+|---|---|
+| Fluid/Chemical Tank: Block-Entity, Tick (`mekanism_mode`) | ok |
+| Debug Chemical Source füllt Basic Chemical Tank mit Wasserstoff | ok |
+| Fluid Tank nimmt keinen Wasserstoff an | ok |
+| Chemical-Tank-GUI: Titel, Inhalt, Transfer, Modus-Knopf schaltet | ok |
+| Dumping Excess hält 85 % (54.400 von 64.000 mB) | ok |
+| Dumping leert 160 mB/Tick | ok |
+| Abbauen (Survival) gibt Item mit Inhalt; Platzieren stellt ihn wieder her | ok |
+| Chemical Tank dreht sich zum Platzierenden | ok |
+| Creative Chemical Tank bleibt voll (`i32::MAX`) | ok |
+| Fluid Tank „Auto-eject down“: 5.000 mB in den Tank darunter, Ventil `active=true` | ok |
+| Wasser-Eimer füllt Fluid Tank (2 × 1.000 mB, leerer Eimer zurück); leerer Eimer entnimmt 1.000 mB; Lava-Eimer in Wassertank abgelehnt (Retest `native-fdc87ae-c2fbcfc22770`, Eimer über `right_click_block`) | ok |
+| GUI-Layout: Name und Menge in eigenen Zeilen, Anzeige endet über „Inventory“ (Retest) | ok |
+| Boden unter Tanks sichtbar (`occludes: false`, Retest) | ok |
+| Flüssigkeit im Fluid Tank sichtbar: Wasser und Lava je nach Füllstand, Füllstand folgt Änderungen, leerer Tank zeigt nichts (`native-fdc87ae-2f1bbd36b98c`) | ok |
+| Andere Flüssigkeiten: Sole als Wasser-Box in eigener Farbe, Füllstand stimmt (`native-fdc87ae-1ac2734b93a0`) | ok |
+| Flüssigkeit mit Shaderpack (Bliss) | Fehler: falsch dargestellt; ohne Shader korrekt. Liegt an Horizons Shader-Pfad für `draw_fluid_box`, nicht am Mod |
