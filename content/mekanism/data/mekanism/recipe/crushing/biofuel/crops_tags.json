@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:bio_fuel",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "#c:crops/carrot",
+      "#c:crops/cactus",
+      "#c:crops/potato",
+      "#c:crops/wheat",
+      "#c:crops/beetroot",
+      "#c:crops/nether_wart",
+      "#c:crops/cocoa_bean"
+    ]
+  },
+  "output": {
+    "count": 2,
+    "id": "mekanism:bio_fuel"
+  }
+}

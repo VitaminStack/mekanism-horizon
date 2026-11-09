@@ -1,6 +1,7 @@
 {
   "block.mekanism.advanced_energy_cube": "Fortschrittlicher Energiewürfel",
   "block.mekanism.basic_energy_cube": "Einfacher Energiewürfel",
+  "block.mekanism.block_bio_fuel": "Biobrennstoffblock",
   "block.mekanism.block_bronze": "Bronzeblock",
   "block.mekanism.block_charcoal": "Holzkohleblock",
   "block.mekanism.block_fluorite": "Fluoritblock",
@@ -63,6 +64,7 @@
   "item.mekanism.alloy_infused": "Infundierte Legierung",
   "item.mekanism.alloy_reinforced": "Verstärkte Legierung",
   "item.mekanism.basic_control_circuit": "Einfacher Steuerschaltkreis",
+  "item.mekanism.bio_fuel": "Bio-Brennstoff",
   "item.mekanism.dust_bronze": "Bronzestaub",
   "item.mekanism.dust_charcoal": "Holzkohlestaub",
   "item.mekanism.dust_coal": "Kohlestaub",

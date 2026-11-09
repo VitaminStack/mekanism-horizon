@@ -6,6 +6,7 @@
       "alloy_infused",
       "alloy_reinforced",
       "basic_control_circuit",
+      "bio_fuel",
       "dust_bronze",
       "dust_charcoal",
       "dust_coal",
@@ -63,6 +64,7 @@
     "blocks": [
       "advanced_energy_cube",
       "basic_energy_cube",
+      "block_bio_fuel",
       "block_bronze",
       "block_charcoal",
       "block_fluorite",
@@ -104,6 +106,7 @@
       "solar_panel"
     ],
     "blocks": [
+      "bio_generator",
       "heat_generator",
       "solar_generator"
     ]

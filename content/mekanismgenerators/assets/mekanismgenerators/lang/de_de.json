@@ -1,7 +1,9 @@
 {
+  "block.mekanismgenerators.bio_generator": "Biogenerator",
   "block.mekanismgenerators.heat_generator": "Wärmegenerator",
   "block.mekanismgenerators.solar_generator": "Solargenerator",
   "item.mekanismgenerators.solar_panel": "Solarmodul",
+  "sound_event.mekanismgenerators.tile.generator.bio": "Bio Generator summt",
   "sound_event.mekanismgenerators.tile.generator.heat": "Wärmegenerator summt",
   "sound_event.mekanismgenerators.tile.generator.solar": "Solar Generator summt"
 }

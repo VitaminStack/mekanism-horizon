@@ -109,6 +109,9 @@ block('steel_casing', 'minecraft:iron_block', 3.5, 9.0, sounds=STONE)
 
 # --- energy (M03): cubes are ticked/buffered by native/mekanism_native ---
 item('energy_tablet', stack=1)
+# Bio Fuel (Crusher output, Bio Generator input) and its block (MekanismBlocks: strength 0.5, grass sound).
+item('bio_fuel')
+block('block_bio_fuel', 'minecraft:hay_block', 0.5, 0.5, requires_tool=False, sounds='minecraft:grass_block')
 CUBE_TIERS = ['basic', 'advanced', 'elite', 'ultimate', 'creative']
 # Mekanism's BlockEnergyCube: FACING (all six directions), turned toward the placer by the native mod.
 # The barrel template gives that `facing` and a block that opens its menu on use
@@ -156,6 +159,9 @@ block('heat_generator', 'minecraft:barrel', 3.5, 16.0, ns=GEN, occludes=False, e
     'default_state': {'facing': 'north', 'active': 'false'}})
 block('solar_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
 item('solar_panel', ns=GEN)
+# Bio Generator: slot 0 bio fuel (`#c:fuels/bio`), its bioethanol tank kept by the native mod.
+block('bio_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
+put(f'data/{GEN}/horizon/menu/bio_generator.json', {'slots': 1, 'data_slots': 4, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/heat_generator.json', {'slots': 1, 'data_slots': 7, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/solar_generator.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
 
@@ -259,7 +265,7 @@ for tag, values in CONVENTION_TAGS.items():
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS] + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'enrichment_chamber', 'crusher')]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
-    {'replace': False, 'values': [f'{GEN}:heat_generator', f'{GEN}:solar_generator']}, GEN)
+    {'replace': False, 'values': [f'{GEN}:{g}' for g in ('heat_generator', 'solar_generator', 'bio_generator')]}, GEN)
 
 # Hand-written content stays declared too, so the importer covers it.
 for ns, reg in registry.items():

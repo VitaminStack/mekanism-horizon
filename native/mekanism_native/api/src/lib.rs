@@ -39,7 +39,7 @@
 //! Machines and generators loop Mekanism's sound while running: `Host::play_sound`
 //! (API 61, mod sound events from the content mods' `sounds.json`), replayed when the clip ends.
 //!
-//! Heat and Solar Generator (`generator.rs`; M04, ids of the separate
+//! Heat, Solar and Bio Generator (`generator.rs`; M04, ids of the separate
 //! `mekanismgenerators` content mod): the same block-entity, container, menu,
 //! screen and energy hooks; they read the world through `Host::block`,
 //! `biome`, `light`, `weather`, `day_time` and `dimension` (API 20/97), and
@@ -162,6 +162,8 @@ const PROGRESS: &str = "mekanism_progress";
 const INFUSE_TYPE: &str = "mekanism_infuse_type";
 const INFUSE: &str = "mekanism_infuse";
 /// Block entity NBT of the Heat Generator: stored heat (Tag::Double) and lava in mB.
+/// The Bio Generator keeps its bioethanol in mB as `mekanism_bio_fuel`.
+const BIO_FUEL: &str = "mekanism_bio_fuel";
 const HEAT: &str = "mekanism_heat";
 const LAVA: &str = "mekanism_lava";
 
@@ -584,6 +586,47 @@ impl MekanismNative {
 
     /// One Solar Generator tick: produce while it sees the sun, then the energy
     /// goes out of the bottom.
+    /// One Bio Generator tick, as Mekanism's `TileEntityBioGenerator`: fill
+    /// the tank from the fuel slot, burn 1 mB for 25 FE, push out of the front.
+    fn bio_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+        let pos = event.pos;
+        let entity = &*event.entity;
+        let mut items: Vec<Option<ItemStack>> = entity.items.clone();
+        items.resize(1, None);
+        let mut energy = read_energy(&entity.nbt, ENERGY).clamp(0, generator::BIO_STORAGE);
+        let mut fuel = read_energy(&entity.nbt, BIO_FUEL).clamp(0, generator::BIO_TANK);
+
+        if let Some(stack) = &items[0] {
+            let per_item = if host.server_item_in_tag(stack, generator::BIO_FUEL_TAG).unwrap_or(false) {
+                generator::BIO_FUEL_PER_ITEM
+            } else if host.server_item_in_tag(stack, generator::BIO_FUEL_BLOCK_TAG).unwrap_or(false) {
+                9 * generator::BIO_FUEL_PER_ITEM
+            } else {
+                0
+            };
+            if generator::bio_fits(fuel, per_item) {
+                fuel += per_item;
+                items[0] = shrink(stack, 1);
+            }
+        }
+
+        let active = generator::bio_tick(&mut fuel, &mut energy);
+        let f = facing(host, pos);
+        energy -= give(host, pos, f, energy, energy);
+        self.hum(host, pos, generator::BIO_SOUND, generator::BIO_SOUND_TICKS, active);
+
+        let e = &mut *event.entity;
+        if e.items != items {
+            e.items = items;
+        }
+        write_int(&mut e.nbt, ENERGY, energy);
+        write_int(&mut e.nbt, BIO_FUEL, fuel);
+        let data = generator::bio_menu_data(energy, fuel, active, f);
+        if e.data.as_slice() != data.as_slice() {
+            e.data = data.to_vec();
+        }
+    }
+
     fn solar_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
         let pos = event.pos;
         let mut stored = read_energy(&event.entity.nbt, ENERGY).clamp(0, generator::SOLAR_STORAGE);
@@ -662,7 +705,7 @@ fn read_double(nbt: &Compound, name: &'static str) -> Option<f64> {
 }
 
 fn is_generator(block: &str) -> bool {
-    block == generator::HEAT || block == generator::SOLAR
+    block == generator::HEAT || block == generator::SOLAR || block == generator::BIO
 }
 
 /// Machines and generators face the placer horizontally (Mekanism's `AttributeStateFacing`).
@@ -678,6 +721,24 @@ fn energy_bar(host: &dyn Host, batch: &mut horizon_client::mod_api::HudBatch, or
 
 /// The Heat Generator's screen: fuel slot left, lava gauge in the middle,
 /// energy bar right; the temperature under the fuel slot.
+/// The Bio Generator's screen, in Mekanism's layout: fuel bar at the left
+/// edge, fuel slot, energy bar right.
+fn draw_bio(host: &dyn Host, event: &mut ScreenDrawEvent) {
+    let [x, y] = event.origin;
+    let d = |i: usize| event.data.get(i).copied().unwrap_or(0);
+    let title = host.screen_title().unwrap_or_else(|| "Bio-Generator".to_owned());
+    host.text(event.batch, &title, [x + 8.0, y + 6.0], 0x404040, false);
+    let [bx, by, bw, bh] = generator::BIO_FUEL_BAR;
+    let fuel = d(generator::BIO_DATA_FUEL) as f32 / generator::BIO_TANK as f32;
+    gauge(host, event.batch, [x + bx, y + by, bw, bh], fuel, 0xFFC8B43C);
+    energy_bar(host, event.batch, event.origin, d(generator::BIO_DATA_ENERGY), generator::BIO_STORAGE);
+    let [sx, sy, sw, sh] = generator::BIO_SCREEN;
+    host.fill(event.batch, [x + sx, y + sy, sw, sh], 0xFF242A2F);
+    host.text(event.batch, &format!("{} FE/t", d(generator::BIO_DATA_PRODUCING)), [x + sx + 4.0, y + sy + 4.0], 0x3FA9F5, false);
+    host.text(event.batch, &format!("{} mB", d(generator::BIO_DATA_FUEL)), [x + sx + 4.0, y + sy + 16.0], 0x3FA9F5, false);
+    host.text(event.batch, "Inventory", [x + 8.0, y + generator::INVENTORY_Y - 10.0], 0x404040, false);
+}
+
 fn draw_heat(host: &dyn Host, event: &mut ScreenDrawEvent) {
     let [x, y] = event.origin;
     let d = |i: usize| event.data.get(i).copied().unwrap_or(0);
@@ -766,6 +827,16 @@ impl Hooks for MekanismNative {
                 menu: Some(generator::HEAT_MENU.to_owned()),
             });
         }
+        if event.block == generator::BIO {
+            // Hoppers fill the fuel slot from any side.
+            return Some(ModContainer {
+                slots: 1,
+                faces: std::array::from_fn(|_| vec![0]),
+                inputs: vec![0],
+                outputs: Vec::new(),
+                menu: Some(generator::BIO_MENU.to_owned()),
+            });
+        }
         if event.block == generator::SOLAR {
             // One hidden placeholder slot, as the cube's.
             return Some(ModContainer {
@@ -803,6 +874,15 @@ impl Hooks for MekanismNative {
                 capacity: generator::HEAT_STORAGE,
                 max_insert: 0,
                 max_extract: generator::HEAT_STORAGE,
+                insert_faces: [false; 6],
+                extract_faces: [true; 6],
+            });
+        }
+        if event.block == generator::BIO {
+            return Some(ModEnergyBuffer {
+                capacity: generator::BIO_STORAGE,
+                max_insert: 0,
+                max_extract: generator::BIO_STORAGE,
                 insert_faces: [false; 6],
                 extract_faces: [true; 6],
             });
@@ -848,6 +928,10 @@ impl Hooks for MekanismNative {
         }
         if event.entity.id == generator::SOLAR {
             self.solar_tick(host, event);
+            return;
+        }
+        if event.entity.id == generator::BIO {
+            self.bio_tick(host, event);
             return;
         }
         if is_debug(&event.entity.id) {
@@ -939,7 +1023,11 @@ impl Hooks for MekanismNative {
             });
         }
         if is_generator(event.block) {
-            let fuel = (event.block == generator::HEAT).then_some(generator::HEAT_FUEL_SLOT);
+            let fuel = match event.block {
+                generator::HEAT => Some(generator::HEAT_FUEL_SLOT),
+                generator::BIO => Some(generator::BIO_FUEL_SLOT),
+                _ => None,
+            };
             return Some(NativeScreen {
                 width: generator::WIDTH,
                 height: generator::HEIGHT,
@@ -978,6 +1066,10 @@ impl Hooks for MekanismNative {
         }
         if event.block == generator::SOLAR {
             draw_solar(host, event);
+            return;
+        }
+        if event.block == generator::BIO {
+            draw_bio(host, event);
             return;
         }
         let Some((capacity, rate)) = cube(event.block) else { return };
@@ -1050,6 +1142,8 @@ impl Hooks for MekanismNative {
             event.lines.extend(generator::heat_tooltip(event.data, event.at));
         } else if event.block == generator::SOLAR {
             event.lines.extend(generator::solar_tooltip(event.data, event.at));
+        } else if event.block == generator::BIO {
+            event.lines.extend(generator::bio_tooltip(event.data, event.at));
         }
     }
 

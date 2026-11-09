@@ -8,6 +8,11 @@
 //! output), `TileEntityHeatGenerator`, `TileEntitySolarGenerator`,
 //! `BasicHeatCapacitor`, `ITileHeatHandler` and `HeatAPI`.
 //!
+//! Bio Generator (`TileEntityBioGenerator`): bio fuel items fill a 200 mB
+//! bioethanol tank (64 mB per Bio Fuel, 9 x that per block), and each tick
+//! burns 1 mB for 25 FE when all of it fits (`GeneratorsConfig`; storage 30 s).
+//! The tank holds no fluid of Horizon's: there are no pipes yet.
+//!
 //! Approximations: the ambient temperature and the solar peak use the biome's
 //! base temperature and downfall from the table below (vanilla's values; Horizon
 //! gives mods the biome's id only), without vanilla's height adjustment. Sky
@@ -15,20 +20,25 @@
 //! day and the rain and thunder levels.
 //!
 //! Not ported: the energy (charging) slot, redstone control, heat transfer to
-//! adjacent heat blocks (there are none yet), and the Wind and Advanced Solar
+//! adjacent heat blocks (there are none yet), filling the Bio Generator from
+//! fluid containers, and the Wind and Advanced Solar
 //! Generators (multiblocks).
 
 pub const HEAT: &str = "mekanismgenerators:heat_generator";
 pub const SOLAR: &str = "mekanismgenerators:solar_generator";
+pub const BIO: &str = "mekanismgenerators:bio_generator";
 /// Registered by `data/mekanismgenerators/horizon/menu/<generator>.json`.
 pub const HEAT_MENU: &str = HEAT;
 pub const SOLAR_MENU: &str = SOLAR;
+pub const BIO_MENU: &str = BIO;
 /// Mekanism's loops while running (`tile.generator.*` in `sounds.json`) and
 /// their clip lengths in ticks.
 pub const HEAT_SOUND: &str = "mekanismgenerators:tile.generator.heat";
 pub const HEAT_SOUND_TICKS: i32 = 26;
 pub const SOLAR_SOUND: &str = "mekanismgenerators:tile.generator.solar";
 pub const SOLAR_SOUND_TICKS: i32 = 20;
+pub const BIO_SOUND: &str = "mekanismgenerators:tile.generator.bio";
+pub const BIO_SOUND_TICKS: i32 = 56;
 
 pub const TICKS_PER_SECOND: i32 = 20;
 
@@ -166,6 +176,32 @@ impl Heat {
 // --- Solar Generator ---
 pub const SOLAR_STORAGE: i32 = 2 * TICKS_PER_SECOND;
 pub const SOLAR_GENERATION: f64 = 2.0;
+
+// --- Bio Generator ---
+pub const BIO_STORAGE: i32 = 30 * TICKS_PER_SECOND;
+pub const BIO_GENERATION: i32 = 25;
+pub const BIO_TANK: i32 = 200;
+pub const BIO_FUEL_PER_ITEM: i32 = 64;
+/// `#c:fuels/bio` and `#c:fuels/block/bio` (`biofuelFromItem`).
+pub const BIO_FUEL_TAG: &str = "c:fuels/bio";
+pub const BIO_FUEL_BLOCK_TAG: &str = "c:fuels/block/bio";
+
+/// One Bio Generator tick: burn 1 mB for `BIO_GENERATION` when the energy
+/// all fits. Returns whether it ran (the generator is active).
+pub fn bio_tick(fuel: &mut i32, energy: &mut i32) -> bool {
+    if *fuel < 1 || *energy + BIO_GENERATION > BIO_STORAGE {
+        return false;
+    }
+    *fuel -= 1;
+    *energy += BIO_GENERATION;
+    true
+}
+
+/// Mekanism's `FluidFuelInventorySlot.fillOrBurn`: an item is used only when
+/// all the fuel it gives fits in the tank.
+pub fn bio_fits(fuel: i32, from_item: i32) -> bool {
+    from_item > 0 && fuel + from_item <= BIO_TANK
+}
 
 /// Vanilla biome climate: (id, temperature, downfall, has precipitation).
 pub const BIOMES: [(&str, f32, f32, bool); 64] = [
@@ -322,6 +358,19 @@ pub fn solar_menu_data(energy: i32, producing: i32, sees: bool, facing: usize, p
     [energy, producing, sees as i32, facing as i32, (peak * 100.0).round().clamp(0.0, 65_535.0) as i32]
 }
 
+pub const BIO_FUEL_SLOT: [f32; 2] = [17.0, 35.0];
+pub const BIO_FUEL_BAR: [f32; 4] = [7.0, 15.0, 4.0, 52.0];
+pub const BIO_SCREEN: [f32; 4] = [48.0, 23.0, 80.0, 40.0];
+pub const BIO_DATA_ENERGY: usize = 0;
+pub const BIO_DATA_FUEL: usize = 1;
+pub const BIO_DATA_PRODUCING: usize = 2;
+pub const BIO_DATA_FACING: usize = 3;
+pub const BIO_DATA_LEN: usize = 4;
+
+pub fn bio_menu_data(energy: i32, fuel: i32, active: bool, facing: usize) -> [i32; BIO_DATA_LEN] {
+    [energy, fuel, if active { BIO_GENERATION } else { 0 }, facing as i32]
+}
+
 pub fn inside(rect: [f32; 4], at: [f32; 2]) -> bool {
     let [x, y, w, h] = rect;
     at[0] >= x && at[0] < x + w && at[1] >= y && at[1] < y + h
@@ -342,6 +391,17 @@ pub fn heat_tooltip(data: &[i32], at: [f32; 2]) -> Vec<String> {
     Vec::new()
 }
 
+pub fn bio_tooltip(data: &[i32], at: [f32; 2]) -> Vec<String> {
+    let d = |i: usize| data.get(i).copied().unwrap_or(0);
+    if inside(BIO_FUEL_BAR, at) {
+        return vec![format!("Bioethanol: {} / {BIO_TANK} mB", d(BIO_DATA_FUEL))];
+    }
+    if inside(ENERGY_BAR, at) {
+        return energy_lines(d(BIO_DATA_ENERGY), BIO_STORAGE, d(BIO_DATA_PRODUCING));
+    }
+    Vec::new()
+}
+
 pub fn solar_tooltip(data: &[i32], at: [f32; 2]) -> Vec<String> {
     let d = |i: usize| data.get(i).copied().unwrap_or(0);
     if inside(ENERGY_BAR, at) {
@@ -357,6 +417,34 @@ pub fn solar_tooltip(data: &[i32], at: [f32; 2]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bio_burns_one_mb_for_25_when_it_fits() {
+        let (mut fuel, mut energy) = (2, 0);
+        assert!(bio_tick(&mut fuel, &mut energy));
+        assert_eq!((fuel, energy), (1, 25));
+        let mut full = BIO_STORAGE - 24;
+        assert!(!bio_tick(&mut fuel, &mut full), "25 does not fit");
+        assert_eq!((fuel, full), (1, BIO_STORAGE - 24));
+        fuel = 0;
+        assert!(!bio_tick(&mut fuel, &mut energy));
+    }
+
+    #[test]
+    fn bio_items_fit_whole() {
+        assert!(bio_fits(0, BIO_FUEL_PER_ITEM));
+        assert!(bio_fits(136, BIO_FUEL_PER_ITEM));
+        assert!(!bio_fits(137, BIO_FUEL_PER_ITEM));
+        assert!(!bio_fits(0, 9 * BIO_FUEL_PER_ITEM), "a block never fits the 200 mB tank");
+        assert!(!bio_fits(0, 0));
+    }
+
+    #[test]
+    fn bio_tooltips() {
+        let d = bio_menu_data(100, 64, true, 2);
+        assert_eq!(bio_tooltip(&d, [8.0, 30.0]), vec!["Bioethanol: 64 / 200 mB"]);
+        assert_eq!(bio_tooltip(&d, [165.0, 30.0])[1], "Producing: 25 FE/t");
+    }
 
     fn run(state: &mut Heat, boost: f64, ambient: f64, ticks: usize) -> HeatTick {
         let mut last = HeatTick::default();

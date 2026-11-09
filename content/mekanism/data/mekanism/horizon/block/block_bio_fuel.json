@@ -1,0 +1,10 @@
+{
+  "template": "minecraft:hay_block",
+  "properties": {
+    "hardness": 0.5,
+    "explosion_resistance": 0.5,
+    "requires_tool": false,
+    "sounds": "minecraft:grass_block"
+  },
+  "item": true
+}

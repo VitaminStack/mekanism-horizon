@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:bio_fuel",
+  "input": {
+    "count": 10,
+    "ingredient": "#minecraft:leaves"
+  },
+  "output": {
+    "id": "mekanism:bio_fuel"
+  }
+}

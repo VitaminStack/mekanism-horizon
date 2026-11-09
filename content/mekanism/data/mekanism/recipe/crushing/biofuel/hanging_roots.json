@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:bio_fuel",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:hanging_roots"
+  },
+  "output": {
+    "id": "mekanism:bio_fuel"
+  }
+}

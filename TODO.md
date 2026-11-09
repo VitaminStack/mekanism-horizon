@@ -80,7 +80,7 @@
 - [ ] Heat Generator (Brennstoff, Umgebung und Ausgabeseiten). *(Implementiert, ingame ungetestet: eigener Content-Mod `content/mekanismgenerators` mit Upstream-IDs, Logik in `native/mekanism_native/api/src/generator.rs`. Lava-Tank 1000 mB, 100 mB/t, Lava-Nachbarn 7/Seite, Nether +10, Wärme-/Carnot-Modell wie Original, Energie aus der Front in Cube/Maschine. Nicht portiert: Energie-Slot, Redstone, Wärmeübertragung an Nachbarn.)*
 - [ ] Solar Generator und Advanced Solar Generator. *(Solar Generator implementiert, ingame ungetestet: 2 FE/t Spitze, Biom-Faktor aus Vanilla-Klimatabelle, Tageszeit/Regen nach Vanilla-Formel, Energie nach unten. Advanced Solar ist Multiblock: offen.)*
 - [ ] Wind Generator (Höhe/Wetter nach Original).
-- [ ] Bio Generator und Bio Fuel.
+- [ ] Bio Generator und Bio Fuel. *(Implementiert, ingame ungetestet: 25 FE/t, 1 mB/t aus 200-mB-Tank, 64 mB je Bio Fuel, Speicher 600 FE, Energie aus der Front, Sound. Bio Fuel aus dem Crusher (alle `crushing/biofuel`-Rezepte), Block of Bio Fuel. Nicht portiert: Befüllen per Fluid-Container/Pipe, Energie-Slot, Redstone; Block of Bio Fuel als Ofen-Brennstoff.)*
 - [ ] Gas-Burning Generator, nachdem Chemie/Fluids funktionieren.
 - [ ] GUIs, Energieabgabe, Upgrades und Balancing der Generatoren.
 - [ ] Survival-Test: Generator -> Universal Cable -> Energy Cube -> Maschine.

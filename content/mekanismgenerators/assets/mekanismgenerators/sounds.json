@@ -1,4 +1,10 @@
 {
+  "tile.generator.bio": {
+    "sounds": [
+      "mekanismgenerators:generator/bio"
+    ],
+    "subtitle": "sound_event.mekanismgenerators.tile.generator.bio"
+  },
   "tile.generator.heat": {
     "sounds": [
       "mekanismgenerators:generator/heat"

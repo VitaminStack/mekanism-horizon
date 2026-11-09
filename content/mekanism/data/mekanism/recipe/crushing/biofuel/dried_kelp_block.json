@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:block_bio_fuel",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/dried_kelp"
+  },
+  "output": {
+    "id": "mekanism:block_bio_fuel"
+  }
+}

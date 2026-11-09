@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "mekanismgenerators:heat_generator",
-    "mekanismgenerators:solar_generator"
+    "mekanismgenerators:solar_generator",
+    "mekanismgenerators:bio_generator"
   ]
 }

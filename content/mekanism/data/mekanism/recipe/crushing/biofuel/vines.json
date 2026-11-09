@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:bio_fuel",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:vine",
+      "minecraft:twisting_vines",
+      "minecraft:weeping_vines"
+    ]
+  },
+  "output": {
+    "id": "mekanism:bio_fuel"
+  }
+}

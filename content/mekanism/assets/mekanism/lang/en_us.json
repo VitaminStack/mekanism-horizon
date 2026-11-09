@@ -1,6 +1,7 @@
 {
   "block.mekanism.advanced_energy_cube": "Advanced Energy Cube",
   "block.mekanism.basic_energy_cube": "Basic Energy Cube",
+  "block.mekanism.block_bio_fuel": "Block of Bio Fuel",
   "block.mekanism.block_bronze": "Block of Bronze",
   "block.mekanism.block_charcoal": "Block of Charcoal",
   "block.mekanism.block_fluorite": "Block of Fluorite",
@@ -63,6 +64,7 @@
   "item.mekanism.alloy_infused": "Infused Alloy",
   "item.mekanism.alloy_reinforced": "Reinforced Alloy",
   "item.mekanism.basic_control_circuit": "Basic Control Circuit",
+  "item.mekanism.bio_fuel": "Bio Fuel",
   "item.mekanism.dust_bronze": "Bronze Dust",
   "item.mekanism.dust_charcoal": "Charcoal Dust",
   "item.mekanism.dust_coal": "Coal Dust",
