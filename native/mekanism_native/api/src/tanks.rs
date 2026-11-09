@@ -6,12 +6,13 @@
 //! `mod_fluids`) hold both, a chemical as a `mekanism:chemical/<id>` fluid id;
 //! `block_entity_accepts_fluid` keeps fluids and chemicals out of each other's
 //! tanks. `fluid_insert`/`fluid_tanks`/`fluid_extract` (API 54) fill the tank
-//! below, buckets and the debug chemical source; `use_item_on` (API 13) handles
-//! water and lava buckets on fluid tanks.
+//! below, buckets and the debug chemical source; `right_click_block` (API 21)
+//! handles water and lava buckets on fluid tanks, before the tank opens its
+//! screen (`use_item_on` only hears clicks the block let through).
 
 use horizon_client::mod_api::{
-    BlockEntityTickEvent, Compound, Direction, Host, ItemStack, ModContainer, ModFluidTanks, NativeScreen,
-    ScreenDrawEvent, Tag, Text, UseItemOnEvent,
+    BlockEntityDraw, BlockEntityTickEvent, Compound, Direction, Host, ItemStack, ModContainer,
+    ModFluidTanks, NativeFluidRenderOptions, NativeFluidStack, NativeScreen, ScreenDrawEvent, Tag, Text,
 };
 
 use super::{chemicals, cube, gauge, key, offset, read_energy, tank};
@@ -166,14 +167,13 @@ pub(super) fn debug_tick(host: &mut dyn Host, pos: [i32; 3]) {
 
 /// Water and lava buckets fill and empty fluid tanks (Mekanism's
 /// `BlockFluidTank` bucket handling); mod fluids have no buckets in Horizon.
-/// Returns whether the click was used.
-pub(super) fn use_item_on(host: &mut dyn Host, event: &UseItemOnEvent, t: &tank::Tier) -> bool {
+/// `item` is the main hand's. Returns whether the click was used.
+pub(super) fn use_bucket(host: &mut dyn Host, pos: [i32; 3], face: [i32; 3], item: &str, t: &tank::Tier) -> bool {
     if t.family != tank::Family::Fluid {
         return false;
     }
-    let Some(dir) = dir_of_normal(event.face) else { return false };
+    let Some(dir) = dir_of_normal(face) else { return false };
     let face = direction(dir);
-    let item: &str = &event.stack.item;
     let full = match item {
         "minecraft:water_bucket" => Some(chemicals::WATER),
         "minecraft:lava_bucket" => Some(chemicals::LAVA),
@@ -182,7 +182,7 @@ pub(super) fn use_item_on(host: &mut dyn Host, event: &UseItemOnEvent, t: &tank:
     if let Some(fluid) = full {
         // Whole bucket or nothing: check the room first.
         let room = host
-            .fluid_tanks(host.dimension(), event.pos, face)
+            .fluid_tanks(host.dimension(), pos, face)
             .and_then(|tanks| tanks.into_iter().next())
             .map_or(0, |tk| match tk.fluid.as_deref() {
                 None => tk.capacity,
@@ -190,7 +190,7 @@ pub(super) fn use_item_on(host: &mut dyn Host, event: &UseItemOnEvent, t: &tank:
                 _ => 0,
             });
         if room >= 1_000 && host.take_items(item, 1) == 1 {
-            let left = host.fluid_insert(event.pos, face, fluid, 1_000);
+            let left = host.fluid_insert(pos, face, fluid, 1_000);
             debug_assert_eq!(left, 0);
             host.give_items("minecraft:bucket", 1);
         }
@@ -198,7 +198,7 @@ pub(super) fn use_item_on(host: &mut dyn Host, event: &UseItemOnEvent, t: &tank:
     }
     if item == "minecraft:bucket" {
         let held = host
-            .fluid_tanks(host.dimension(), event.pos, face)
+            .fluid_tanks(host.dimension(), pos, face)
             .and_then(|tanks| tanks.into_iter().next())
             .and_then(|tk| Some((tk.fluid?, tk.amount)));
         let bucket = match held {
@@ -207,12 +207,51 @@ pub(super) fn use_item_on(host: &mut dyn Host, event: &UseItemOnEvent, t: &tank:
             _ => return false,
         };
         if host.take_items(item, 1) == 1 {
-            host.fluid_extract(host.dimension(), event.pos, face, 1_000);
+            host.fluid_extract(host.dimension(), pos, face, 1_000);
             host.give_items(bucket, 1);
         }
         return true;
     }
     false
+}
+
+/// What a fluid tank sends its clients: its contents (Horizon's `fluids`),
+/// for `draw_contents`. Chemical tanks are opaque and send nothing.
+pub(super) fn update_tag(nbt: &Compound, t: &tank::Tier) -> Option<Compound> {
+    if t.family != tank::Family::Fluid {
+        return None;
+    }
+    let (fluid, amount) = read_fluid(nbt);
+    let mut tag = Compound::new();
+    write_fluid(&mut tag, fluid.as_deref(), amount);
+    if !tag.contains_key(&key(&tag, "fluids")) {
+        // An empty tank still sends its (empty) list, so the client's copy empties too.
+        tag.insert(key(&tag, "fluids"), Tag::List(Vec::new()));
+    }
+    Some(tag)
+}
+
+/// The glass of `fluid_tank_base.json` spans 2..14 px on every axis.
+const INNER_MIN: f32 = 2.02 / 16.0;
+const INNER_MAX: f32 = 13.98 / 16.0;
+
+/// The fluid seen through a fluid tank's glass, as high as it is full
+/// (Mekanism's `RenderFluidTank`). Horizon's fluid box draws water and lava;
+/// other fluids are drawn as water in their own colour.
+pub(super) fn draw_contents(host: &dyn Host, nbt: &Compound, draw: &mut BlockEntityDraw, t: &tank::Tier) {
+    let (Some(fluid), amount) = read_fluid(nbt) else { return };
+    let fill = if t.creative { 1.0 } else { (amount as f32 / t.capacity as f32).clamp(0.0, 1.0) };
+    let top = INNER_MIN + (INNER_MAX - INNER_MIN) * fill;
+    let bounds = [INNER_MIN, INNER_MIN, INNER_MIN, INNER_MAX, top, INNER_MAX];
+    let own = fluid == chemicals::WATER || fluid == chemicals::LAVA;
+    let argb = (!own).then(|| chemicals::index(&fluid).and_then(chemicals::entry).map_or(0xFFFF_FFFF, |e| e.1));
+    let stack = NativeFluidStack {
+        fluid: if own { fluid } else { chemicals::WATER.to_owned() },
+        amount,
+        components: Compound::new(),
+    };
+    let options = NativeFluidRenderOptions { argb, render_bottom: true, uv_shrink_ratio: 4.0 / 2048.0 };
+    host.draw_fluid_box(draw, &stack, bounds, options);
 }
 
 /// A tank's screen: a gauge in the contents' colour, the amount and the mode button.
@@ -227,9 +266,12 @@ pub(super) fn draw(host: &dyn Host, event: &mut ScreenDrawEvent, t: &tank::Tier)
     let fill = if t.creative && amount > 0 { 1.0 } else { amount as f32 / t.capacity as f32 };
     let [gx, gy, gw, gh] = tank::GAUGE;
     gauge(host, event.batch, [x + gx, y + gy, gw, gh], fill, color);
-    host.text(event.batch, &tank::contents_line(t, data), [x + 32.0, y + 22.0], 0x333333, false);
+    // Name and amount on lines of their own: together they overflow the panel.
+    let (name, amount_text) = tank::contents(t, data);
+    host.text(event.batch, name, [x + 32.0, y + 20.0], 0x333333, false);
+    host.text(event.batch, &amount_text, [x + 32.0, y + 31.0], 0x333333, false);
     let rate = if t.creative { "Infinite".to_owned() } else { format!("{} mB/t", t.rate) };
-    host.text(event.batch, &format!("Transfer: {rate}"), [x + 32.0, y + 36.0], 0x404040, false);
+    host.text(event.batch, &format!("Transfer: {rate}"), [x + 32.0, y + 43.0], 0x404040, false);
     let mode = data.get(tank::DATA_MODE).copied().unwrap_or(0) as u8;
     let [bx, by, bw, bh] = tank::MODE_BUTTON;
     let on = mode != 0;

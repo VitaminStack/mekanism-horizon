@@ -123,7 +123,7 @@ pub fn menu_data(amount: i32, fluid: Option<&str>, mode: u8) -> [i32; DATA_LEN] 
 pub const WIDTH: f32 = 176.0;
 pub const HEIGHT: f32 = 166.0;
 pub const INVENTORY_Y: f32 = 84.0;
-pub const GAUGE: [f32; 4] = [8.0, 18.0, 18.0, 58.0];
+pub const GAUGE: [f32; 4] = [8.0, 18.0, 18.0, 54.0];
 pub const MODE_BUTTON: [f32; 4] = [32.0, 58.0, 136.0, 16.0];
 /// Menu button ids of the mode button (left click forward, right click back).
 pub const BUTTON_MODE_NEXT: i32 = 200;
@@ -133,15 +133,21 @@ pub fn button_at(at: [f32; 2], right: bool) -> Option<i32> {
     crate::machine::inside(MODE_BUTTON, at).then_some(if right { BUTTON_MODE_PREV } else { BUTTON_MODE_NEXT })
 }
 
-/// Lines describing the contents, from the menu data.
-pub fn contents_line(t: &Tier, data: &[i32]) -> String {
+/// The contents' name and amount, from the menu data.
+pub fn contents(t: &Tier, data: &[i32]) -> (&'static str, String) {
     let amount = cube::read_amount(data, DATA_AMOUNT).max(0);
     let kind = data.get(DATA_KIND).copied().unwrap_or(0);
     let name = (kind as usize).checked_sub(1).and_then(chemicals::entry).map_or("Empty", |e| e.0);
     if t.creative {
-        return format!("{name}: Infinite");
+        return (name, "Infinite".to_owned());
     }
-    format!("{name}: {amount} / {} mB", t.capacity)
+    (name, format!("{amount} / {} mB", t.capacity))
+}
+
+/// One line describing the contents, from the menu data.
+pub fn contents_line(t: &Tier, data: &[i32]) -> String {
+    let (name, amount) = contents(t, data);
+    format!("{name}: {amount}")
 }
 
 pub fn tooltip(t: &Tier, data: &[i32], at: [f32; 2]) -> Vec<String> {

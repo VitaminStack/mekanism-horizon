@@ -193,7 +193,9 @@ TANK_STATE = {
 }
 for family, state in TANK_STATE.items():
     for tier in CUBE_TIERS:
-        block(f'{tier}_{family}_tank', 'minecraft:barrel', 3.5, 16.0, extra=state, explosion_proof=True)
+        # Not full cubes: `occludes: false` keeps the faces of the blocks beside them drawn.
+        block(f'{tier}_{family}_tank', 'minecraft:barrel', 3.5, 16.0, extra=state, explosion_proof=True,
+              occludes=False)
     put(f'data/{NS}/horizon/menu/{family}_tank.json', {'slots': 1, 'data_slots': 4, 'results': [0]})
 # Upstream's fluid tank item definitions use a custom item model type (the contents drawn inside);
 # here the plain block model (import_upstream.py ITEM_SKIP leaves these alone).

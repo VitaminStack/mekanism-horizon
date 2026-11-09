@@ -28,8 +28,8 @@
 //!   buffers, saved by Horizon in the stack's `minecraft:custom_data` as `horizon_energy`.
 //! - `tooltip` (API 12): a cube item's stored energy.
 //! - `recipes_of_type`/`recipe_ingredient`/`recipe_result` (API 36): recipes.
-//! - `block_entity_fluids`, `block_entity_accepts_fluid` (API 54), `use_item_on`
-//!   (API 13): the tanks' contents and buckets (`tanks.rs`).
+//! - `block_entity_fluids`, `block_entity_accepts_fluid` (API 54), `right_click_block`
+//!   (API 21): the tanks' contents and buckets (`tanks.rs`).
 //! - `Host::play_sound` (API 61): machines and generators loop Mekanism's
 //!   sound while running, replayed when the clip ends.
 //!
@@ -63,7 +63,7 @@ use horizon_client::mod_api::{
     ItemEnergyBuffer, ItemEnergyBufferEvent, ItemStack, LevelHost, LootDropsEvent, MenuButtonEvent,
     ModContainer, ModEnergyBuffer, ModFluidTanks, NativeScreen, PlaceBlockEvent, ScreenClickEvent,
     ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent, StateForPlacementEvent, Tag,
-    Text, TooltipEvent, UseItemOnEvent,
+    Text, TooltipEvent, RightClickBlockEvent,
 };
 use machine::Machine;
 
@@ -451,11 +451,11 @@ impl Hooks for MekanismNative {
         }
     }
 
-    fn use_item_on(&self, host: &mut dyn Host, event: &mut UseItemOnEvent) -> Flow {
-        let Some(Kind::Tank(t)) = host.mod_block_entity(event.pos).and_then(|e| kind(&e.id)) else {
-            return Flow::Continue;
-        };
-        if tanks::use_item_on(host, event, t) { Flow::Cancel } else { Flow::Continue }
+    /// Buckets on a fluid tank fill or empty it instead of opening its screen.
+    fn right_click_block(&self, host: &mut dyn Host, event: &mut RightClickBlockEvent) -> Flow {
+        let Some(Kind::Tank(t)) = kind(&host.block(event.pos)) else { return Flow::Continue };
+        let Some((item, _, _)) = host.held() else { return Flow::Continue };
+        if tanks::use_bucket(host, event.pos, event.face, &item, t) { Flow::Cancel } else { Flow::Continue }
     }
 
     fn block_entity_ticks(&self, _host: &dyn Host, event: &mut BlockEntityTicksEvent) {
@@ -590,6 +590,9 @@ impl Hooks for MekanismNative {
     }
 
     fn block_entity_update_tag(&self, event: &mut BlockEntityUpdateTagEvent) -> Option<Compound> {
+        if let Some(Kind::Tank(t)) = kind(&event.entity.id) {
+            return tanks::update_tag(&event.entity.nbt, t);
+        }
         if &*event.entity.id != generator::WIND {
             return None;
         }
@@ -604,6 +607,8 @@ impl Hooks for MekanismNative {
             generators::draw_wind(host, event.pos, active, event.draw);
         } else if event.block == generator::ADVANCED_SOLAR {
             generators::draw_advanced_solar_top(host, event.pos, event.draw);
+        } else if let Some(Kind::Tank(t)) = kind(event.block) {
+            tanks::draw_contents(host, &event.entity.nbt, event.draw, t);
         }
     }
 
