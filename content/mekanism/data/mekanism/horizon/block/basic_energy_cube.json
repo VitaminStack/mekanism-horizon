@@ -1,8 +1,8 @@
 {
   "template": "minecraft:iron_block",
   "properties": {
-    "hardness": 3.5,
-    "explosion_resistance": 6.0,
+    "hardness": 2.0,
+    "explosion_resistance": 2.4,
     "requires_tool": true
   },
   "item": true

@@ -29,7 +29,7 @@ VANILLA_RECIPES = {'minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 
                    'minecraft:blasting', 'minecraft:smoking', 'minecraft:campfire_cooking',
                    'minecraft:stonecutting'}
 # Hand-made placeholder assets kept until their custom model loaders are ported.
-ASSET_SKIP = {'basic_energy_cube'}
+ASSET_SKIP = {f'{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')}
 REF = re.compile(r'"#?mekanism:([a-z0-9_/.]+)"')
 
 
@@ -105,13 +105,21 @@ def main(up):
     n = 0
     for src in (gen / 'data/mekanism/recipe').rglob('*.json'):
         text = src.read_text(encoding='utf-8')
-        if json.loads(text).get('type') not in VANILLA_RECIPES:
+        recipe = json.loads(text)
+        if recipe.get('type') == 'mekanism:mek_data':
+            # Shaped crafting that also carries the inputs' stored contents over. Horizon has no such
+            # type yet, so it is plain shaped crafting: a crafted cube starts empty.
+            recipe['type'] = 'minecraft:crafting_shaped'
+            text = json.dumps(recipe, indent=2)
+        elif recipe.get('type') not in VANILLA_RECIPES:
             continue
-        refs = {m.group(1) for m in REF.finditer(text) if not m.group(0).startswith('"#')}
+        # `type` and `group` name no item; every other plain `mekanism:` id must be registered.
+        scan = json.dumps({k: v for k, v in recipe.items() if k not in ('type', 'group')})
+        refs = {m.group(1) for m in REF.finditer(scan) if not m.group(0).startswith('"#')}
         if refs <= known:
             dst = C / 'data/mekanism/recipe' / src.relative_to(gen / 'data/mekanism/recipe')
             dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(src, dst)
+            dst.write_text(text, encoding='utf-8')
             n += 1
     stats['recipes'] = n
 

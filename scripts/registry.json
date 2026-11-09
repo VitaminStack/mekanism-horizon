@@ -27,6 +27,7 @@
     "dust_tin",
     "dust_uranium",
     "elite_control_circuit",
+    "energy_tablet",
     "enriched_carbon",
     "enriched_diamond",
     "enriched_gold",
@@ -59,6 +60,7 @@
     "ultimate_control_circuit"
   ],
   "blocks": [
+    "advanced_energy_cube",
     "basic_energy_cube",
     "block_bronze",
     "block_charcoal",
@@ -75,16 +77,19 @@
     "block_steel",
     "block_tin",
     "block_uranium",
+    "creative_energy_cube",
     "deepslate_fluorite_ore",
     "deepslate_lead_ore",
     "deepslate_osmium_ore",
     "deepslate_tin_ore",
     "deepslate_uranium_ore",
+    "elite_energy_cube",
     "fluorite_ore",
     "lead_ore",
     "osmium_ore",
     "steel_casing",
     "tin_ore",
+    "ultimate_energy_cube",
     "uranium_ore"
   ]
 }

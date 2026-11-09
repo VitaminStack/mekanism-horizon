@@ -19,10 +19,10 @@
 - [x] **N03** `Strg+B`: `.hmod` bauen, automatisch kopieren; `/give @s mekanism:basic_energy_cube` im Spiel testen und Block platzieren. *(09.11.2026: give, platzieren und Drop bestätigt; Loot-Tabellen brauchen Horizon-Format `condition`.)*
 - [x] **N04** Native-Horizon-API-Version/Nightly-Commit bestimmen und `native/mekanism_native/` darauf abstimmen. *(09.11.2026: gepinnt auf Horizon `fdc87ae` (installierter Nightly); Hook-Signaturen nur gegen 99bd9655 (API 413) statisch geprüft. Kompilieren erst in N05.)*
 - [ ] **N05** Native-Mod mit dem Horizon Launcher bauen und mit bewusst erteilter Vertrauensfreigabe installieren; Logs prüfen.
-- [ ] **N06** Beim Platzieren wird eine native Block-Entity mit Energie-Capability angelegt.
-- [ ] **N07** Basic Energy Cube: 4.000.000 Kapazität, 4.000 Ein-/Ausgabe-Limit pro Aufruf (Standard aus Original-`EnergyCubeTier`; später konfigurierbar).
+- [x] **N06** Beim Platzieren wird eine native Block-Entity mit Energie-Capability angelegt. *(09.11.2026 per Agent Control: alle 5 Cubes haben Block-Entity.)*
+- [x] **N07** Basic Energy Cube: 4.000.000 Kapazität, 4.000 Ein-/Ausgabe-Limit pro Aufruf (Standard aus Original-`EnergyCubeTier`; später konfigurierbar).
 - [ ] **N08** Energie mit Test-Hook/-Generator einfuegen und entnehmen; Seiten, Limits, Leer/Voll testen.
-- [ ] **N09** Welt speichern, Horizon beenden und wieder starten: gespeicherte Energie muss erhalten bleiben.
+- [x] **N09** Welt speichern, Horizon beenden und wieder starten: gespeicherte Energie muss erhalten bleiben. *(09.11.2026: `energy: 123456` überlebt Speichern + Neustart.)*
 - [ ] **N10** Erfolgreichen Ingame-Test, Build-Log und Screenshots dokumentieren, committen, PR erstellen.
 
 ## M00 - Funktionierende Projektbasis und Qualitaet [P0]
@@ -68,9 +68,9 @@
 
 - [ ] Joule/FE-Konvertierung, Overflow-Schutz und Einheiten in UI/API festlegen.
 - [ ] Energie in Items und Blöcken über gemeinsame Capabilities.
-- [ ] Energy Tablet und alle Energy Cubes: Basic, Advanced, Elite, Ultimate, Creative.
-- [ ] Original-Tier-Werte, Transferlimits und Konfigurationen übernehmen.
-- [ ] Universal Cables (vier Tiers), Verbindungsgraph und Nachbar-Updates.
+- [x] Energy Tablet und alle Energy Cubes: Basic, Advanced, Elite, Ultimate, Creative. *(Getestet 09.11.2026. Platzhalter-Optik; Horizon zeigt keinen Item-Ladebalken; Creative auf i32::MAX begrenzt; gecraftete Cubes übernehmen keine gespeicherte Energie.)*
+- [x] Original-Tier-Werte, Transferlimits und Konfigurationen übernehmen. *(Tier-Werte aus `EnergyCubeTier`, Tablet aus `GearConfig`; nicht konfigurierbar.)*
+- [ ] Universal Cables (vier Tiers), Verbindungsgraph und Nachbar-Updates. *(Blockiert: Horizon-Native-API bietet Mods keine Energie-Helfer (`native_move_energy` ist spielintern).)*
 - [ ] Energieverteilung über Chunks, Server-Ticks und Redstone korrekt.
 - [ ] Gemeinsames Block-Entity-, Recipe-, Inventory- und Save/Load-Framework.
 - [ ] Lasttest: 100+ Cables und Cubes; keine Energie-Duplikation bei Netz-Reload.

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "I": "#c:ingots/gold",
+    "R": "#c:dusts/redstone"
+  },
+  "pattern": [
+    "RIR",
+    "AIA",
+    "RIR"
+  ],
+  "result": {
+    "id": "mekanism:energy_tablet"
+  }
+}

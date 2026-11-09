@@ -34,9 +34,9 @@ def put(rel, obj):
     path.write_text(json.dumps(obj, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 
 
-def item(id_, template='minecraft:iron_ingot'):
+def item(id_, template='minecraft:iron_ingot', stack=64):
     items.append(id_)
-    put(f'data/{NS}/horizon/item/{id_}.json', {'template': template, 'rarity': 'common', 'max_stack_size': 64})
+    put(f'data/{NS}/horizon/item/{id_}.json', {'template': template, 'rarity': 'common', 'max_stack_size': stack})
 
 
 def loot(id_, drop, count=None):
@@ -90,6 +90,19 @@ block('deepslate_fluorite_ore', 'minecraft:deepslate_diamond_ore', 4.5, 3.0, 'fl
 block('block_charcoal', 'minecraft:coal_block', 5.0, 6.0)
 block('block_salt', 'minecraft:clay', 0.5, 0.5, 'salt', (4, 4), requires_tool=False)
 block('steel_casing', 'minecraft:iron_block', 3.5, 9.0)
+
+# --- energy (M03): cubes are ticked/buffered by native/mekanism_native ---
+item('energy_tablet', stack=1)
+CUBE_TEXTURE = {'basic': 'copper_block', 'advanced': 'gold_block', 'elite': 'diamond_block',
+                'ultimate': 'emerald_block', 'creative': 'amethyst_block'}
+for tier, tex in CUBE_TEXTURE.items():
+    cid = f'{tier}_energy_cube'
+    block(cid, 'minecraft:iron_block', 2.0, 2.4)
+    # Placeholder art: Mekanism's cube uses a custom item model type not ported yet.
+    put(f'assets/{NS}/models/block/{cid}.json',
+        {'parent': 'minecraft:block/cube_all', 'textures': {'all': f'minecraft:block/{tex}'}})
+    put(f'assets/{NS}/blockstates/{cid}.json', {'variants': {'': {'model': f'{NS}:block/{cid}'}}})
+    put(f'assets/{NS}/items/{cid}.json', {'model': {'type': 'minecraft:model', 'model': f'{NS}:block/{cid}'}})
 
 # --- ore generation: OreType defaults, translated to vanilla features ---
 # (name, per chunk, discard on air, max vein size, shape, min anchor, max anchor, plateau)
@@ -160,7 +173,8 @@ put(f'data/{NS}/tags/worldgen/biome/spawn_ores.json',
     {'replace': False, 'values': ['#minecraft:is_overworld', {'id': '#c:is_overworld', 'required': False}]})
 
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
-put('data/minecraft/tags/block/mineable/pickaxe.json', {'replace': False, 'values': [f'{NS}:basic_energy_cube']})
+put('data/minecraft/tags/block/mineable/pickaxe.json',
+    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TEXTURE]})
 
 # Hand-written content stays declared too, so the importer covers it.
 for f in (C / f'data/{NS}/horizon/item').glob('*.json'):

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:energy_cube",
+  "key": {
+    "A": "#mekanism:alloys/basic",
+    "E": "mekanism:energy_tablet",
+    "I": "#c:ingots/iron",
+    "P": "mekanism:steel_casing"
+  },
+  "pattern": [
+    "AEA",
+    "IPI",
+    "AEA"
+  ],
+  "result": {
+    "id": "mekanism:basic_energy_cube"
+  }
+}

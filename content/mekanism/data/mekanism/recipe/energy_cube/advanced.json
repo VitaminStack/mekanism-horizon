@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:energy_cube",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "E": "mekanism:energy_tablet",
+    "I": "#c:ingots/osmium",
+    "P": "mekanism:basic_energy_cube"
+  },
+  "pattern": [
+    "AEA",
+    "IPI",
+    "AEA"
+  ],
+  "result": {
+    "id": "mekanism:advanced_energy_cube"
+  }
+}

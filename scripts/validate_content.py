@@ -31,7 +31,7 @@ def main():
     for rel in ['assets/mekanism/blockstates/basic_energy_cube.json',
                 'assets/mekanism/models/block/basic_energy_cube.json',
                 'data/mekanism/loot_table/blocks/basic_energy_cube.json',
-                'data/mekanism/recipe/basic_energy_cube.json']:
+                'data/mekanism/recipe/energy_cube/basic.json']:
         assert (CONTENT/rel).is_file(), f'Missing Energy Cube file: {rel}'
     # Cube needs any pickaxe (no tool tier), like Mekanism machines.
     rel = 'data/minecraft/tags/block/mineable/pickaxe.json'
