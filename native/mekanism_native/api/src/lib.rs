@@ -407,6 +407,11 @@ impl MekanismNative {
         let tick = state.tick(generator::boost(lava_sides, nether), ambient);
         let f = facing(host, pos);
         state.energy -= give(host, pos, f, state.energy, state.energy);
+        // The model glows while burning; set the property only on change.
+        let want = if tick.active { "true" } else { "false" };
+        if host.block_property(pos, "active").as_deref() != Some(want) {
+            host.set_block_property(pos, "active", want);
+        }
 
         let e = &mut *event.entity;
         if e.items != items {

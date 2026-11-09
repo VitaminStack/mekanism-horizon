@@ -149,7 +149,10 @@ facing_blockstate('metallurgic_infuser')
 # own (one hidden placeholder). Mekanism's energy (charging) slot is not ported on either.
 # Wind and Advanced Solar Generator are multiblocks (bounding blocks): not yet.
 MACHINE_STATE = {'default_state': {'facing': 'north'}}
-block('heat_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, ns=GEN)
+# Upstream's blockstate picks the model by `active` (the drum glows while burning), set by the native mod.
+block('heat_generator', 'minecraft:barrel', 3.5, 16.0, ns=GEN, extra={
+    'state_properties': {'active': {'type': 'boolean'}},
+    'default_state': {'facing': 'north', 'active': 'false'}})
 block('solar_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, ns=GEN)
 item('solar_panel', ns=GEN)
 put(f'data/{GEN}/horizon/menu/heat_generator.json', {'slots': 1, 'data_slots': 7, 'results': []}, GEN)
