@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "efficiency",
+  "experience": 0.6,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:rods/blaze"
+  },
+  "output": {
+    "count": 4,
+    "id": "minecraft:blaze_powder"
+  }
+}

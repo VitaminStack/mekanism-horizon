@@ -1,0 +1,32 @@
+{
+  "tile.generator.bio": {
+    "sounds": [
+      "mekanismgenerators:generator/bio"
+    ],
+    "subtitle": "sound_event.mekanismgenerators.tile.generator.bio"
+  },
+  "tile.generator.heat": {
+    "sounds": [
+      "mekanismgenerators:generator/heat"
+    ],
+    "subtitle": "sound_event.mekanismgenerators.tile.generator.heat"
+  },
+  "tile.generator.solar": {
+    "sounds": [
+      {
+        "attenuation_distance": 8,
+        "name": "mekanismgenerators:generator/solar"
+      }
+    ],
+    "subtitle": "sound_event.mekanismgenerators.tile.generator.solar"
+  },
+  "tile.generator.wind": {
+    "sounds": [
+      {
+        "attenuation_distance": 8,
+        "name": "mekanismgenerators:generator/wind"
+      }
+    ],
+    "subtitle": "sound_event.mekanismgenerators.tile.generator.wind"
+  }
+}

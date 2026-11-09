@@ -1,0 +1,14 @@
+{
+  "type": "mekanism:enriching",
+  "category": "decorative",
+  "experience": 0.1,
+  "group": "brown_dye",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:crops/cocoa_bean"
+  },
+  "output": {
+    "count": 2,
+    "id": "minecraft:brown_dye"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.05,
+  "group": "mekanism:dust_lapis_lazuli",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:gems/lapis"
+  },
+  "output": {
+    "id": "mekanism:dust_lapis_lazuli"
+  }
+}

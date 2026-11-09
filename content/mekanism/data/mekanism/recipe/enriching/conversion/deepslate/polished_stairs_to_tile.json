@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanism:deepslate_tile_conversion",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:polished_deepslate_stairs"
+  },
+  "output": {
+    "id": "minecraft:deepslate_tile_stairs"
+  }
+}

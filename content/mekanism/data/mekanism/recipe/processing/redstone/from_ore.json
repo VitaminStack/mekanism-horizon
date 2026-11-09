@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.7,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:ores/redstone"
+  },
+  "output": {
+    "count": 12,
+    "id": "minecraft:redstone"
+  }
+}

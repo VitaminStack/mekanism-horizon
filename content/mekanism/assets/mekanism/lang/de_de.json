@@ -1,6 +1,7 @@
 {
   "block.mekanism.advanced_energy_cube": "Fortschrittlicher Energiewürfel",
   "block.mekanism.basic_energy_cube": "Einfacher Energiewürfel",
+  "block.mekanism.block_bio_fuel": "Biobrennstoffblock",
   "block.mekanism.block_bronze": "Bronzeblock",
   "block.mekanism.block_charcoal": "Holzkohleblock",
   "block.mekanism.block_fluorite": "Fluoritblock",
@@ -16,7 +17,9 @@
   "block.mekanism.block_steel": "Stahlblock",
   "block.mekanism.block_tin": "Zinnblock",
   "block.mekanism.block_uranium": "Uranblock",
+  "block.mekanism.bounding_block": "Begrenzungsblock",
   "block.mekanism.creative_energy_cube": "Kreativer Energiewürfel",
+  "block.mekanism.crusher": "Zerkleinerer",
   "block.mekanism.debug_energy_sink": "Debug-Energiesenke",
   "block.mekanism.debug_energy_source": "Debug-Energiequelle",
   "block.mekanism.deepslate_fluorite_ore": "Tiefenschiefer-Fluoriterz",
@@ -25,6 +28,7 @@
   "block.mekanism.deepslate_tin_ore": "Tiefenschiefer-Zinnerz",
   "block.mekanism.deepslate_uranium_ore": "Tiefenschiefer-Uranerz",
   "block.mekanism.elite_energy_cube": "Elitärer Energiewürfel",
+  "block.mekanism.enrichment_chamber": "Anreicherungskammer",
   "block.mekanism.fluorite_ore": "Fluoriterz",
   "block.mekanism.lead_ore": "Bleierz",
   "block.mekanism.metallurgic_infuser": "Metallurgische Infusionsanlage",
@@ -61,6 +65,7 @@
   "item.mekanism.alloy_infused": "Infundierte Legierung",
   "item.mekanism.alloy_reinforced": "Verstärkte Legierung",
   "item.mekanism.basic_control_circuit": "Einfacher Steuerschaltkreis",
+  "item.mekanism.bio_fuel": "Bio-Brennstoff",
   "item.mekanism.dust_bronze": "Bronzestaub",
   "item.mekanism.dust_charcoal": "Holzkohlestaub",
   "item.mekanism.dust_coal": "Kohlestaub",
@@ -113,5 +118,8 @@
   "item.mekanism.raw_tin": "Rohzinn",
   "item.mekanism.raw_uranium": "Rohuran",
   "item.mekanism.salt": "Salz",
-  "item.mekanism.ultimate_control_circuit": "Ultimativer Steuerschaltkreis"
+  "item.mekanism.ultimate_control_circuit": "Ultimativer Steuerschaltkreis",
+  "sound_event.mekanism.tile.machine.crusher": "Zerquetscher klirrt",
+  "sound_event.mekanism.tile.machine.enrichment_chamber": "Anreicherer summt",
+  "sound_event.mekanism.tile.machine.metallurgic_infuser": "Metallischer Mischer summt"
 }

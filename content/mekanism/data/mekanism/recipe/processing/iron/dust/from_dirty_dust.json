@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.35,
+  "group": "mekanism:dust_iron",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:dirty_dusts/iron"
+  },
+  "output": {
+    "id": "mekanism:dust_iron"
+  }
+}

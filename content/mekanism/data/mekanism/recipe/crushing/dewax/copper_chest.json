@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "building",
+  "experience": 0.1,
+  "group": "unaffected",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:waxed_copper_chest"
+  },
+  "output": {
+    "id": "minecraft:copper_chest"
+  }
+}

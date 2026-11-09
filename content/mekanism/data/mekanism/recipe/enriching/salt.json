@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "mekanism:block_salt"
+  },
+  "output": {
+    "count": 4,
+    "id": "mekanism:salt"
+  }
+}

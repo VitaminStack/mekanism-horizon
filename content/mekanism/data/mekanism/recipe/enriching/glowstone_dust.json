@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:glowstone"
+  },
+  "output": {
+    "count": 4,
+    "id": "minecraft:glowstone_dust"
+  }
+}

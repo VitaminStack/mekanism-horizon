@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanism:cracked_deepslate_conversion",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:deepslate_bricks"
+  },
+  "output": {
+    "id": "minecraft:cracked_deepslate_bricks"
+  }
+}

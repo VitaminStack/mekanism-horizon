@@ -8,6 +8,16 @@
 //! output), `TileEntityHeatGenerator`, `TileEntitySolarGenerator`,
 //! `BasicHeatCapacitor`, `ITileHeatHandler` and `HeatAPI`.
 //!
+//! Bio Generator (`TileEntityBioGenerator`): bio fuel items fill a 200 mB
+//! bioethanol tank (64 mB per Bio Fuel, 9 x that per block), and each tick
+//! burns 1 mB for 25 FE when all of it fits (`GeneratorsConfig`; storage 30 s).
+//! The tank holds no fluid of Horizon's: there are no pipes yet.
+//!
+//! Advanced Solar Generator (`TileEntityAdvancedSolarGenerator`, 12 FE/t peak,
+//! storage 12 s) and Wind Generator (`TileEntityWindGenerator`, 1 to 5 FE/t by
+//! height, storage 5 s) are multiblocks: bounding blocks (`mekanism:bounding_block`)
+//! fill the rest of their shape, placed and removed by the native mod.
+//!
 //! Approximations: the ambient temperature and the solar peak use the biome's
 //! base temperature and downfall from the table below (vanilla's values; Horizon
 //! gives mods the biome's id only), without vanilla's height adjustment. Sky
@@ -15,14 +25,33 @@
 //! day and the rain and thunder levels.
 //!
 //! Not ported: the energy (charging) slot, redstone control, heat transfer to
-//! adjacent heat blocks (there are none yet), and the Wind and Advanced Solar
-//! Generators (multiblocks).
+//! adjacent heat blocks (there are none yet), filling the Bio Generator from
+//! fluid containers, the `c:no_wind` dimension blacklist (no dimension here
+//! without a sky has wind anyway), and using a bounding block to open the
+//! main block's screen.
 
 pub const HEAT: &str = "mekanismgenerators:heat_generator";
 pub const SOLAR: &str = "mekanismgenerators:solar_generator";
+pub const BIO: &str = "mekanismgenerators:bio_generator";
+pub const ADVANCED_SOLAR: &str = "mekanismgenerators:advanced_solar_generator";
+pub const WIND: &str = "mekanismgenerators:wind_generator";
+pub const BOUNDING: &str = "mekanism:bounding_block";
 /// Registered by `data/mekanismgenerators/horizon/menu/<generator>.json`.
 pub const HEAT_MENU: &str = HEAT;
 pub const SOLAR_MENU: &str = SOLAR;
+pub const BIO_MENU: &str = BIO;
+pub const ADVANCED_SOLAR_MENU: &str = ADVANCED_SOLAR;
+pub const WIND_MENU: &str = WIND;
+/// Mekanism's loops while running (`tile.generator.*` in `sounds.json`) and
+/// their clip lengths in ticks.
+pub const HEAT_SOUND: &str = "mekanismgenerators:tile.generator.heat";
+pub const HEAT_SOUND_TICKS: i32 = 26;
+pub const SOLAR_SOUND: &str = "mekanismgenerators:tile.generator.solar";
+pub const SOLAR_SOUND_TICKS: i32 = 20;
+pub const BIO_SOUND: &str = "mekanismgenerators:tile.generator.bio";
+pub const BIO_SOUND_TICKS: i32 = 56;
+pub const WIND_SOUND: &str = "mekanismgenerators:tile.generator.wind";
+pub const WIND_SOUND_TICKS: i32 = 258;
 
 pub const TICKS_PER_SECOND: i32 = 20;
 
@@ -160,6 +189,147 @@ impl Heat {
 // --- Solar Generator ---
 pub const SOLAR_STORAGE: i32 = 2 * TICKS_PER_SECOND;
 pub const SOLAR_GENERATION: f64 = 2.0;
+
+// --- Bio Generator ---
+pub const BIO_STORAGE: i32 = 30 * TICKS_PER_SECOND;
+pub const BIO_GENERATION: i32 = 25;
+pub const BIO_TANK: i32 = 200;
+pub const BIO_FUEL_PER_ITEM: i32 = 64;
+/// `#c:fuels/bio` and `#c:fuels/block/bio` (`biofuelFromItem`).
+pub const BIO_FUEL_TAG: &str = "c:fuels/bio";
+pub const BIO_FUEL_BLOCK_TAG: &str = "c:fuels/block/bio";
+
+/// One Bio Generator tick: burn 1 mB for `BIO_GENERATION` when the energy
+/// all fits. Returns whether it ran (the generator is active).
+pub fn bio_tick(fuel: &mut i32, energy: &mut i32) -> bool {
+    if *fuel < 1 || *energy + BIO_GENERATION > BIO_STORAGE {
+        return false;
+    }
+    *fuel -= 1;
+    *energy += BIO_GENERATION;
+    true
+}
+
+/// Mekanism's `FluidFuelInventorySlot.fillOrBurn`: an item is used only when
+/// all the fuel it gives fits in the tank.
+pub fn bio_fits(fuel: i32, from_item: i32) -> bool {
+    from_item > 0 && fuel + from_item <= BIO_TANK
+}
+
+// --- multiblocks ---
+
+/// Offsets of a multiblock's bounding blocks from its main block (`withBounding`).
+pub fn bounding_offsets(block: &str) -> Vec<[i32; 3]> {
+    match block {
+        WIND => (1..=4).map(|y| [0, y, 0]).collect(),
+        ADVANCED_SOLAR => {
+            let mut v = vec![[0, 1, 0]];
+            for x in -1..=1 {
+                for z in -1..=1 {
+                    v.push([x, 2, z]);
+                }
+            }
+            v
+        }
+        _ => Vec::new(),
+    }
+}
+
+pub fn is_multiblock(block: &str) -> bool {
+    block == WIND || block == ADVANCED_SOLAR
+}
+
+/// Where the main block of a bounding block at `pos` may be: one candidate per
+/// multiblock offset (the caller checks which holds a main block that claims it).
+pub fn main_candidates(pos: [i32; 3]) -> Vec<(&'static str, [i32; 3])> {
+    [WIND, ADVANCED_SOLAR]
+        .into_iter()
+        .flat_map(|b| {
+            bounding_offsets(b).into_iter().map(move |o| (b, [pos[0] - o[0], pos[1] - o[1], pos[2] - o[2]]))
+        })
+        .collect()
+}
+
+// --- Advanced Solar Generator ---
+pub const ADVANCED_SOLAR_STORAGE: i32 = 12 * TICKS_PER_SECOND;
+pub const ADVANCED_SOLAR_GENERATION: f64 = 12.0;
+/// The panel's nine sky checks: the 3 x 3 above its top, two blocks up.
+pub const ADVANCED_SOLAR_CHECKS: usize = 9;
+
+/// `getProduction` with `checkCanSeeSun`: it runs when more than four of the
+/// nine positions see the sun, each one that does adds the biome's peak, and
+/// the average scales the 12 FE/t by the sky's brightness.
+pub fn advanced_solar_production(seeing: usize, darkness: f32, peak: f32) -> i32 {
+    if seeing <= 4 {
+        return 0;
+    }
+    let brightness = (1.0 - darkness).max(0.0);
+    let multiplier = seeing as f32 * peak / ADVANCED_SOLAR_CHECKS as f32;
+    (ADVANCED_SOLAR_GENERATION * (brightness * multiplier) as f64).clamp(0.0, i32::MAX as f64) as i32
+}
+
+// --- Wind Generator ---
+pub const WIND_STORAGE: i32 = 5 * TICKS_PER_SECOND;
+pub const WIND_GENERATION_MIN: f64 = 1.0;
+pub const WIND_GENERATION_MAX: f64 = 5.0;
+pub const WIND_MIN_Y: i32 = 24;
+/// `DimensionType.MAX_Y`, the default of `windGenerationMaxY`.
+pub const WIND_MAX_Y: i32 = 2031;
+
+/// Vanilla's build heights by dimension: (min y, height, logical height).
+pub fn dimension_heights(dimension: &str) -> (i32, i32, i32) {
+    match dimension {
+        "minecraft:the_nether" => (0, 256, 128),
+        "minecraft:the_end" => (0, 256, 256),
+        _ => (-64, 384, 384),
+    }
+}
+
+/// `getMultiplier`: 0 when the top (four blocks up) can't see the sky,
+/// otherwise rising linearly from 1 at y 24 to 5 at the top of the world.
+pub fn wind_multiplier(top_y: i32, sees_sky: bool, dimension: &str) -> f64 {
+    if !sees_sky {
+        return 0.0;
+    }
+    let (min_build, height, logical) = dimension_heights(dimension);
+    let max_level = (min_build + height).min(min_build + logical) - 1;
+    let min_y = WIND_MIN_Y.max(min_build);
+    let max_y = WIND_MAX_Y.min(max_level);
+    let clamped = top_y.clamp(min_y, max_y);
+    let slope = (WIND_GENERATION_MAX - WIND_GENERATION_MIN) / (max_y - min_y) as f64;
+    (WIND_GENERATION_MIN + slope * (clamped - min_y) as f64) / WIND_GENERATION_MIN
+}
+
+/// The Advanced Solar Generator above its main block (`scripts/import_generator_models.py`):
+/// the upper pole and the panels, drawn one block up.
+pub const ADVANCED_SOLAR_TOP: &str = "mekanismgenerators:block/advanced_solar_generator/top";
+
+/// The tower and blade models (`scripts/import_generator_models.py`, mirrors
+/// `scripts/wind_parts.json`): each with how many blocks it was moved per axis
+/// to fit a model's -16 to 32, and whether it is a blade (turns about the hub).
+pub const WIND_PARTS: [(&str, [f32; 3], bool); 7] = [
+    ("mekanismgenerators:block/wind_generator/rotor_0", [-2.0, 2.0, 0.0], true),
+    ("mekanismgenerators:block/wind_generator/rotor_1", [0.0, 4.0, 0.0], true),
+    ("mekanismgenerators:block/wind_generator/rotor_2", [0.0, 6.0, 0.0], true),
+    ("mekanismgenerators:block/wind_generator/rotor_3", [4.0, 1.0, 0.0], true),
+    ("mekanismgenerators:block/wind_generator/tower_4", [0.0, 0.0, 0.0], false),
+    ("mekanismgenerators:block/wind_generator/tower_5", [0.0, 2.0, 0.0], false),
+    ("mekanismgenerators:block/wind_generator/tower_6", [0.0, 4.0, 0.0], false),
+];
+/// The blades' hub, in blocks from the main block's corner, facing north; they turn about z.
+pub const WIND_HUB: [f32; 3] = [0.5, 4.5, 0.156_248_75];
+
+/// `RenderWindGenerator`'s turn per tick while running: faster the higher it stands.
+pub fn wind_rotor_speed(y: i32, dimension: &str) -> f32 {
+    let (min_build, height, logical) = dimension_heights(dimension);
+    let max_level = (min_build + height).min(min_build + logical) - 1;
+    32.0 * (y + 4 - min_build) as f32 / (max_level + 1 - min_build) as f32
+}
+
+/// `getCurrentGeneration`, truncated as `MathUtils.clampToInt`.
+pub fn wind_generation(multiplier: f64) -> i32 {
+    (WIND_GENERATION_MIN * multiplier).clamp(0.0, i32::MAX as f64) as i32
+}
 
 /// Vanilla biome climate: (id, temperature, downfall, has precipitation).
 pub const BIOMES: [(&str, f32, f32, bool); 64] = [
@@ -316,6 +486,19 @@ pub fn solar_menu_data(energy: i32, producing: i32, sees: bool, facing: usize, p
     [energy, producing, sees as i32, facing as i32, (peak * 100.0).round().clamp(0.0, 65_535.0) as i32]
 }
 
+pub const BIO_FUEL_SLOT: [f32; 2] = [17.0, 35.0];
+pub const BIO_FUEL_BAR: [f32; 4] = [7.0, 15.0, 4.0, 52.0];
+pub const BIO_SCREEN: [f32; 4] = [48.0, 23.0, 80.0, 40.0];
+pub const BIO_DATA_ENERGY: usize = 0;
+pub const BIO_DATA_FUEL: usize = 1;
+pub const BIO_DATA_PRODUCING: usize = 2;
+pub const BIO_DATA_FACING: usize = 3;
+pub const BIO_DATA_LEN: usize = 4;
+
+pub fn bio_menu_data(energy: i32, fuel: i32, active: bool, facing: usize) -> [i32; BIO_DATA_LEN] {
+    [energy, fuel, if active { BIO_GENERATION } else { 0 }, facing as i32]
+}
+
 pub fn inside(rect: [f32; 4], at: [f32; 2]) -> bool {
     let [x, y, w, h] = rect;
     at[0] >= x && at[0] < x + w && at[1] >= y && at[1] < y + h
@@ -336,12 +519,38 @@ pub fn heat_tooltip(data: &[i32], at: [f32; 2]) -> Vec<String> {
     Vec::new()
 }
 
-pub fn solar_tooltip(data: &[i32], at: [f32; 2]) -> Vec<String> {
+pub fn bio_tooltip(data: &[i32], at: [f32; 2]) -> Vec<String> {
+    let d = |i: usize| data.get(i).copied().unwrap_or(0);
+    if inside(BIO_FUEL_BAR, at) {
+        return vec![format!("Bioethanol: {} / {BIO_TANK} mB", d(BIO_DATA_FUEL))];
+    }
+    if inside(ENERGY_BAR, at) {
+        return energy_lines(d(BIO_DATA_ENERGY), BIO_STORAGE, d(BIO_DATA_PRODUCING));
+    }
+    Vec::new()
+}
+
+/// Energy storage of the generators that use the solar screen.
+pub fn panel_storage(block: &str) -> i32 {
+    match block {
+        ADVANCED_SOLAR => ADVANCED_SOLAR_STORAGE,
+        WIND => WIND_STORAGE,
+        _ => SOLAR_STORAGE,
+    }
+}
+
+/// Solar, Advanced Solar and Wind Generator share the solar screen and data
+/// (the wind's `SOLAR_DATA_PEAK` is its height multiplier in percent).
+pub fn solar_tooltip(block: &str, data: &[i32], at: [f32; 2]) -> Vec<String> {
     let d = |i: usize| data.get(i).copied().unwrap_or(0);
     if inside(ENERGY_BAR, at) {
-        return energy_lines(d(SOLAR_DATA_ENERGY), SOLAR_STORAGE, d(SOLAR_DATA_PRODUCING));
+        return energy_lines(d(SOLAR_DATA_ENERGY), panel_storage(block), d(SOLAR_DATA_PRODUCING));
     }
     if inside(SOLAR_SUN, at) {
+        if block == WIND {
+            let wind = if d(SOLAR_DATA_SEES_SUN) != 0 { "Wind" } else { "No wind" };
+            return vec![wind.to_owned(), format!("Height multiplier: {}%", d(SOLAR_DATA_PEAK))];
+        }
         let sees = if d(SOLAR_DATA_SEES_SUN) != 0 { "Sees the sun" } else { "No sun" };
         return vec![sees.to_owned(), format!("Biome peak: {}%", d(SOLAR_DATA_PEAK))];
     }
@@ -351,6 +560,67 @@ pub fn solar_tooltip(data: &[i32], at: [f32; 2]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bounding_shapes_match_mekanism() {
+        assert_eq!(bounding_offsets(WIND), vec![[0, 1, 0], [0, 2, 0], [0, 3, 0], [0, 4, 0]]);
+        let a = bounding_offsets(ADVANCED_SOLAR);
+        assert_eq!(a.len(), 10);
+        assert!(a.contains(&[0, 1, 0]) && a.contains(&[-1, 2, 1]) && a.contains(&[0, 2, 0]));
+        assert!(bounding_offsets(SOLAR).is_empty());
+        let c = main_candidates([5, 10, 5]);
+        assert!(c.contains(&(WIND, [5, 6, 5])));
+        assert!(c.contains(&(ADVANCED_SOLAR, [6, 8, 4])));
+    }
+
+    #[test]
+    fn advanced_solar_needs_five_of_nine() {
+        assert_eq!(advanced_solar_production(4, 0.0, 1.0), 0);
+        assert_eq!(advanced_solar_production(9, 0.0, 1.0), 12);
+        assert_eq!(advanced_solar_production(5, 0.0, 1.0), 6, "12 * 5/9 truncated");
+        assert_eq!(advanced_solar_production(9, 0.5, 1.0), 6);
+    }
+
+    #[test]
+    fn wind_rises_with_height() {
+        let ow = "minecraft:overworld";
+        assert_eq!(wind_multiplier(100, false, ow), 0.0);
+        assert_eq!(wind_generation(wind_multiplier(24, true, ow)), 1);
+        assert_eq!(wind_generation(wind_multiplier(-10, true, ow)), 1, "clamped to y 24");
+        assert_eq!(wind_generation(wind_multiplier(319, true, ow)), 5);
+        assert_eq!(wind_generation(wind_multiplier(400, true, ow)), 5);
+        let mid = wind_multiplier(171, true, ow);
+        assert!((mid - 2.99).abs() < 0.02, "{mid}");
+        assert_eq!(wind_generation(wind_multiplier(127, true, "minecraft:the_nether")), 5);
+    }
+
+    #[test]
+    fn bio_burns_one_mb_for_25_when_it_fits() {
+        let (mut fuel, mut energy) = (2, 0);
+        assert!(bio_tick(&mut fuel, &mut energy));
+        assert_eq!((fuel, energy), (1, 25));
+        let mut full = BIO_STORAGE - 24;
+        assert!(!bio_tick(&mut fuel, &mut full), "25 does not fit");
+        assert_eq!((fuel, full), (1, BIO_STORAGE - 24));
+        fuel = 0;
+        assert!(!bio_tick(&mut fuel, &mut energy));
+    }
+
+    #[test]
+    fn bio_items_fit_whole() {
+        assert!(bio_fits(0, BIO_FUEL_PER_ITEM));
+        assert!(bio_fits(136, BIO_FUEL_PER_ITEM));
+        assert!(!bio_fits(137, BIO_FUEL_PER_ITEM));
+        assert!(!bio_fits(0, 9 * BIO_FUEL_PER_ITEM), "a block never fits the 200 mB tank");
+        assert!(!bio_fits(0, 0));
+    }
+
+    #[test]
+    fn bio_tooltips() {
+        let d = bio_menu_data(100, 64, true, 2);
+        assert_eq!(bio_tooltip(&d, [8.0, 30.0]), vec!["Bioethanol: 64 / 200 mB"]);
+        assert_eq!(bio_tooltip(&d, [165.0, 30.0])[1], "Producing: 25 FE/t");
+    }
 
     fn run(state: &mut Heat, boost: f64, ambient: f64, ticks: usize) -> HeatTick {
         let mut last = HeatTick::default();
@@ -463,7 +733,7 @@ mod tests {
         assert_eq!(heat_tooltip(&data, [165.0, 30.0])[1], "Producing: 40 FE/t");
         assert!(heat_tooltip(&data, [10.0, 10.0]).is_empty());
         let data = solar_menu_data(20, 1, true, 2, 0.88);
-        assert_eq!(solar_tooltip(&data, [20.0, 40.0]), vec!["Sees the sun", "Biome peak: 88%"]);
-        assert_eq!(solar_tooltip(&data, [165.0, 30.0])[0], "Energy: 20 / 40 FE");
+        assert_eq!(solar_tooltip(SOLAR, &data, [20.0, 40.0]), vec!["Sees the sun", "Biome peak: 88%"]);
+        assert_eq!(solar_tooltip(SOLAR, &data, [165.0, 30.0])[0], "Energy: 20 / 40 FE");
     }
 }

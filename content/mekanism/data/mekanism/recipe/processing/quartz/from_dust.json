@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "experience": 0.1,
+  "group": "quartz",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/quartz"
+  },
+  "output": {
+    "id": "minecraft:quartz"
+  }
+}

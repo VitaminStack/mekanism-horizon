@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:enriching",
+  "experience": 0.025,
+  "input": {
+    "count": 8,
+    "ingredient": "#c:dusts/wood"
+  },
+  "output": {
+    "id": "mekanism:dust_charcoal"
+  }
+}

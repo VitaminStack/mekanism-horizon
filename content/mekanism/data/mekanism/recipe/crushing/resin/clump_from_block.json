@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/resin"
+  },
+  "output": {
+    "count": 9,
+    "id": "minecraft:resin_clump"
+  }
+}

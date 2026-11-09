@@ -1,0 +1,15 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:basalt",
+      "minecraft:smooth_basalt"
+    ]
+  },
+  "output": {
+    "id": "minecraft:polished_basalt"
+  }
+}

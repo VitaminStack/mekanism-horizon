@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.35,
+  "group": "mekanism:dust_osmium",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:dirty_dusts/osmium"
+  },
+  "output": {
+    "id": "mekanism:dust_osmium"
+  }
+}

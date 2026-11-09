@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:bio_fuel",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:brown_mushroom_block",
+      "minecraft:red_mushroom_block",
+      "minecraft:mushroom_stem"
+    ]
+  },
+  "output": {
+    "count": 4,
+    "id": "mekanism:bio_fuel"
+  }
+}

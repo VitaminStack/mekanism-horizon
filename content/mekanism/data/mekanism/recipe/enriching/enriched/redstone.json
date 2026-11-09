@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.5,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/redstone"
+  },
+  "output": {
+    "id": "mekanism:enriched_redstone"
+  }
+}

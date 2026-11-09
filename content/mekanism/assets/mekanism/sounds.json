@@ -1,0 +1,20 @@
+{
+  "tile.machine.crusher": {
+    "sounds": [
+      "mekanism:tile/crusher"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.crusher"
+  },
+  "tile.machine.enrichment_chamber": {
+    "sounds": [
+      "mekanism:tile/enrichment_chamber"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.enrichment_chamber"
+  },
+  "tile.machine.metallurgic_infuser": {
+    "sounds": [
+      "mekanism:tile/metallurgic_infuser"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.metallurgic_infuser"
+  }
+}

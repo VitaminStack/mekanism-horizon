@@ -19,6 +19,8 @@
     "mekanism:block_fluorite",
     "mekanism:block_refined_obsidian",
     "mekanism:block_refined_glowstone",
-    "mekanism:steel_casing"
+    "mekanism:steel_casing",
+    "mekanism:block_bio_fuel",
+    "mekanism:bounding_block"
   ]
 }

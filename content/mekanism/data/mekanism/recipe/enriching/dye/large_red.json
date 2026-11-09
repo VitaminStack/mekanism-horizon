@@ -1,0 +1,14 @@
+{
+  "type": "mekanism:enriching",
+  "category": "decorative",
+  "experience": 0.2,
+  "group": "red_dye",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:rose_bush"
+  },
+  "output": {
+    "count": 4,
+    "id": "minecraft:red_dye"
+  }
+}

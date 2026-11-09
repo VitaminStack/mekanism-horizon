@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:block_bio_fuel",
+  "input": {
+    "count": 2,
+    "ingredient": "minecraft:straw_bed"
+  },
+  "output": {
+    "count": 3,
+    "id": "mekanism:block_bio_fuel"
+  }
+}

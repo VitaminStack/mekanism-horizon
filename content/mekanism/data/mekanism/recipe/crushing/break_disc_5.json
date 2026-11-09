@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:music_disc_5"
+  },
+  "output": {
+    "count": 9,
+    "id": "minecraft:disc_fragment_5"
+  }
+}

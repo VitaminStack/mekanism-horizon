@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:enriching",
+  "experience": 0.2,
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:quartz_block",
+      "minecraft:quartz_bricks",
+      "minecraft:chiseled_quartz_block",
+      "minecraft:quartz_pillar"
+    ]
+  },
+  "output": {
+    "count": 4,
+    "id": "minecraft:quartz"
+  }
+}

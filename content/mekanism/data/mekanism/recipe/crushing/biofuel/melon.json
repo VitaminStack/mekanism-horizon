@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:bio_fuel",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:crops/melon"
+  },
+  "output": {
+    "count": 6,
+    "id": "mekanism:bio_fuel"
+  }
+}

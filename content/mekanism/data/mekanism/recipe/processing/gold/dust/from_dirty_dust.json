@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.5,
+  "group": "mekanism:dust_gold",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:dirty_dusts/gold"
+  },
+  "output": {
+    "id": "mekanism:dust_gold"
+  }
+}

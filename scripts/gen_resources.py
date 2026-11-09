@@ -109,6 +109,9 @@ block('steel_casing', 'minecraft:iron_block', 3.5, 9.0, sounds=STONE)
 
 # --- energy (M03): cubes are ticked/buffered by native/mekanism_native ---
 item('energy_tablet', stack=1)
+# Bio Fuel (Crusher output, Bio Generator input) and its block (MekanismBlocks: strength 0.5, grass sound).
+item('bio_fuel')
+block('block_bio_fuel', 'minecraft:hay_block', 0.5, 0.5, requires_tool=False, sounds='minecraft:grass_block')
 CUBE_TIERS = ['basic', 'advanced', 'elite', 'ultimate', 'creative']
 # Mekanism's BlockEnergyCube: FACING (all six directions), turned toward the placer by the native mod.
 # The barrel template gives that `facing` and a block that opens its menu on use
@@ -132,24 +135,23 @@ for tier in CUBE_TIERS:
 block('metallurgic_infuser', 'minecraft:barrel', 3.5, 16.0,
       extra={'default_state': {'facing': 'north'}})
 put(f'data/{NS}/horizon/menu/metallurgic_infuser.json', {'slots': 3, 'data_slots': 6, 'results': [2]})
-# Upstream has no blockstate file for machines (its client code builds it); same model per facing.
-FACING_Y = {'north': 0, 'east': 90, 'south': 180, 'west': 270, 'up': 0, 'down': 0}
+# Machine and generator blockstates come from upstream via import_upstream.py.
 
-
-def facing_blockstate(id_, ns=NS):
-    put(f'assets/{ns}/blockstates/{id_}.json', {'variants': {
-        f'facing={f}': {'model': f'{ns}:block/{id_}', **({'y': y} if y else {})}
-        for f, y in FACING_Y.items()}}, ns)
-
-
-facing_blockstate('metallurgic_infuser')
+# Enrichment Chamber and Crusher: BlockTile.defaultProperties (3.5, 16). Slots: 0 input, 1 output
+# (results). Upstream's blockstate picks the model by `active`, set by the native mod.
+for m in ('enrichment_chamber', 'crusher'):
+    block(m, 'minecraft:barrel', 3.5, 16.0, extra={
+        'state_properties': {'active': {'type': 'boolean'}},
+        'default_state': {'facing': 'north', 'active': 'false'}})
+    put(f'data/{NS}/horizon/menu/{m}.json', {'slots': 2, 'data_slots': 4, 'results': [1]})
 
 # --- generators (M04), content mod `mekanismgenerators`: ticked, powered and drawn by
 # native/mekanism_native. BlockTile.defaultProperties (3.5, 16) as the infuser; the barrel template
 # gives `facing` and the menu, the native mod turns the front toward the placer, horizontally.
 # Heat Generator slot 0: fuel (lava bucket or furnace fuel). The Solar Generator has no slot of its
 # own (one hidden placeholder). Mekanism's energy (charging) slot is not ported on either.
-# Wind and Advanced Solar Generator are multiblocks (bounding blocks): not yet.
+# Wind and Advanced Solar Generator are multiblocks: the native mod fills the rest of their shape with
+# `mekanism:bounding_block` (upstream's BlockBounding: strength 3.5/4.8, no item, no drops).
 MACHINE_STATE = {'default_state': {'facing': 'north'}}
 # Upstream's blockstate picks the model by `active` (the drum glows while burning), set by the native mod.
 # The models are not full cubes: `occludes: false` keeps the faces of the blocks beside them drawn.
@@ -158,10 +160,22 @@ block('heat_generator', 'minecraft:barrel', 3.5, 16.0, ns=GEN, occludes=False, e
     'default_state': {'facing': 'north', 'active': 'false'}})
 block('solar_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
 item('solar_panel', ns=GEN)
+for gid in ('advanced_solar_generator', 'wind_generator'):
+    block(gid, 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
+    put(f'data/{GEN}/horizon/menu/{gid}.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
+registry[NS]['blocks'].append('bounding_block')
+put(f'data/{NS}/horizon/block/bounding_block.json', {
+    'template': 'minecraft:stone',
+    'properties': {'hardness': 3.5, 'explosion_resistance': 4.8, 'requires_tool': False, 'occludes': False},
+    'item': False,
+})
+put(f'data/{NS}/loot_table/blocks/bounding_block.json', {'type': 'minecraft:block', 'pools': [],
+                                                        'random_sequence': f'{NS}:blocks/bounding_block'})
+# Bio Generator: slot 0 bio fuel (`#c:fuels/bio`), its bioethanol tank kept by the native mod.
+block('bio_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
+put(f'data/{GEN}/horizon/menu/bio_generator.json', {'slots': 1, 'data_slots': 4, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/heat_generator.json', {'slots': 1, 'data_slots': 7, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/solar_generator.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
-for gid in ('heat_generator', 'solar_generator'):
-    facing_blockstate(gid, GEN)
 
 # Debug blocks for testing the cubes (TODO N08), ticked by native/mekanism_native.
 for did, tex in (('debug_energy_source', 'redstone_block'), ('debug_energy_sink', 'coal_block')):
@@ -261,9 +275,10 @@ for tag, values in CONVENTION_TAGS.items():
 
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
-    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS] + [f'{NS}:metallurgic_infuser']})
+    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS] + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'enrichment_chamber', 'crusher')]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
-    {'replace': False, 'values': [f'{GEN}:heat_generator', f'{GEN}:solar_generator']}, GEN)
+    {'replace': False, 'values': [f'{GEN}:{g}' for g in ('heat_generator', 'solar_generator', 'bio_generator',
+                                                         'advanced_solar_generator', 'wind_generator')]}, GEN)
 
 # Hand-written content stays declared too, so the importer covers it.
 for ns, reg in registry.items():

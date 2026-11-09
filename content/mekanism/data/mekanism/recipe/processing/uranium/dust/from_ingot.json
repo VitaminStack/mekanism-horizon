@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.3125,
+  "group": "mekanism:dust_uranium",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:ingots/uranium"
+  },
+  "output": {
+    "id": "mekanism:dust_uranium"
+  }
+}

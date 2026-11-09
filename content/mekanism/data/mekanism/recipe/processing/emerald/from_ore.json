@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 1.0,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:ores/emerald"
+  },
+  "output": {
+    "count": 2,
+    "id": "minecraft:emerald"
+  }
+}

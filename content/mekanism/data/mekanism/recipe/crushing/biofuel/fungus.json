@@ -1,0 +1,15 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:bio_fuel",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:crimson_fungus",
+      "minecraft:warped_fungus"
+    ]
+  },
+  "output": {
+    "id": "mekanism:bio_fuel"
+  }
+}

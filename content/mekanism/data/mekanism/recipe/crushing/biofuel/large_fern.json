@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.15,
+  "group": "mekanism:bio_fuel",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:large_fern"
+  },
+  "output": {
+    "count": 3,
+    "id": "mekanism:bio_fuel"
+  }
+}

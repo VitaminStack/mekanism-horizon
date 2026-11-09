@@ -1,0 +1,72 @@
+{
+  "hub": [
+    0.5,
+    4.5,
+    0.15624875
+  ],
+  "parts": [
+    {
+      "model": "mekanismgenerators:block/wind_generator/rotor_0",
+      "kind": "rotor",
+      "moved": [
+        -2,
+        2,
+        0
+      ]
+    },
+    {
+      "model": "mekanismgenerators:block/wind_generator/rotor_1",
+      "kind": "rotor",
+      "moved": [
+        0,
+        4,
+        0
+      ]
+    },
+    {
+      "model": "mekanismgenerators:block/wind_generator/rotor_2",
+      "kind": "rotor",
+      "moved": [
+        0,
+        6,
+        0
+      ]
+    },
+    {
+      "model": "mekanismgenerators:block/wind_generator/rotor_3",
+      "kind": "rotor",
+      "moved": [
+        4,
+        1,
+        0
+      ]
+    },
+    {
+      "model": "mekanismgenerators:block/wind_generator/tower_4",
+      "kind": "tower",
+      "moved": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "model": "mekanismgenerators:block/wind_generator/tower_5",
+      "kind": "tower",
+      "moved": [
+        0,
+        2,
+        0
+      ]
+    },
+    {
+      "model": "mekanismgenerators:block/wind_generator/tower_6",
+      "kind": "tower",
+      "moved": [
+        0,
+        4,
+        0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "textures": {
+    "particle": "mekanismgenerators:block/model/wind_generator",
+    "wind_generator": "mekanismgenerators:block/model/wind_generator",
+    "ports_led": "mekanism:block/models/ports_led",
+    "ports": "mekanism:block/models/ports"
+  },
+  "elements": [
+    {
+      "name": "wire_2",
+      "from": [
+        -9,
+        -6.184889999999996,
+        2.95305
+      ],
+      "to": [
+        -7,
+        -5.18489,
+        4.95305
+      ],
+      "rotation": {
+        "x": 178,
+        "y": -180,
+        "z": 0,
+        "origin": [
+          0,
+          0,
+          0
+        ]
+      },
+      "faces": {
+        "north": {
+          "uv": [
+            9.5,
+            8.25,
+            9.75,
+            8.375
+          ],
+          "texture": "#wind_generator",
+          "rotation": 180
+        },
+        "east": {
+          "uv": [
+            9.25,
+            8.25,
+            9.5,
+            8.375
+          ],
+          "texture": "#wind_generator",
+          "rotation": 180
+        },
+        "west": {
+          "uv": [
+            9.75,
+            8.25,
+            10,
+            8.375
+          ],
+          "texture": "#wind_generator",
+          "rotation": 180
+        },
+        "up": {
+          "uv": [
+            9.75,
+            0.25,
+            9.5,
+            0
+          ],
+          "texture": "#wind_generator",
+          "rotation": 180
+        }
+      }
+    },
+    {
+      "name": "post1a_2",
+      "from": [
+        -12.93809,
+        -5.915610000000001,
+        3.06336
+      ],
+      "to": [
+        -7.93809,
+        -1.91561,
+        8.06336
+      ],
+      "rotation": {
+        "x": 178,
+        "y": -180,
+        "z": 2,
+        "origin": [
+          0,
+          0,
+          0
+        ]
+      },
+      "faces": {
+        "north": {
+          "uv": [
+            0.625,
+            0.625,
+            1.25,
+            1.125
+          ],
+          "texture": "#wind_generator"
+        },
+        "west": {
+          "uv": [
+            1.25,
+            0.625,
+            1.875,
+            1.125
+          ],
+          "texture": "#wind_generator"
+        }
+      }
+    },
+    {
+      "name": "post1b_2",
+      "from": [
+        -8.05216,
+        -5.913880000000006,
+        7.94631
+      ],
+      "to": [
+        -3.05216,
+        -1.91388,
+        12.94631
+      ],
+      "rotation": {
+        "x": -178,
+        "y": -180,
+        "z": -2,
+        "origin": [
+          0,
+          0,
+          0
+        ]
+      },
+      "faces": {
+        "east": {
+          "uv": [
+            0,
+            0.625,
+            0.625,
+            1.1250000000000009
+          ],
+          "texture": "#wind_generator"
+        },
+        "south": {
+          "uv": [
+            1.875,
+            0.625,
+            2.5,
+            1.1250000000000009
+          ],
+          "texture": "#wind_generator"
+        }
+      }
+    },
+    {
+      "name": "post1c_2",
+      "from": [
+        -12.93809,
+        -5.355829999999997,
+        7.92682
+      ],
+      "to": [
+        -7.93809,
+        -1.35583,
+        12.92682
+      ],
+      "rotation": {
+        "x": -178,
+        "y": -180,
+        "z": 2,
+        "origin": [
+          0,
+          0,
+          0
+        ]
+      },
+      "faces": {
+        "south": {
+          "uv": [
+            1.875,
+            0.625,
+            2.5,
+            1.1249999999999996
+          ],
+          "texture": "#wind_generator"
+        },
+        "west": {
+          "uv": [
+            1.25,
+            0.625,
+            1.875,
+            1.1249999999999996
+          ],
+          "texture": "#wind_generator"
+        }
+      }
+    },
+    {
+      "name": "post1d_2",
+      "from": [
+        -8.05216,
+        -6.473659999999995,
+        3.04387
+      ],
+      "to": [
+        -3.05216,
+        -2.47366,
+        8.04387
+      ],
+      "rotation": {
+        "x": 178,
+        "y": -180,
+        "z": -2,
+        "origin": [
+          0,
+          0,
+          0
+        ]
+      },
+      "faces": {
+        "north": {
+          "uv": [
+            0.625,
+            0.625,
+            1.25,
+            1.1249999999999993
+          ],
+          "texture": "#wind_generator"
+        },
+        "east": {
+          "uv": [
+            0,
+            0.625,
+            0.625,
+            1.1249999999999993
+          ],
+          "texture": "#wind_generator"
+        }
+      }
+    }
+  ]
+}

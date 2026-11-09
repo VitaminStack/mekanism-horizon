@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "experience": 0.5,
+  "group": "emerald",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/emerald"
+  },
+  "output": {
+    "id": "minecraft:emerald"
+  }
+}

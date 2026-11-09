@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "experience": 0.35,
+  "group": "mekanism:fluorite_gem",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/fluorite"
+  },
+  "output": {
+    "id": "mekanism:fluorite_gem"
+  }
+}

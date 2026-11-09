@@ -1,0 +1,14 @@
+{
+  "type": "mekanism:enriching",
+  "category": "decorative",
+  "experience": 0.2,
+  "group": "magenta_dye",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:lilac"
+  },
+  "output": {
+    "count": 4,
+    "id": "minecraft:magenta_dye"
+  }
+}

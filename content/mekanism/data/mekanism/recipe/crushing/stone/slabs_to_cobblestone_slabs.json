@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanism:cobble_conversion",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:stone_slab"
+  },
+  "output": {
+    "id": "minecraft:cobblestone_slab"
+  }
+}

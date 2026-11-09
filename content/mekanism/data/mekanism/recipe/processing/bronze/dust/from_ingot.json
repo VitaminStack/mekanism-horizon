@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.25,
+  "group": "mekanism:dust_bronze",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:ingots/bronze"
+  },
+  "output": {
+    "id": "mekanism:dust_bronze"
+  }
+}

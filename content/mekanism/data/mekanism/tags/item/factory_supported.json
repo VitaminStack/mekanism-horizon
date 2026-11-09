@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "#mekanism:factory_supported/infusing"
+    "#mekanism:factory_supported/infusing",
+    "#mekanism:factory_supported/enriching",
+    "#mekanism:factory_supported/crushing"
   ]
 }

@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanism:tuff_brick_conversion",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:chiseled_tuff"
+  },
+  "output": {
+    "id": "minecraft:tuff_bricks"
+  }
+}
