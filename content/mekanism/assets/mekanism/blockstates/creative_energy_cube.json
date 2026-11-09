@@ -1,7 +1,62 @@
 {
-  "variants": {
-    "": {
-      "model": "mekanism:block/creative_energy_cube"
+  "multipart": [
+    {
+      "apply": {
+        "model": "mekanism:block/creative_energy_cube"
+      }
+    },
+    {
+      "when": {
+        "port_north": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/energy_cube/port"
+      }
+    },
+    {
+      "when": {
+        "port_east": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/energy_cube/port",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "port_south": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/energy_cube/port",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "port_west": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/energy_cube/port",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "port_up": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/energy_cube/port",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "port_down": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/energy_cube/port",
+        "x": 90
+      }
     }
-  }
+  ]
 }

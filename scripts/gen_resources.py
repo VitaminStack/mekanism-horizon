@@ -39,26 +39,29 @@ def item(id_, template='minecraft:iron_ingot', stack=64):
     put(f'data/{NS}/horizon/item/{id_}.json', {'template': template, 'rarity': 'common', 'max_stack_size': stack})
 
 
-def loot(id_, drop, count=None):
+def loot(id_, drop, count=None, explosion_proof=False):
     entry = {'type': 'minecraft:item', 'name': f'{NS}:{drop}'}
     if count:
         entry['functions'] = [{'function': 'minecraft:set_count',
                                'count': {'type': 'minecraft:uniform', 'min': count[0], 'max': count[1]}}]
     put(f'data/{NS}/loot_table/blocks/{id_}.json', {
         'type': 'minecraft:block',
-        'pools': [{'condition': {'type': 'minecraft:survives_explosion'}, 'entries': [entry], 'rolls': 1}],
+        'pools': [{'entries': [entry], 'rolls': 1} if explosion_proof else
+                  {'condition': {'type': 'minecraft:survives_explosion'}, 'entries': [entry], 'rolls': 1}],
         'random_sequence': f'{NS}:blocks/{id_}',
     })
 
 
-def block(id_, template, hardness, resistance, drop=None, count=None, requires_tool=True):
+def block(id_, template, hardness, resistance, drop=None, count=None, requires_tool=True, extra=None,
+          explosion_proof=False):
     blocks.append(id_)
     put(f'data/{NS}/horizon/block/{id_}.json', {
         'template': template,
         'properties': {'hardness': hardness, 'explosion_resistance': resistance, 'requires_tool': requires_tool},
+        **(extra or {}),
         'item': True,
     })
-    loot(id_, drop or id_, count)
+    loot(id_, drop or id_, count, explosion_proof)
 
 
 # --- items ---
@@ -93,16 +96,20 @@ block('steel_casing', 'minecraft:iron_block', 3.5, 9.0)
 
 # --- energy (M03): cubes are ticked/buffered by native/mekanism_native ---
 item('energy_tablet', stack=1)
-CUBE_TEXTURE = {'basic': 'copper_block', 'advanced': 'gold_block', 'elite': 'diamond_block',
-                'ultimate': 'emerald_block', 'creative': 'amethyst_block'}
-for tier, tex in CUBE_TEXTURE.items():
-    cid = f'{tier}_energy_cube'
-    block(cid, 'minecraft:iron_block', 2.0, 2.4)
-    # Placeholder art: Mekanism's cube uses a custom item model type not ported yet.
-    put(f'assets/{NS}/models/block/{cid}.json',
-        {'parent': 'minecraft:block/cube_all', 'textures': {'all': f'minecraft:block/{tex}'}})
-    put(f'assets/{NS}/blockstates/{cid}.json', {'variants': {'': {'model': f'{NS}:block/{cid}'}}})
-    put(f'assets/{NS}/items/{cid}.json', {'model': {'type': 'minecraft:model', 'model': f'{NS}:block/{cid}'}})
+CUBE_TIERS = ['basic', 'advanced', 'elite', 'ultimate', 'creative']
+# Mekanism's BlockEnergyCube: FACING (all six directions), turned toward the placer by the native mod.
+# The barrel template gives that `facing` and a block that opens its menu on use
+# (`data/mekanism/horizon/menu/energy_cube.json`, filled by the native mod's screen hooks).
+# `port_<side>` shows the side's energy port when its side config is not "none" (set by the native mod).
+# Models, blockstates and item definitions come from `scripts/import_energy_cube.py`.
+CUBE_SIDES = ['down', 'up', 'north', 'south', 'west', 'east']
+CUBE_STATE = {
+    'state_properties': {f'port_{d}': {'type': 'boolean'} for d in CUBE_SIDES},
+    'default_state': {'facing': 'north', **{f'port_{d}': 'true' for d in CUBE_SIDES}},
+}
+for tier in CUBE_TIERS:
+    # Mekanism drops the cube even when it is blown up (no survives_explosion), with its energy.
+    block(f'{tier}_energy_cube', 'minecraft:barrel', 2.0, 2.4, extra=CUBE_STATE, explosion_proof=True)
 
 # Debug blocks for testing the cubes (TODO N08), ticked by native/mekanism_native.
 for did, tex in (('debug_energy_source', 'redstone_block'), ('debug_energy_sink', 'coal_block')):
@@ -182,7 +189,7 @@ put(f'data/{NS}/tags/worldgen/biome/spawn_ores.json',
 
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
-    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TEXTURE]})
+    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]})
 
 # Hand-written content stays declared too, so the importer covers it.
 for f in (C / f'data/{NS}/horizon/item').glob('*.json'):

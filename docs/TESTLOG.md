@@ -24,3 +24,23 @@ Build: `scripts/Build-Content.ps1` (Content), `scripts/Build-Native.ps1 -TrustNa
 Build-Log: Native-Build `native-fdc87ae-8abc9345573f` (`scripts/Build-Native.ps1 -TrustNativeCode`), Launcher-Log ohne Fehler.
 
 Screenshots: wurden im Chat geteilt, nicht im Repo abgelegt.
+
+## M01 (09.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-f7d32c38dabb` (mit GUI-Patch: Barrel-Template + Block-Menü `mekanism:energy_cube`).
+
+| Test | Ergebnis |
+|---|---|
+| Original-Modell im Item (Hotbar) | ok (Block-Modell im Spiel nicht einzeln geprüft) |
+| Front zeigt zum Spieler (`facing=north`/`east` je nach Blickrichtung) | ok |
+| Rechtsklick öffnet GUI: Energie, Balken, I/O-Limit, Ausgabe, 6 Seiten | ok (Screenshot) |
+| Linksklick Seite: Out zu Aus, `port_up=false`; Rechtsklick: zurück zu Out, `port_up=true` | ok |
+| Debug-Quelle füllt A, A gibt 4.000 FE/t an B: A 0, B 252.000 | ok |
+| Abbau (Netherite-Spitzhacke): Item `horizon_energy` + `mekanism_sides`; Platzieren stellt beides her (604.000 → 604.000, 2×) | ok |
+| Würfel mit 100.000 FE neu gesetzt, Front zu B: gibt alles an B ab, Summe 504.000 + 100.000 = 604.000 | ok |
+| Chunk-Unload (tp 3000/3000 und zurück): Energie und Seiten bleiben | ok |
+| Neustart: Seiten | ausstehend (Energie: N09) |
+| Rezept ingame craften | ausstehend |
+| Tooltip mit Energie | ausstehend (nicht per Agent Control lesbar) |
+
+Einmal sprang B beim ersten Platzieren von 252.000 auf 504.000. Nicht reproduzierbar (2 Wiederholungen ohne Abweichung); Würfel A trug danach `components.custom_data` mit 252.000, wurde also zwischendurch von Hand abgebaut und neu gesetzt. Vermutlich kam die Energie aus diesem Item, nicht aus einer Duplikation.

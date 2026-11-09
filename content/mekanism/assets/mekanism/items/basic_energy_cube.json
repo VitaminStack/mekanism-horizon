@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "mekanism:block/basic_energy_cube"
+    "model": "mekanism:item/basic_energy_cube"
   }
 }

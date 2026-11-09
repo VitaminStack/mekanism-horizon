@@ -40,16 +40,16 @@
 
 ## M01 - Basic Energy Cube: erster wirklich funktionierender Block [P0]
 
-- [ ] Block, Itemmodell, Texture, Loot, Übersetzungen und Rezept stimmen.
-- [ ] Native Block-Entity beim Platzieren und Entfernen korrekt erzeugen/entfernen.
-- [ ] Horizon Energie-Hook (ab API 142) mit `ModEnergyBuffer` anbinden.
-- [ ] Kapazität, Eingabe, Ausgabe und Simulations-Aufrufe korrekt begrenzen.
-- [ ] Alle Seiten/Facing testen; Eingabe/Ausgabe konfigurieren.
-- [ ] NBT-Persistenz bei Save, Chunk-Unload und Neustart.
-- [ ] Energieübergabe ohne Duplikation oder Verlust.
-- [ ] GUI: Speicherstand, Transferlimit, I/O-Seiten und Status.
-- [ ] Verhalten beim Abbau/Neuplatzieren mit Original vergleichen.
-- [ ] Integrationstests + Ingame-Demonstration abschliessen.
+- [x] Block, Itemmodell, Texture, Loot, Übersetzungen und Rezept stimmen. *(Original-Modell ohne LEDs/Kern, Loot wie Original ohne Explosionsbedingung, Original-Rezept. Ingame: Rezept, Tooltip ok; fehlende `c:`-Tags ergänzt.)*
+- [x] Native Block-Entity beim Platzieren und Entfernen korrekt erzeugen/entfernen.
+- [x] Horizon Energie-Hook (ab API 142) mit `ModEnergyBuffer` anbinden. *(Angebunden; Seiten nur pro Blocktyp, nicht pro Block-Entity.)*
+- [x] Kapazität, Eingabe, Ausgabe und Simulations-Aufrufe korrekt begrenzen. *(Unit-Tests `cube::transfer`; Fremd-Energiequelle ingame nicht verfügbar.)*
+- [x] Alle Seiten/Facing testen; Eingabe/Ausgabe konfigurieren. *(Facing + Seitenkonfig per GUI, getestet 09.11.2026.)*
+- [x] NBT-Persistenz bei Save, Chunk-Unload und Neustart.
+- [x] Energieübergabe ohne Duplikation oder Verlust. *(Eject nur an Mekanism-Cubes; Summe ingame konstant; Unit-Tests `cube::transfer`.)*
+- [x] GUI: Speicherstand, Transferlimit, I/O-Seiten und Status. *(Eigener Screen über Block-Menü `mekanism:energy_cube`.)*
+- [x] Verhalten beim Abbau/Neuplatzieren mit Original vergleichen. *(Item behält Energie + Seiten wie Original.)*
+- [x] Integrationstests + Ingame-Demonstration abschliessen. *(A→B-Übergabe, GUI, Abbau, Chunk-Unload, Neustart ingame, 09.11.2026.)*
 
 **Fertig, wenn:** Der Cube nimmt echte Energie auf, gibt sie ab, kann konfiguriert werden und behaelt den Ladezustand nach Neustart.
 

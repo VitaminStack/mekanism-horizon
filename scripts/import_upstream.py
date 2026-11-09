@@ -28,7 +28,8 @@ NS = 'mekanism'
 VANILLA_RECIPES = {'minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 'minecraft:smelting',
                    'minecraft:blasting', 'minecraft:smoking', 'minecraft:campfire_cooking',
                    'minecraft:stonecutting'}
-# Hand-made placeholder assets kept until their custom model loaders are ported.
+# Assets written elsewhere: the energy cubes by scripts/import_energy_cube.py (custom model loader
+# turned into plain models), the debug blocks by gen_resources.py.
 ASSET_SKIP = {f'{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')} | {
     'debug_energy_source', 'debug_energy_sink'}
 REF = re.compile(r'"#?mekanism:([a-z0-9_/.]+)"')

@@ -5,17 +5,39 @@
 //! - `block_entity` (API 15): a saved block entity for each cube.
 //! - `block_entity_energy` (API 142): the cube's energy buffer. Horizon saves the
 //!   amount itself in the block entity NBT as `energy` (Tag::Int).
-//! - `block_entity_ticks` / `block_entity_tick` (API 15/17): keeps the creative
-//!   cube full.
-//! - `item_energy_buffer` (API 307): the Energy Tablet's buffer, saved by Horizon
-//!   in the stack's `minecraft:custom_data` as `horizon_energy`.
+//! - `block_entity_ticks` / `block_entity_tick` (API 15/17): every cube ejects
+//!   from its output sides into neighbouring cubes; the creative cube stays full.
+//! - `state_for_placement` (API 76): the cube's front faces its placer.
+//! - `block_entity_container` (API 17) + content menu type: a mod block
+//!   menu opened by Horizon's normal block-use path, including singleplayer.
+//! - `screen`, `screen_draw`, `screen_click`, `menu_button` (API 19/20):
+//!   GUI for stored energy, throughput and all six configurable sides.
+//! - `destroy_block`, `loot_drops`, `place_block` (API 14/75): a broken cube's
+//!   item keeps its energy and side config, and placing it restores them.
+//! - `item_energy_buffer` (API 307): the Energy Tablet's and the cube items'
+//!   buffers, saved by Horizon in the stack's `minecraft:custom_data` as `horizon_energy`.
+//! - `tooltip` (API 12): a cube item's stored energy.
 //!
 //! Horizon's energy API uses i32 amounts. Mekanism's tiers up to Ultimate fit;
 //! the creative cube (Long.MAX_VALUE in Mekanism) is capped at i32::MAX.
+//!
+//! Known API gaps (see docs/ENERGY-CUBE.md): Horizon's energy faces are per block
+//! type, not per block entity, so other mods may still fill or drain any side;
+//! a trait mod has no energy helper for other mods' blocks, so ejection reaches
+//! only Mekanism cubes.
 
+mod cube;
+
+use std::collections::{BTreeMap, HashMap};
+use std::sync::Mutex;
+
+use cube::{Mode, Sides};
 use horizon_client::mod_api::{
-    BlockEntityEnergyEvent, BlockEntityEvent, BlockEntityTickEvent, BlockEntityTicksEvent, Compound,
-    Hooks, Host, ItemEnergyBuffer, ItemEnergyBufferEvent, ModEnergyBuffer, Tag,
+    BlockEntityContainerEvent, BlockEntityEnergyEvent, BlockEntityEvent, BlockEntityTickEvent,
+    BlockEntityTicksEvent, Compound, DestroyBlockEvent, Flow, Hooks, Host, ItemEnergyBuffer,
+    ItemEnergyBufferEvent, LevelHost, LootDropsEvent, MenuButtonEvent, ModContainer,
+    ModEnergyBuffer, NativeScreen, PlaceBlockEvent, ScreenClickEvent, ScreenDrawEvent,
+    ScreenEvent, StateForPlacementEvent, Tag, Text, TooltipEvent,
 };
 
 /// (block id, capacity, max insert/extract per call) from Mekanism's `EnergyCubeTier`.
@@ -31,14 +53,22 @@ const CREATIVE_CUBE: &str = "mekanism:creative_energy_cube";
 /// neighbouring cubes, the sink pulls it out, each by the cube's own per-call limit.
 const DEBUG_SOURCE: &str = "mekanism:debug_energy_source";
 const DEBUG_SINK: &str = "mekanism:debug_energy_sink";
-const NEIGHBOURS: [[i32; 3]; 6] = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 /// Mekanism `GearConfig`: tablet max energy 1,000,000, charge rate 5,000.
 const TABLET: &str = "mekanism:energy_tablet";
 const TABLET_CAPACITY: i32 = 1_000_000;
 const TABLET_RATE: i32 = 5_000;
 
+/// Block entity NBT: the energy Horizon keeps (`energy`) and the side config by
+/// relative side (`mekanism_sides`, 6 bytes of `cube::Mode`). Cube items carry
+/// both in `minecraft:custom_data`, the energy as Horizon's `horizon_energy`.
+const ENERGY: &str = "energy";
+const SIDES: &str = "mekanism_sides";
+const ITEM_ENERGY: &str = "horizon_energy";
+/// Registered by `data/mekanism/horizon/menu/energy_cube.json`.
+const CUBE_MENU: &str = "mekanism:energy_cube";
+
 pub fn hooks() -> Box<dyn Hooks> {
-    Box::new(MekanismNative)
+    Box::new(MekanismNative::default())
 }
 
 fn is_debug(block: &str) -> bool {
@@ -52,17 +82,119 @@ fn cube(block: &str) -> Option<(i32, i32)> {
         .map(|&(_, capacity, rate)| (capacity, rate))
 }
 
-/// The `energy` key in the compound's own key type (Horizon's NBT string).
-fn energy_key<K: From<&'static str>>(_: &std::collections::BTreeMap<K, Tag>) -> K {
-    "energy".into()
+/// A key in the compound's own key type (Horizon's NBT string).
+fn key<K: From<&'static str>>(_: &BTreeMap<K, Tag>, name: &'static str) -> K {
+    name.into()
 }
 
-struct MekanismNative;
+fn read_energy(nbt: &Compound, name: &'static str) -> i32 {
+    match nbt.get(&key(nbt, name)) {
+        Some(Tag::Int(v)) => *v,
+        _ => 0,
+    }
+}
+
+fn read_sides(nbt: &Compound) -> Option<Sides> {
+    match nbt.get(&key(nbt, SIDES)) {
+        Some(Tag::ByteArray(b)) => cube::sides_from_bytes(b),
+        _ => None,
+    }
+}
+
+/// Write only on change: a write marks the entity changed (and resyncs it).
+fn write_int(nbt: &mut Compound, name: &'static str, value: i32) {
+    let k = key(nbt, name);
+    if nbt.get(&k) != Some(&Tag::Int(value)) {
+        nbt.insert(k, Tag::Int(value));
+    }
+}
+
+fn facing(host: &dyn Host, pos: [i32; 3]) -> usize {
+    host.block_property(pos, "facing")
+        .and_then(|f| cube::dir_from_name(&f))
+        .unwrap_or(cube::NORTH)
+}
+
+fn offset(pos: [i32; 3], dir: usize) -> [i32; 3] {
+    let d = cube::OFFSETS[dir];
+    [pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]]
+}
+
+/// Show the energy port on each world side whose relative side has a mode.
+fn update_ports(host: &mut dyn Host, pos: [i32; 3], sides: &Sides) {
+    let f = facing(host, pos);
+    for (rel, mode) in sides.iter().enumerate() {
+        let dir = cube::absolute(rel, f);
+        let want = if *mode == Mode::None { "false" } else { "true" };
+        if host.block_property(pos, &format!("port_{}", cube::DIR_NAMES[dir])).as_deref() != Some(want) {
+            host.set_block_property(pos, &format!("port_{}", cube::DIR_NAMES[dir]), want);
+        }
+    }
+}
+
+/// Each cube's energy and sides are synchronised by its block-entity menu data.
+/// Unlike `open_menu`, the block menu works for local and remote players.
+#[derive(Default)]
+struct MekanismNative {
+    /// Energy and sides of cubes a player is breaking, for their drop.
+    broken: Mutex<HashMap<(String, [i32; 3]), (i32, Sides)>>,
+}
+
+impl MekanismNative {
+    /// Push energy out of the cube's output sides into neighbouring cubes whose
+    /// side facing it takes input; at most the cube's transfer rate per tick.
+    /// Each move adds to the neighbour what it takes from this cube: none is lost.
+    fn eject(&self, host: &mut dyn Host, pos: [i32; 3], rate: i32, stored: &mut i32, sides: &Sides) -> i32 {
+        let f = facing(host, pos);
+        let mut budget = rate;
+        let mut moved_total = 0;
+        for (rel, mode) in sides.iter().enumerate() {
+            if *mode != Mode::Output || budget <= 0 || *stored <= 0 {
+                continue;
+            }
+            let dir = cube::absolute(rel, f);
+            let at = offset(pos, dir);
+            let their_facing = facing(host, at);
+            let mut moved = 0;
+            let give = (budget, *stored);
+            host.change_mod_block_entity(at, &mut |m| {
+                let Some((capacity, their_rate)) = cube(&m.id) else { return };
+                let their_side = cube::relative(cube::opposite(dir), their_facing);
+                let their_sides = read_sides(&m.nbt).unwrap_or(cube::DEFAULT_SIDES);
+                if their_sides[their_side] != Mode::Input {
+                    return;
+                }
+                let theirs = read_energy(&m.nbt, ENERGY);
+                moved = cube::transfer(give.0, give.1, theirs, capacity, their_rate);
+                if moved > 0 {
+                    write_int(&mut m.nbt, ENERGY, theirs + moved);
+                }
+            });
+            *stored -= moved;
+            budget -= moved;
+            moved_total += moved;
+        }
+        moved_total
+    }
+}
 
 impl Hooks for MekanismNative {
     fn block_entity(&self, _host: &mut dyn Host, event: &mut BlockEntityEvent) -> Option<(String, Compound)> {
         (cube(event.block).is_some() || is_debug(event.block))
             .then(|| (event.block.to_owned(), Compound::new()))
+    }
+
+    /// The block's own menu, not the LAN-only `Host::open_menu` helper.
+    /// The one placeholder slot is hidden; all interactions are buttons.
+    fn block_entity_container(&self, _host: &dyn Host, event: &mut BlockEntityContainerEvent) -> Option<ModContainer> {
+        cube(event.block)?;
+        Some(ModContainer {
+            slots: 1,
+            faces: std::array::from_fn(|_| Vec::new()),
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+            menu: Some(CUBE_MENU.to_owned()),
+        })
     }
 
     fn block_entity_energy(&self, _host: &dyn Host, event: &mut BlockEntityEnergyEvent) -> Option<ModEnergyBuffer> {
@@ -76,53 +208,243 @@ impl Hooks for MekanismNative {
     }
 
     fn block_entity_ticks(&self, _host: &dyn Host, event: &mut BlockEntityTicksEvent) {
-        if event.block == CREATIVE_CUBE || is_debug(event.block) {
+        if cube(event.block).is_some() || is_debug(event.block) {
             event.ticks = true;
         }
     }
 
-    /// The creative cube never runs dry: refill it every tick.
     fn block_entity_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
         if is_debug(&event.entity.id) {
             let source = event.entity.id == DEBUG_SOURCE;
             let pos = event.pos;
-            for d in NEIGHBOURS {
-                let at = [pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]];
-                host.change_mod_block_entity(at, &mut |m| {
+            for dir in 0..6 {
+                host.change_mod_block_entity(offset(pos, dir), &mut |m| {
                     let Some((capacity, rate)) = cube(&m.id) else { return };
-                    let key = energy_key(&m.nbt);
-                    let stored = match m.nbt.get(&key) {
-                        Some(Tag::Int(v)) => *v,
-                        _ => 0,
-                    };
+                    let stored = read_energy(&m.nbt, ENERGY);
                     let next = if source {
                         stored.saturating_add(rate.min(capacity - stored))
                     } else {
                         stored - rate.min(stored)
                     };
-                    if next != stored {
-                        m.nbt.insert(key, Tag::Int(next));
-                    }
+                    write_int(&mut m.nbt, ENERGY, next);
                 });
             }
             return;
         }
-        if event.entity.id != CREATIVE_CUBE {
-            return;
+        let Some((capacity, rate)) = cube(&event.entity.id) else { return };
+        let pos = event.pos;
+
+        // Side config: Mekanism's default until the cube has its own.
+        let saved = read_sides(&event.entity.nbt);
+        let sides = saved.unwrap_or(cube::DEFAULT_SIDES);
+        let changed = saved.is_none();
+        if changed {
+            let k = key(&event.entity.nbt, SIDES);
+            event.entity.nbt.insert(k, Tag::ByteArray(cube::sides_to_bytes(&sides)));
+            update_ports(host, pos, &sides);
         }
-        let full = Tag::Int(i32::MAX);
-        let key = energy_key(&event.entity.nbt);
-        // Read through `Deref` first: a write marks the entity changed (and resyncs it).
-        if event.entity.nbt.get(&key) != Some(&full) {
-            event.entity.nbt.insert(key, full);
+
+        let mut stored = read_energy(&event.entity.nbt, ENERGY).clamp(0, capacity);
+        if event.entity.id == CREATIVE_CUBE {
+            // The creative cube never runs dry.
+            stored = capacity;
+        }
+        let ejected = self.eject(host, pos, rate, &mut stored, &sides);
+        if event.entity.id == CREATIVE_CUBE {
+            stored = capacity;
+        }
+        write_int(&mut event.entity.nbt, ENERGY, stored);
+
+        // ContainerData is synchronised by Horizon for both singleplayer and LAN.
+        // Each wire entry is 16-bit, so every 32-bit FE amount takes two entries.
+        let data = cube::menu_data(stored, ejected, facing(host, pos), &sides);
+        if event.entity.data.as_slice() != data.as_slice() {
+            event.entity.data = data.to_vec();
         }
     }
 
-    fn item_energy_buffer(&self, _host: &dyn Host, event: &mut ItemEnergyBufferEvent) -> Option<ItemEnergyBuffer> {
-        (event.item == TABLET).then_some(ItemEnergyBuffer {
-            capacity: TABLET_CAPACITY,
-            max_insert: TABLET_RATE,
-            max_extract: TABLET_RATE,
+    /// Mekanism turns the cube's front toward its placer.
+    fn state_for_placement(&self, level: &dyn LevelHost, event: &mut StateForPlacementEvent) -> Option<Option<horizon_client::mod_api::BlockStateId>> {
+        cube(&event.context.item)?;
+        let facing = cube::facing_from_look(event.context.yaw, event.context.pitch);
+        level
+            .state_with_property(event.state, "facing", cube::DIR_NAMES[facing])
+            .map(Some)
+    }
+
+    /// A Horizon mod screen replaces the default inventory artwork when the
+    /// content menu for this block opens. Hide the dummy container slot.
+    fn screen(&self, _host: &dyn Host, event: &mut ScreenEvent) -> Option<NativeScreen> {
+        cube(event.block)?;
+        Some(NativeScreen {
+            width: 176.0,
+            height: 238.0,
+            slots: vec![None],
+            inventory_y: 156.0,
+            inventory_x: 8.0,
+            own_labels: true,
+            own_background: false,
         })
+    }
+
+    /// Drawn on top of Horizon's plain panel; no item slots are used for labels.
+    fn screen_draw(&self, host: &dyn Host, event: &mut ScreenDrawEvent) {
+        let Some((capacity, rate)) = cube(event.block) else { return };
+        let [x, y] = event.origin;
+        let stored = cube::read_amount(event.data, cube::DATA_ENERGY).clamp(0, capacity);
+        let ejected = cube::read_amount(event.data, cube::DATA_EJECTED).max(0);
+        let progress = stored as f32 / capacity as f32;
+
+        let title = host.screen_title().unwrap_or_else(|| "Energy Cube".to_owned());
+        host.text(event.batch, &title, [x + 8.0, y + 7.0], 0x404040, false);
+        host.text(
+            event.batch,
+            &format!("Energy: {} / {} FE", cube::si(stored as i64), cube::si(capacity as i64)),
+            [x + 8.0, y + 24.0],
+            0x333333,
+            false,
+        );
+        host.fill(event.batch, [x + 8.0, y + 37.0, 160.0, 10.0], 0xFF242A2F);
+        if progress > 0.0 {
+            host.fill(event.batch, [x + 9.0, y + 38.0, 158.0 * progress, 8.0], 0xFF50C878);
+        }
+        host.text(
+            event.batch,
+            &format!("I/O: {} FE/t  Out: {} FE/t", cube::si(rate as i64), cube::si(ejected as i64)),
+            [x + 8.0, y + 53.0],
+            0x404040,
+            false,
+        );
+
+        for rel in 0..6 {
+            let mode = Mode::from_byte(event.data.get(cube::DATA_SIDES + rel).copied().unwrap_or(0) as u8);
+            let [bx, by, w, h] = cube::SIDE_BUTTON_RECTS[rel];
+            let color = match mode {
+                Mode::None => 0xFF6B7075,
+                Mode::Input => 0xFF278447,
+                Mode::Output => 0xFFAF4141,
+            };
+            host.fill(event.batch, [x + bx, y + by, w, h], 0xFF262A2F);
+            host.fill(event.batch, [x + bx + 1.0, y + by + 1.0, w - 2.0, h - 2.0], color);
+            let status = match mode {
+                Mode::None => "Off",
+                Mode::Input => "In",
+                Mode::Output => "Out",
+            };
+            let label = format!("{}: {}", cube::REL_BUTTON_NAMES[rel], status);
+            host.text(event.batch, &label, [x + bx + 5.0, y + by + 5.0], 0xFFFFFF, true);
+        }
+        host.text(event.batch, "Left: next  |  Right: previous", [x + 8.0, y + 132.0], 0x555555, false);
+        host.text(event.batch, "Inventory", [x + 8.0, y + 145.0], 0x404040, false);
+    }
+
+    /// Mouse hits a side button, not an inventory slot. The click is sent
+    /// via a ContainerButtonClick packet and handled in `menu_button`.
+    fn screen_click(&self, _host: &dyn Host, event: &mut ScreenClickEvent) -> Option<i32> {
+        cube(event.block)?;
+        cube::side_button_at(event.at, event.right)
+    }
+
+    /// Button presses update the actual block entity on the server, then
+    /// normal ContainerData sync refreshes the screen for every player.
+    fn menu_button(&self, host: &mut dyn Host, event: &mut MenuButtonEvent) {
+        let Some((rel, forward)) = cube::side_button_action(event.id) else { return };
+        if cube(&event.entity.id).is_none() { return; }
+        let mut sides = read_sides(&event.entity.nbt).unwrap_or(cube::DEFAULT_SIDES);
+        sides[rel] = sides[rel].cycle(forward);
+        let k = key(&event.entity.nbt, SIDES);
+        event.entity.nbt.insert(k, Tag::ByteArray(cube::sides_to_bytes(&sides)));
+        update_ports(host, event.pos, &sides);
+        let ejected = cube::read_amount(&event.entity.data, cube::DATA_EJECTED);
+        let stored = read_energy(&event.entity.nbt, ENERGY);
+        event.entity.data = cube::menu_data(stored, ejected, facing(host, event.pos), &sides).to_vec();
+    }
+
+    /// Remember what a cube holds before a player breaks it, for its drop.
+    fn destroy_block(&self, host: &mut dyn Host, event: &mut DestroyBlockEvent) -> Flow {
+        if let Some(entity) = host.mod_block_entity(event.pos) {
+            if cube(&entity.id).is_some() {
+                let sides = read_sides(&entity.nbt).unwrap_or(cube::DEFAULT_SIDES);
+                self.broken.lock().unwrap().insert(
+                    (host.dimension().to_owned(), event.pos),
+                    (read_energy(&entity.nbt, ENERGY), sides),
+                );
+            }
+        }
+        Flow::Continue
+    }
+
+    /// A broken cube drops an item that keeps its energy and side config
+    /// (Mekanism's loot table copies `mekanism:energy` and `mekanism:side_config`).
+    fn loot_drops(&self, host: &mut dyn Host, event: &mut LootDropsEvent) {
+        let Some((pos, _)) = event.context.block else { return };
+        let place = (event.context.dimension.to_owned(), pos);
+        let remembered = self.broken.lock().unwrap().remove(&place);
+        let held = host
+            .mod_block_entity(pos)
+            .filter(|e| cube(&e.id).is_some())
+            .map(|e| (read_energy(&e.nbt, ENERGY), read_sides(&e.nbt).unwrap_or(cube::DEFAULT_SIDES)))
+            .or(remembered);
+        let Some((energy, sides)) = held else { return };
+        for drop in event.drops.iter_mut() {
+            let Some((capacity, _)) = cube(&drop.item) else { continue };
+            let bytes = cube::sides_to_bytes(&sides)
+                .iter()
+                .map(|b| format!("{b}b"))
+                .collect::<Vec<_>>()
+                .join(",");
+            let snbt = format!(
+                "{{id:\"{}\",count:{},components:{{\"minecraft:custom_data\":{{{ITEM_ENERGY}:{},{SIDES}:[B;{bytes}]}}}}}}",
+                drop.item,
+                drop.count,
+                energy.clamp(0, capacity)
+            );
+            if let Some(stack) = host.item_from_snbt(&snbt) {
+                *drop = stack;
+            }
+        }
+    }
+
+    /// Placing a cube item restores the energy and side config it carries.
+    fn place_block(&self, host: &mut dyn Host, event: &mut PlaceBlockEvent) {
+        let Some((capacity, _)) = cube(&event.stack.item) else { return };
+        let dimension = host.dimension().to_owned();
+        self.broken.lock().unwrap().remove(&(dimension, event.pos));
+        let Some(data) = event.stack.custom_data() else { return };
+        let energy = read_energy(data, ITEM_ENERGY).clamp(0, capacity);
+        let sides = read_sides(data);
+        host.change_mod_block_entity(event.pos, &mut |m| {
+            if cube(&m.id).is_none() {
+                return;
+            }
+            if energy > 0 {
+                write_int(&mut m.nbt, ENERGY, energy);
+            }
+            if let Some(sides) = sides {
+                let k = key(&m.nbt, SIDES);
+                m.nbt.insert(k, Tag::ByteArray(cube::sides_to_bytes(&sides)));
+            }
+        });
+        if let Some(sides) = sides {
+            update_ports(host, event.pos, &sides);
+        }
+    }
+
+    fn tooltip(&self, _host: &dyn Host, event: &mut TooltipEvent) {
+        let Some((capacity, _)) = cube(&event.stack.item) else { return };
+        let stored = event.stack.custom_data().map_or(0, |d| read_energy(d, ITEM_ENERGY));
+        let line = Text::translate_with_fallback(
+            "gui.mekanism.energy_cube.stored",
+            "Stored: %s / %s FE",
+            &[Text::literal(cube::si(stored as i64)), Text::literal(cube::si(capacity as i64))],
+        );
+        event.lines.push((line, 0xFF_AAAAAA));
+    }
+
+    fn item_energy_buffer(&self, _host: &dyn Host, event: &mut ItemEnergyBufferEvent) -> Option<ItemEnergyBuffer> {
+        if event.item == TABLET {
+            return Some(ItemEnergyBuffer { capacity: TABLET_CAPACITY, max_insert: TABLET_RATE, max_extract: TABLET_RATE });
+        }
+        cube(event.item).map(|(capacity, rate)| ItemEnergyBuffer { capacity, max_insert: rate, max_extract: rate })
     }
 }
