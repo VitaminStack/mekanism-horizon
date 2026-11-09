@@ -1,0 +1,14 @@
+{
+  "type": "mekanism:enriching",
+  "category": "decorative",
+  "experience": 0.1,
+  "group": "green_dye",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:crops/cactus"
+  },
+  "output": {
+    "count": 2,
+    "id": "minecraft:green_dye"
+  }
+}

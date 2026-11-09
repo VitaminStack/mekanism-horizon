@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:enriching",
+  "experience": 0.45,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/sulfur"
+  },
+  "output": {
+    "id": "minecraft:sulfur_spike"
+  }
+}

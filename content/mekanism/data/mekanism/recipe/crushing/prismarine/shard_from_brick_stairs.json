@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.1,
+  "group": "mekanism:prismarine_shards",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:prismarine_brick_stairs"
+  },
+  "output": {
+    "count": 9,
+    "id": "minecraft:prismarine_shard"
+  }
+}

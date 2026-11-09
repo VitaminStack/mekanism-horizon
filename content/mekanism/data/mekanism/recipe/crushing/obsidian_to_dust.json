@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.25,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:obsidians/normal"
+  },
+  "output": {
+    "count": 4,
+    "id": "mekanism:dust_obsidian"
+  }
+}

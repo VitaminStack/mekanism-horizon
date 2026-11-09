@@ -10,6 +10,10 @@ pub mod cube;
 #[path = "../../../native/mekanism_native/api/src/infuser.rs"]
 pub mod infuser;
 
+/// Enrichment Chamber and Crusher logic.
+#[path = "../../../native/mekanism_native/api/src/machine.rs"]
+pub mod machine;
+
 /// Heat and Solar Generator logic (M04).
 #[path = "../../../native/mekanism_native/api/src/generator.rs"]
 pub mod generator;

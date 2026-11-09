@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanism:polished_diorite_conversion",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:diorite_slab"
+  },
+  "output": {
+    "id": "minecraft:polished_diorite_slab"
+  }
+}

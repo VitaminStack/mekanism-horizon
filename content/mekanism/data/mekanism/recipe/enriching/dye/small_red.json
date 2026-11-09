@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:enriching",
+  "category": "decorative",
+  "experience": 0.1,
+  "group": "red_dye",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:beetroot",
+      "minecraft:poppy",
+      "minecraft:red_tulip"
+    ]
+  },
+  "output": {
+    "count": 2,
+    "id": "minecraft:red_dye"
+  }
+}

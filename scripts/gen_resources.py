@@ -132,17 +132,15 @@ for tier in CUBE_TIERS:
 block('metallurgic_infuser', 'minecraft:barrel', 3.5, 16.0,
       extra={'default_state': {'facing': 'north'}})
 put(f'data/{NS}/horizon/menu/metallurgic_infuser.json', {'slots': 3, 'data_slots': 6, 'results': [2]})
-# Upstream has no blockstate file for machines (its client code builds it); same model per facing.
-FACING_Y = {'north': 0, 'east': 90, 'south': 180, 'west': 270, 'up': 0, 'down': 0}
+# Machine and generator blockstates come from upstream via import_upstream.py.
 
-
-def facing_blockstate(id_, ns=NS):
-    put(f'assets/{ns}/blockstates/{id_}.json', {'variants': {
-        f'facing={f}': {'model': f'{ns}:block/{id_}', **({'y': y} if y else {})}
-        for f, y in FACING_Y.items()}}, ns)
-
-
-facing_blockstate('metallurgic_infuser')
+# Enrichment Chamber and Crusher: BlockTile.defaultProperties (3.5, 16). Slots: 0 input, 1 output
+# (results). Upstream's blockstate picks the model by `active`, set by the native mod.
+for m in ('enrichment_chamber', 'crusher'):
+    block(m, 'minecraft:barrel', 3.5, 16.0, extra={
+        'state_properties': {'active': {'type': 'boolean'}},
+        'default_state': {'facing': 'north', 'active': 'false'}})
+    put(f'data/{NS}/horizon/menu/{m}.json', {'slots': 2, 'data_slots': 4, 'results': [1]})
 
 # --- generators (M04), content mod `mekanismgenerators`: ticked, powered and drawn by
 # native/mekanism_native. BlockTile.defaultProperties (3.5, 16) as the infuser; the barrel template
@@ -160,8 +158,6 @@ block('solar_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occ
 item('solar_panel', ns=GEN)
 put(f'data/{GEN}/horizon/menu/heat_generator.json', {'slots': 1, 'data_slots': 7, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/solar_generator.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
-for gid in ('heat_generator', 'solar_generator'):
-    facing_blockstate(gid, GEN)
 
 # Debug blocks for testing the cubes (TODO N08), ticked by native/mekanism_native.
 for did, tex in (('debug_energy_source', 'redstone_block'), ('debug_energy_sink', 'coal_block')):
@@ -261,7 +257,7 @@ for tag, values in CONVENTION_TAGS.items():
 
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
-    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS] + [f'{NS}:metallurgic_infuser']})
+    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS] + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'enrichment_chamber', 'crusher')]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:heat_generator', f'{GEN}:solar_generator']}, GEN)
 

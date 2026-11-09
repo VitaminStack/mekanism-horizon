@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.05,
+  "group": "mekanism:dust_quartz",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:gems/quartz"
+  },
+  "output": {
+    "id": "mekanism:dust_quartz"
+  }
+}

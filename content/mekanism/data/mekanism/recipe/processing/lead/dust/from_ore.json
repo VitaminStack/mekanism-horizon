@@ -1,0 +1,14 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.5,
+  "group": "mekanism:dust_lead",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:ores/lead"
+  },
+  "output": {
+    "count": 2,
+    "id": "mekanism:dust_lead"
+  }
+}

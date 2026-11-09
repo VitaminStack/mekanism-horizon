@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.2,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:ores/lapis"
+  },
+  "output": {
+    "count": 12,
+    "id": "minecraft:lapis_lazuli"
+  }
+}

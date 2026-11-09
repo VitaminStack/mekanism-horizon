@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 1.0,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:gems/diamond"
+  },
+  "output": {
+    "id": "mekanism:enriched_diamond"
+  }
+}

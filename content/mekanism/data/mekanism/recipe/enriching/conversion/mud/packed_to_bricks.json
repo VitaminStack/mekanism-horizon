@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:packed_mud"
+  },
+  "output": {
+    "id": "minecraft:mud_bricks"
+  }
+}

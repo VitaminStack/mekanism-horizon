@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:flint"
+  },
+  "output": {
+    "id": "minecraft:gunpowder"
+  }
+}

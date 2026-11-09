@@ -1,5 +1,7 @@
 {
   "block.mekanismgenerators.heat_generator": "Heat Generator",
   "block.mekanismgenerators.solar_generator": "Solar Generator",
-  "item.mekanismgenerators.solar_panel": "Solar Panel"
+  "item.mekanismgenerators.solar_panel": "Solar Panel",
+  "sound_event.mekanismgenerators.tile.generator.heat": "Heat generator hums",
+  "sound_event.mekanismgenerators.tile.generator.solar": "Solar generator hums"
 }

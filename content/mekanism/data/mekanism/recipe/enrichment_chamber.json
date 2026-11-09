@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:enriching",
+  "key": {
+    "A": "#mekanism:alloys/basic",
+    "C": "#c:circuits/basic",
+    "I": "#c:ingots/iron",
+    "X": "mekanism:steel_casing"
+  },
+  "pattern": [
+    "ACA",
+    "IXI",
+    "ACA"
+  ],
+  "result": {
+    "id": "mekanism:enrichment_chamber"
+  }
+}

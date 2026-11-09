@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.25,
+  "group": "mekanism:dust_emerald",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:gems/emerald"
+  },
+  "output": {
+    "id": "mekanism:dust_emerald"
+  }
+}

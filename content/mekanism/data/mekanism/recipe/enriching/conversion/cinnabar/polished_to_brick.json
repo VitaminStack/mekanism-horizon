@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanism:cinnabar_brick_conversion",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:polished_cinnabar"
+  },
+  "output": {
+    "id": "minecraft:cinnabar_bricks"
+  }
+}

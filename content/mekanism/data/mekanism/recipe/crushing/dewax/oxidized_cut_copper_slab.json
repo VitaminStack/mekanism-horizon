@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "building",
+  "experience": 0.1,
+  "group": "oxidized",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:waxed_oxidized_cut_copper_slab"
+  },
+  "output": {
+    "id": "minecraft:oxidized_cut_copper_slab"
+  }
+}

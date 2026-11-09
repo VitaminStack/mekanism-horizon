@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanism:cracked_stone_brick_conversion",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:stone_bricks"
+  },
+  "output": {
+    "id": "minecraft:cracked_stone_bricks"
+  }
+}

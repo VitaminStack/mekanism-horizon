@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:enriching",
+  "category": "decorative",
+  "experience": 0.1,
+  "group": "blue_dye",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:cornflower",
+      "minecraft:lapis_lazuli"
+    ]
+  },
+  "output": {
+    "count": 2,
+    "id": "minecraft:blue_dye"
+  }
+}

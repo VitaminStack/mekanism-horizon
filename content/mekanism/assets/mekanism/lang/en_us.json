@@ -17,6 +17,7 @@
   "block.mekanism.block_tin": "Block of Tin",
   "block.mekanism.block_uranium": "Block of Uranium",
   "block.mekanism.creative_energy_cube": "Creative Energy Cube",
+  "block.mekanism.crusher": "Crusher",
   "block.mekanism.debug_energy_sink": "Debug Energy Sink",
   "block.mekanism.debug_energy_source": "Debug Energy Source",
   "block.mekanism.deepslate_fluorite_ore": "Deepslate Fluorite Ore",
@@ -25,6 +26,7 @@
   "block.mekanism.deepslate_tin_ore": "Deepslate Tin Ore",
   "block.mekanism.deepslate_uranium_ore": "Deepslate Uranium Ore",
   "block.mekanism.elite_energy_cube": "Elite Energy Cube",
+  "block.mekanism.enrichment_chamber": "Enrichment Chamber",
   "block.mekanism.fluorite_ore": "Fluorite Ore",
   "block.mekanism.lead_ore": "Lead Ore",
   "block.mekanism.metallurgic_infuser": "Metallurgic Infuser",
@@ -113,5 +115,8 @@
   "item.mekanism.raw_tin": "Raw Tin",
   "item.mekanism.raw_uranium": "Raw Uranium",
   "item.mekanism.salt": "Salt",
-  "item.mekanism.ultimate_control_circuit": "Ultimate Control Circuit"
+  "item.mekanism.ultimate_control_circuit": "Ultimate Control Circuit",
+  "sound_event.mekanism.tile.machine.crusher": "Crusher clangs",
+  "sound_event.mekanism.tile.machine.enrichment_chamber": "Enricher hums",
+  "sound_event.mekanism.tile.machine.metallurgic_infuser": "Metallurgic infuser hums"
 }

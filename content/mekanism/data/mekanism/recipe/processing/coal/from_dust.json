@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.05,
+  "group": "coal",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/coal"
+  },
+  "output": {
+    "id": "minecraft:coal"
+  }
+}

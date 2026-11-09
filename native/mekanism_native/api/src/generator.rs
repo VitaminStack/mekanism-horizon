@@ -23,6 +23,12 @@ pub const SOLAR: &str = "mekanismgenerators:solar_generator";
 /// Registered by `data/mekanismgenerators/horizon/menu/<generator>.json`.
 pub const HEAT_MENU: &str = HEAT;
 pub const SOLAR_MENU: &str = SOLAR;
+/// Mekanism's loops while running (`tile.generator.*` in `sounds.json`) and
+/// their clip lengths in ticks.
+pub const HEAT_SOUND: &str = "mekanismgenerators:tile.generator.heat";
+pub const HEAT_SOUND_TICKS: i32 = 26;
+pub const SOLAR_SOUND: &str = "mekanismgenerators:tile.generator.solar";
+pub const SOLAR_SOUND_TICKS: i32 = 20;
 
 pub const TICKS_PER_SECOND: i32 = 20;
 

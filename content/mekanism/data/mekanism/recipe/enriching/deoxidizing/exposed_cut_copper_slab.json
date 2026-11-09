@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "group": "weathered_to_exposed",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:weathered_cut_copper_slab"
+  },
+  "output": {
+    "id": "minecraft:exposed_cut_copper_slab"
+  }
+}

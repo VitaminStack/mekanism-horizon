@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.65,
+  "group": "mekanism:dust_sulfur",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:potent_sulfur"
+  },
+  "output": {
+    "count": 36,
+    "id": "mekanism:dust_sulfur"
+  }
+}

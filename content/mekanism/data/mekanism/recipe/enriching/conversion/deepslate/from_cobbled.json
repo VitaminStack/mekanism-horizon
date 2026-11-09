@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanism:deepslate_conversion",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:cobblestones/deepslate"
+  },
+  "output": {
+    "id": "minecraft:deepslate"
+  }
+}

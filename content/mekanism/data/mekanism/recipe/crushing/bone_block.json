@@ -1,0 +1,14 @@
+{
+  "type": "mekanism:crushing",
+  "category": "efficiency",
+  "experience": 0.25,
+  "group": "mekanism:bone_meal",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/bone_meal"
+  },
+  "output": {
+    "count": 9,
+    "id": "minecraft:bone_meal"
+  }
+}

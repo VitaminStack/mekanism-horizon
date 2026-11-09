@@ -15,6 +15,9 @@ pub const BLOCK: &str = "mekanism:metallurgic_infuser";
 pub const MENU: &str = "mekanism:metallurgic_infuser";
 pub const INFUSING: &str = "mekanism:metallurgic_infusing";
 pub const CONVERSION: &str = "mekanism:chemical_conversion";
+/// Mekanism's loop while running and its clip length in ticks.
+pub const SOUND: &str = "mekanism:tile.machine.metallurgic_infuser";
+pub const SOUND_TICKS: i32 = 29;
 
 pub const USAGE: i32 = 5;
 pub const CAPACITY: i32 = 4 * USAGE;

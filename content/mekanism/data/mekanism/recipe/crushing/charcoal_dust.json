@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.025,
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:charcoal"
+  },
+  "output": {
+    "id": "mekanism:dust_charcoal"
+  }
+}

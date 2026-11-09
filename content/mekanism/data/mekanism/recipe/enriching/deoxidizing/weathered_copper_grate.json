@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "group": "oxidized_to_weathered",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:oxidized_copper_grate"
+  },
+  "output": {
+    "id": "minecraft:weathered_copper_grate"
+  }
+}

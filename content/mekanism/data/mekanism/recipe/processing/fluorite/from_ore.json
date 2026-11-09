@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.7,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:ores/fluorite"
+  },
+  "output": {
+    "count": 6,
+    "id": "mekanism:fluorite_gem"
+  }
+}

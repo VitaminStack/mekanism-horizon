@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanism:mossy_cobble_removal",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:mossy_cobblestone_stairs"
+  },
+  "output": {
+    "id": "minecraft:cobblestone_stairs"
+  }
+}

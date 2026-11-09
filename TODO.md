@@ -56,13 +56,13 @@
 ## M02 - Rohstoffe, Weltgenerierung und Grundrezepte [P1]
 
 - [x] Originale Registry-IDs von Items/Blöcken/Ressourcen inventarisieren. *(Ressourcen-IDs nach Mekanism 26.3 in `scripts/gen_resources.py`, Liste in `scripts/registry.json`.)*
-- [ ] Originaltexturen, Modelle, Blockstates, Sounds und Sprachen mit Lizenzhinweisen integrieren. *(Für Ressourcen per `scripts/import_upstream.py`; MIT-Lizenz in `content/mekanism/LICENSE-MEKANISM`. Block-Sound-Typen wie Original (Stone, Deepslate, Salz = Sand; ingame getestet 09.11.2026). Energy-Cube-Modell per `scripts/import_energy_cube.py`. Alle 46 Mekanism-Sound-Events (`sounds.json`) gehören zu Maschinen, Items und GUI; Import folgt mit diesen Inhalten. Native Mods spielen derzeit nur Vanilla-Sound-Events.)*
+- [ ] Originaltexturen, Modelle, Blockstates, Sounds und Sprachen mit Lizenzhinweisen integrieren. *(Für Ressourcen per `scripts/import_upstream.py`; MIT-Lizenz in `content/mekanism/LICENSE-MEKANISM`. Block-Sound-Typen wie Original (Stone, Deepslate, Salz = Sand; ingame getestet 09.11.2026). Energy-Cube-Modell per `scripts/import_energy_cube.py`. Sounds: `sounds.json` + `.ogg` der vorhandenen Maschinen und Generatoren (Infuser, Enrichment Chamber, Crusher, Heat, Solar) per `import_upstream.py` (`SOUNDS`), mit Untertiteln; Horizon spielt Mod-Sound-Events seit API 61, der Native-Mod wiederholt den Clip, solange die Maschine läuft. Ingame ungetestet. Die übrigen Mekanism-Sound-Events folgen mit ihren Maschinen/Items.)*
 - [x] Osmium-, Tin/Zinn-, Uranium-/Uran- und Fluorite-/Fluorit-Erze inklusive Deepslate-Varianten. *(Plus Blei und Salz.)*
 - [x] Weltgenerierung, Erzverteilung, Drops und Mining-Level (nur neue Chunks) testen. *(Werte aus Original-`OreType`/`WorldConfig`. Kein Glück/Behutsamkeit: Horizon-Loot kennt `apply_bonus`/`match_tool` nicht.)*
 - [x] Ingots, Nuggets, Dusts, Raw Materials, Storage Blocks (z.B. Bronze, Steel, Refined Glowstone, Refined Obsidian).
-- [ ] Steel Casing, Control Circuits (Basic/Advanced/Elite/Ultimate), Alloys und Enriched Materials. *(Registriert. Infusing-Rezepte laufen über den Metallurgic Infuser (Grundstufe aus M05; ingame getestet 09.11.2026: Carbon, Enriched Iron, Steel Dust, Steel Casing, Dump, Tooltips). Elite/Ultimate Circuits und Reinforced/Atomic Alloy brauchen Diamant-/Obsidian-Staub oder Enriched Materials: erst mit Crusher/Enrichment Chamber (M05) ohne Cheat.)*
+- [ ] Steel Casing, Control Circuits (Basic/Advanced/Elite/Ultimate), Alloys und Enriched Materials. *(Registriert. Infusing-Rezepte laufen über den Metallurgic Infuser (Grundstufe aus M05; ingame getestet 09.11.2026: Carbon, Enriched Iron, Steel Dust, Steel Casing, Dump, Tooltips). Elite/Ultimate Circuits und Reinforced/Atomic Alloy: Kette Crusher (Obsidian-/Diamant-Staub) und Enrichment Chamber (Enriched Diamond/Refined Obsidian) implementiert, ingame ungetestet.)*
 - [x] Crafting-, Smelting-, Blasting- und Resource-Tags nach Original-Rezepten. *(Ingame bestätigt 09.11.2026: Steel Ingot im Ofen, Steel Casing, Infuser-Rezept. Vanilla-Rezepte + Tags importiert, dazu `metallurgic_infusing` und Infuse-`chemical_conversion`. Fehlende NeoForge-`c:`-Tags für Vanilla-Items in `gen_resources.py` (`CONVENTION_TAGS`). Weitere Maschinenrezepte folgen mit ihren Maschinen.)*
-- [ ] Survival-Test: alle Materialien für erste Maschinen ohne Cheat erhältlich. *(Weg: Infuser craften, Kohle zu Carbon, Eisen zu Enriched Iron, dann Steel Dust, Steel Ingot (Ofen), Steel Casing; Osmium + Redstone zu Basic Circuit. Energie bisher nur aus Creative-/geladenem Cube: Generatoren erst M04.)*
+- [ ] Survival-Test: alle Materialien für erste Maschinen ohne Cheat erhältlich. *(Weg: Infuser craften, Kohle zu Carbon, Eisen zu Enriched Iron, dann Steel Dust, Steel Ingot (Ofen), Steel Casing; Osmium + Redstone zu Basic Circuit. Energie ohne Cheat aus Heat Generator (Kohle) direkt neben der Maschine; ohne Universal Cables nur als Nachbarblock. Ingame ungetestet.)*
 
 ## M03 - Energie- und Maschinen-Fundament [P0/P1]
 
@@ -90,9 +90,9 @@
 - [ ] Allgemeines Rezept-System: Inputs, Outputs, Energie je Tick, Fortschritt, Nebenprodukte.
 - [ ] Maschinen-Inventare, Menüs, GUI, Upgrades, Auto-Eject, Sided I/O, Redstone-Modi.
 - [x] Metallurgic Infuser und Infusions-Ressourcen. *(Ingame getestet 09.11.2026. Werte aus Original; 8 Infuse-Typen, alle `metallurgic_infusing`-Rezepte. Fehlt: Energie-Slot, Upgrades, Side-Config, Redstone; Infuse/Energie bleiben beim Abbau nicht am Item; Balkenfarben genähert.)*
-- [ ] Enrichment Chamber.
+- [ ] Enrichment Chamber. *(Implementiert, ingame ungetestet: `native/mekanism_native/api/src/machine.rs`, 5 FE/t, 200 Ticks, Speicher 20 FE, alle `mekanism:enriching`-Rezepte, Upstream-Modell mit `active`, Sound. Fehlt wie beim Infuser: Energie-Slot, Upgrades, Side-Config, Redstone.)*
 - [ ] Energized Smelter.
-- [ ] Crusher.
+- [ ] Crusher. *(Implementiert, ingame ungetestet: wie Enrichment Chamber, 8 FE/t, Speicher 32 FE, alle `mekanism:crushing`-Rezepte.)*
 - [ ] Precision Sawmill.
 - [ ] Osmium Compressor und Combiner.
 - [ ] Formulation/Assembly: Formulaic Assemblicator und Oredictionificator.

@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/resin"
+  },
+  "output": {
+    "id": "minecraft:resin_bricks"
+  }
+}

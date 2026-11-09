@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:crushing",
+  "experience": 0.5,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:ingots/refined_glowstone"
+  },
+  "output": {
+    "id": "minecraft:glowstone_dust"
+  }
+}

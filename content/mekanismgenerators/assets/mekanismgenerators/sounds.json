@@ -1,0 +1,17 @@
+{
+  "tile.generator.heat": {
+    "sounds": [
+      "mekanismgenerators:generator/heat"
+    ],
+    "subtitle": "sound_event.mekanismgenerators.tile.generator.heat"
+  },
+  "tile.generator.solar": {
+    "sounds": [
+      {
+        "attenuation_distance": 8,
+        "name": "mekanismgenerators:generator/solar"
+      }
+    ],
+    "subtitle": "sound_event.mekanismgenerators.tile.generator.solar"
+  }
+}

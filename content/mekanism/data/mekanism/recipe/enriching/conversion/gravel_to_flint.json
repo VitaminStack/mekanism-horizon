@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.3,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:gravels"
+  },
+  "output": {
+    "id": "minecraft:flint"
+  }
+}

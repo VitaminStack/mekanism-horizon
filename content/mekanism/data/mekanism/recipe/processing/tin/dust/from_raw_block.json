@@ -1,0 +1,14 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 0.35,
+  "group": "mekanism:dust_tin",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/raw_tin"
+  },
+  "output": {
+    "count": 12,
+    "id": "mekanism:dust_tin"
+  }
+}

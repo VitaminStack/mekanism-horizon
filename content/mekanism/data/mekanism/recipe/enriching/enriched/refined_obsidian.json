@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:enriching",
+  "category": "efficiency",
+  "experience": 1.5,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/refined_obsidian"
+  },
+  "output": {
+    "id": "mekanism:enriched_refined_obsidian"
+  }
+}

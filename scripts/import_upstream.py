@@ -13,7 +13,9 @@ mod of each id's namespace (`content/mekanism`, `content/mekanismgenerators`):
   other machine recipe types are skipped until their machines exist;
 - block/item tags (own, vanilla and convention namespaces), filtered to
   registered ids, merged into ours;
-- en_us and de_de names for registered ids.
+- the sound events in SOUNDS (`sounds.json` entries and their `.ogg` files),
+  played by native/mekanism_native;
+- en_us and de_de names for registered ids and those sounds' subtitles.
 
 Mekanism is MIT licensed; its LICENSE is copied to each mod's LICENSE-MEKANISM.
 
@@ -39,10 +41,17 @@ ASSET_SKIP = {f'{NS}:{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'u
     f'{NS}:debug_energy_source', f'{NS}:debug_energy_sink'}
 REF = re.compile(r'"(#?)(mekanism|mekanismgenerators):([a-z0-9_/.]+)"')
 # Mekanism machine recipe types whose machine exists here.
-MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversion'}
+MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversion', 'mekanism:enriching',
+                   'mekanism:crushing'}
 # Chemicals with Mekanism's infuse-type attribute: what the Metallurgic Infuser takes.
 INFUSE_TYPES = {f'{NS}:{t}' for t in ('carbon', 'redstone', 'diamond', 'refined_obsidian', 'tin', 'gold',
                                       'bio', 'fungi')}
+
+# Sound events whose block plays them (native/mekanism_native loops them while running).
+SOUNDS = {
+    NS: ['tile.machine.metallurgic_infuser', 'tile.machine.enrichment_chamber', 'tile.machine.crusher'],
+    'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar'],
+}
 
 
 def flat_or(ingredient):
@@ -238,6 +247,27 @@ def main(up):
                 n -= 1
     stats['tags'] = n
 
+    # --- sounds ---
+    subtitles = {ns: set() for ns in SOURCES}
+    n = 0
+    for ns, events in SOUNDS.items():
+        src = find(ns, 'sounds.json')
+        up_sounds = json.loads(src.read_text(encoding='utf-8'))
+        dst = content(ns) / 'assets' / ns / 'sounds.json'
+        ours = json.loads(dst.read_text(encoding='utf-8')) if dst.exists() else {}
+        for event in events:
+            entry = up_sounds[event]
+            ours[event] = entry
+            if 'subtitle' in entry:
+                subtitles[ns].add(entry['subtitle'])
+            for sound in entry['sounds']:
+                s_ns, path = split(sound if isinstance(sound, str) else sound['name'])
+                if not copy_asset(s_ns, f'sounds/{path}.ogg'):
+                    print(f'  missing sound {s_ns}:{path}')
+                n += 1
+        dst.write_text(json.dumps(dict(sorted(ours.items())), indent=2) + '\n', encoding='utf-8')
+    stats['sounds'] = n
+
     # --- names ---
     for ns in SOURCES:
         for lang in ('en_us', 'de_de'):
@@ -252,6 +282,9 @@ def main(up):
                 for key in (f'item.{ns}.{id_}', f'block.{ns}.{id_}'):
                     if key in up_lang:
                         ours[key] = up_lang[key]
+            for key in subtitles[ns]:
+                if key in up_lang:
+                    ours[key] = up_lang[key]
             dst.parent.mkdir(parents=True, exist_ok=True)
             dst.write_text(json.dumps(dict(sorted(ours.items())), indent=2, ensure_ascii=False) + '\n',
                            encoding='utf-8')
