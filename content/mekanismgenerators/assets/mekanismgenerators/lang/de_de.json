@@ -1,0 +1,5 @@
+{
+  "block.mekanismgenerators.heat_generator": "Wärmegenerator",
+  "block.mekanismgenerators.solar_generator": "Solargenerator",
+  "item.mekanismgenerators.solar_panel": "Solarmodul"
+}

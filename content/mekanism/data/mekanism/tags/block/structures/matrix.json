@@ -1,8 +1,0 @@
-{
-  "replace": false,
-  "values": [
-    "#mekanism:induction_cells",
-    "#mekanism:induction_providers",
-    "#mekanism:structures/common"
-  ]
-}
