@@ -150,7 +150,8 @@ for m in ('enrichment_chamber', 'crusher'):
 # gives `facing` and the menu, the native mod turns the front toward the placer, horizontally.
 # Heat Generator slot 0: fuel (lava bucket or furnace fuel). The Solar Generator has no slot of its
 # own (one hidden placeholder). Mekanism's energy (charging) slot is not ported on either.
-# Wind and Advanced Solar Generator are multiblocks (bounding blocks): not yet.
+# Wind and Advanced Solar Generator are multiblocks: the native mod fills the rest of their shape with
+# `mekanism:bounding_block` (upstream's BlockBounding: strength 3.5/4.8, no item, no drops).
 MACHINE_STATE = {'default_state': {'facing': 'north'}}
 # Upstream's blockstate picks the model by `active` (the drum glows while burning), set by the native mod.
 # The models are not full cubes: `occludes: false` keeps the faces of the blocks beside them drawn.
@@ -159,6 +160,17 @@ block('heat_generator', 'minecraft:barrel', 3.5, 16.0, ns=GEN, occludes=False, e
     'default_state': {'facing': 'north', 'active': 'false'}})
 block('solar_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
 item('solar_panel', ns=GEN)
+for gid in ('advanced_solar_generator', 'wind_generator'):
+    block(gid, 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
+    put(f'data/{GEN}/horizon/menu/{gid}.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
+registry[NS]['blocks'].append('bounding_block')
+put(f'data/{NS}/horizon/block/bounding_block.json', {
+    'template': 'minecraft:stone',
+    'properties': {'hardness': 3.5, 'explosion_resistance': 4.8, 'requires_tool': False, 'occludes': False},
+    'item': False,
+})
+put(f'data/{NS}/loot_table/blocks/bounding_block.json', {'type': 'minecraft:block', 'pools': [],
+                                                        'random_sequence': f'{NS}:blocks/bounding_block'})
 # Bio Generator: slot 0 bio fuel (`#c:fuels/bio`), its bioethanol tank kept by the native mod.
 block('bio_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
 put(f'data/{GEN}/horizon/menu/bio_generator.json', {'slots': 1, 'data_slots': 4, 'results': []}, GEN)
@@ -265,7 +277,8 @@ for tag, values in CONVENTION_TAGS.items():
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS] + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'enrichment_chamber', 'crusher')]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
-    {'replace': False, 'values': [f'{GEN}:{g}' for g in ('heat_generator', 'solar_generator', 'bio_generator')]}, GEN)
+    {'replace': False, 'values': [f'{GEN}:{g}' for g in ('heat_generator', 'solar_generator', 'bio_generator',
+                                                         'advanced_solar_generator', 'wind_generator')]}, GEN)
 
 # Hand-written content stays declared too, so the importer covers it.
 for ns, reg in registry.items():

@@ -80,6 +80,7 @@
       "block_steel",
       "block_tin",
       "block_uranium",
+      "bounding_block",
       "creative_energy_cube",
       "crusher",
       "debug_energy_sink",
@@ -106,9 +107,11 @@
       "solar_panel"
     ],
     "blocks": [
+      "advanced_solar_generator",
       "bio_generator",
       "heat_generator",
-      "solar_generator"
+      "solar_generator",
+      "wind_generator"
     ]
   }
 }

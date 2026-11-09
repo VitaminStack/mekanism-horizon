@@ -55,6 +55,8 @@ use std::sync::Mutex;
 
 use cube::{Mode, Sides};
 use horizon_client::mod_api::{
+    NativeBlockEdit, NativeBlockRun, BlockEntityDraw, BlockEntityRenderBoundingBoxEvent,
+    BlockEntitySubmitEvent, BlockEntityUpdateTagEvent, StandaloneModelsEvent,
     BlockEntityContainerEvent, BlockEntityEnergyEvent, BlockEntityEvent, BlockEntityTickEvent,
     BlockEntityTicksEvent, Compound, DestroyBlockEvent, Flow, Hooks, Host, Ingredient,
     ItemEnergyBuffer, ItemEnergyBufferEvent, ItemStack, LevelHost, LootDropsEvent, MenuButtonEvent,
@@ -88,8 +90,9 @@ const SIDES: &str = "mekanism_sides";
 const ITEM_ENERGY: &str = "horizon_energy";
 /// Registered by `data/mekanism/horizon/menu/energy_cube.json`.
 const CUBE_MENU: &str = "mekanism:energy_cube";
-/// `SoundSource.BLOCKS` ordinal.
+/// `SoundSource.BLOCKS` and `WEATHER` ordinals.
 const SOUND_BLOCKS: usize = 4;
+const SOUND_WEATHER: usize = 3;
 
 pub fn hooks() -> Box<dyn Hooks> {
     Box::new(MekanismNative::default())
@@ -166,6 +169,8 @@ const INFUSE: &str = "mekanism_infuse";
 const BIO_FUEL: &str = "mekanism_bio_fuel";
 const HEAT: &str = "mekanism_heat";
 const LAVA: &str = "mekanism_lava";
+/// A Wind Generator turning its blades, sent to clients (1 or 0).
+const WIND_ACTIVE: &str = "mekanism_wind_active";
 
 /// A `mekanism:metallurgic_infusing` recipe: `item_input`, `chemical_input`, `output`.
 struct Infusing {
@@ -376,6 +381,10 @@ impl MekanismNative {
     /// `TileTickableSound`); here the server replays the clip each time it
     /// ends, for the players near it, in the `blocks` category.
     fn hum(&self, host: &mut dyn Host, pos: [i32; 3], sound: &str, ticks: i32, active: bool) {
+        self.hum_as(host, pos, sound, ticks, active, SOUND_BLOCKS);
+    }
+
+    fn hum_as(&self, host: &mut dyn Host, pos: [i32; 3], sound: &str, ticks: i32, active: bool, source: usize) {
         let place = (host.dimension().to_owned(), pos);
         let mut hums = self.hums.lock().unwrap();
         if !active {
@@ -385,7 +394,7 @@ impl MekanismNative {
         let left = hums.entry(place).or_insert(0);
         if *left <= 0 {
             let at = [pos[0] as f64 + 0.5, pos[1] as f64 + 0.5, pos[2] as f64 + 0.5];
-            host.play_sound(sound, at, SOUND_BLOCKS, 1.0, 1.0);
+            host.play_sound(sound, at, source, 1.0, 1.0);
             *left = ticks;
         }
         *left -= 1;
@@ -627,6 +636,70 @@ impl MekanismNative {
         }
     }
 
+    /// One Advanced Solar Generator tick: its nine sky checks are the 3 x 3
+    /// above the panel (the sky light over each bounding block of its top).
+    fn advanced_solar_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+        let pos = event.pos;
+        let storage = generator::ADVANCED_SOLAR_STORAGE;
+        let mut stored = read_energy(&event.entity.nbt, ENERGY).clamp(0, storage);
+        let dimension = host.dimension();
+        let sky_light = dimension != "minecraft:the_nether" && dimension != "minecraft:the_end";
+        let (rain, thunder) = host.weather();
+        let darkness = generator::sky_darkness(host.day_time(), rain, thunder);
+        let seeing = if generator::sees_sun(sky_light, darkness, 15) {
+            (-1..=1)
+                .flat_map(|x| (-1..=1).map(move |z| [pos[0] + x, pos[1] + 3, pos[2] + z]))
+                .filter(|&p| host.light(p).1 >= 15)
+                .count()
+        } else {
+            0
+        };
+        let peak = generator::peak_multiplier(generator::climate(host.biome(pos).as_deref()));
+        let produced = generator::advanced_solar_production(seeing, darkness, peak).min(storage - stored);
+        stored += produced;
+        let f = facing(host, pos);
+        stored -= give(host, pos, f, stored, stored);
+        stored -= give(host, pos, cube::DOWN, stored, stored);
+        self.hum(host, pos, generator::SOLAR_SOUND, generator::SOLAR_SOUND_TICKS, produced > 0);
+
+        let e = &mut *event.entity;
+        write_int(&mut e.nbt, ENERGY, stored);
+        let data = generator::solar_menu_data(stored, produced, seeing > 4, f, peak);
+        if e.data.as_slice() != data.as_slice() {
+            e.data = data.to_vec();
+        }
+    }
+
+    /// One Wind Generator tick: the output rises with the height of its top
+    /// (four blocks up), which must see the sky.
+    fn wind_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+        let pos = event.pos;
+        let storage = generator::WIND_STORAGE;
+        let mut stored = read_energy(&event.entity.nbt, ENERGY).clamp(0, storage);
+        let dimension = host.dimension().to_owned();
+        let top = [pos[0], pos[1] + 4, pos[2]];
+        let sees_sky = host.light([top[0], top[1] + 1, top[2]]).1 >= 15;
+        let multiplier = generator::wind_multiplier(top[1], sees_sky, &dimension);
+        let produced = generator::wind_generation(multiplier).min(storage - stored);
+        stored += produced;
+        let f = facing(host, pos);
+        stored -= give(host, pos, f, stored, stored);
+        stored -= give(host, pos, cube::DOWN, stored, stored);
+        let active = multiplier > 0.0;
+        self.hum_as(host, top, generator::WIND_SOUND, generator::WIND_SOUND_TICKS, active, SOUND_WEATHER);
+
+        let e = &mut *event.entity;
+        write_int(&mut e.nbt, ENERGY, stored);
+        if read_energy(&e.nbt, WIND_ACTIVE) != active as i32 {
+            write_int(&mut e.nbt, WIND_ACTIVE, active as i32);
+            host.block_entity_sync(pos);
+        }
+        let data = generator::solar_menu_data(stored, produced, active, f, multiplier as f32);
+        if e.data.as_slice() != data.as_slice() {
+            e.data = data.to_vec();
+        }
+    }
+
     fn solar_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
         let pos = event.pos;
         let mut stored = read_energy(&event.entity.nbt, ENERGY).clamp(0, generator::SOLAR_STORAGE);
@@ -705,7 +778,64 @@ fn read_double(nbt: &Compound, name: &'static str) -> Option<f64> {
 }
 
 fn is_generator(block: &str) -> bool {
-    block == generator::HEAT || block == generator::SOLAR || block == generator::BIO
+    block == generator::HEAT || block == generator::SOLAR || block == generator::BIO || generator::is_multiblock(block)
+}
+
+/// Generators drawn on the solar screen: Solar, Advanced Solar and Wind.
+fn uses_solar_screen(block: &str) -> bool {
+    block == generator::SOLAR || generator::is_multiblock(block)
+}
+
+fn add(pos: [i32; 3], o: [i32; 3]) -> [i32; 3] {
+    [pos[0] + o[0], pos[1] + o[1], pos[2] + o[2]]
+}
+
+fn is_air(host: &dyn Host, pos: [i32; 3]) -> bool {
+    let b = host.block(pos);
+    b == "minecraft:air" || b == "minecraft:cave_air" || b == "minecraft:void_air"
+}
+
+/// Sets `palette` at `parts` (only where `only` passes), straight into the chunks.
+fn edit(host: &mut dyn Host, parts: &[[i32; 3]], palette: &str, only: Option<&str>) {
+    let edit = NativeBlockEdit {
+        palette: vec![palette.to_owned()],
+        filters: only.map(|f| vec![f.to_owned()]).unwrap_or_default(),
+        runs: parts
+            .iter()
+            .map(|p| NativeBlockRun { x: p[0], z: p[2], y: p[1], height: 1, surface: None, block: 0, only: only.map(|_| 0) })
+            .collect(),
+    };
+    let dimension = host.dimension().to_owned();
+    let _ = host.edit_blocks(&dimension, &edit);
+}
+
+/// Mekanism's `HandleBoundingBlock`: the rest of a multiblock's shape is
+/// bounding blocks. A placement without room for them is undone and the main
+/// block drops as an item, as close as Horizon gets to vanilla's refused placement.
+fn place_multiblock(host: &mut dyn Host, pos: [i32; 3], block: &str) {
+    let parts: Vec<[i32; 3]> = generator::bounding_offsets(block).into_iter().map(|o| add(pos, o)).collect();
+    if !parts.iter().all(|&p| is_air(host, p)) {
+        host.destroy_block(pos, None, false);
+        return;
+    }
+    edit(host, &parts, generator::BOUNDING, None);
+}
+
+/// Removes a multiblock's bounding blocks (only bounding blocks, leaving `except`).
+fn remove_bounding(host: &mut dyn Host, main: [i32; 3], block: &str, except: Option<[i32; 3]>) {
+    let parts: Vec<[i32; 3]> = generator::bounding_offsets(block)
+        .into_iter()
+        .map(|o| add(main, o))
+        .filter(|&p| Some(p) != except)
+        .collect();
+    edit(host, &parts, "minecraft:air", Some(generator::BOUNDING));
+}
+
+/// The main block a bounding block at `pos` belongs to.
+fn bounding_main(host: &dyn Host, pos: [i32; 3]) -> Option<(&'static str, [i32; 3])> {
+    generator::main_candidates(pos)
+        .into_iter()
+        .find(|&(block, main)| host.mod_block_entity(main).is_some_and(|e| &*e.id == block))
 }
 
 /// Machines and generators face the placer horizontally (Mekanism's `AttributeStateFacing`).
@@ -723,6 +853,49 @@ fn energy_bar(host: &dyn Host, batch: &mut horizon_client::mod_api::HudBatch, or
 /// energy bar right; the temperature under the fuel slot.
 /// The Bio Generator's screen, in Mekanism's layout: fuel bar at the left
 /// edge, fuel slot, energy bar right.
+/// Turn of a facing about y, counterclockwise from above (the blockstate's `y` is clockwise).
+fn facing_degrees(dir: usize) -> f32 {
+    match dir {
+        cube::SOUTH => 180.0,
+        cube::WEST => 90.0,
+        cube::EAST => -90.0,
+        _ => 0.0,
+    }
+}
+
+/// `v` turned `degrees` counterclockwise about y (seen from above) through the block's centre.
+fn turn_y(v: [f32; 3], degrees: f32, about: f32) -> [f32; 3] {
+    let (sin, cos) = degrees.to_radians().sin_cos();
+    let (x, z) = (v[0] - about, v[2] - about);
+    [about + x * cos + z * sin, v[1], about - x * sin + z * cos]
+}
+
+/// The Wind Generator's tower and blades, turned to its facing; the blades
+/// spin about the hub while it runs. Kept until the block entity changes.
+fn draw_wind(host: &dyn Host, pos: [i32; 3], active: bool, draw: &mut BlockEntityDraw) {
+    let turn = facing_degrees(facing(host, pos));
+    let speed = if active { generator::wind_rotor_speed(pos[1], host.dimension()) } else { 0.0 };
+    // `spin` takes the axis and pivot in the block's own coordinates, whatever the pose.
+    let axis = turn_y([0.0, 0.0, 1.0], turn, 0.0);
+    let hub = turn_y(generator::WIND_HUB, turn, 0.5);
+    draw.push();
+    draw.rotate_about([0.0, 1.0, 0.0], turn, [0.5, 0.0, 0.5]);
+    for blades in [false, true] {
+        if blades {
+            draw.spin(axis, hub, speed, 0.0);
+        }
+        for (model, moved, _) in generator::WIND_PARTS.iter().filter(|p| p.2 == blades) {
+            draw.push();
+            draw.translate([-moved[0], -moved[1], -moved[2]]);
+            host.draw_model(draw, model, 0xFFFFFF);
+            draw.pop();
+        }
+    }
+    draw.still();
+    draw.pop();
+    draw.keep();
+}
+
 fn draw_bio(host: &dyn Host, event: &mut ScreenDrawEvent) {
     let [x, y] = event.origin;
     let d = |i: usize| event.data.get(i).copied().unwrap_or(0);
@@ -759,13 +932,14 @@ fn draw_solar(host: &dyn Host, event: &mut ScreenDrawEvent) {
     let [x, y] = event.origin;
     let d = |i: usize| event.data.get(i).copied().unwrap_or(0);
     let title = host.screen_title().unwrap_or_else(|| "Solar Generator".to_owned());
+    let storage = generator::panel_storage(event.block);
     host.text(event.batch, &title, [x + 8.0, y + 6.0], 0x404040, false);
     let [sx, sy, sw, sh] = generator::SOLAR_SCREEN;
     host.fill(event.batch, [x + sx, y + sy, sw, sh], 0xFF1C2620);
     let energy = d(generator::SOLAR_DATA_ENERGY);
     host.text(
         event.batch,
-        &format!("{} / {} FE", cube::si(energy as i64), cube::si(generator::SOLAR_STORAGE as i64)),
+        &format!("{} / {} FE", cube::si(energy as i64), cube::si(storage as i64)),
         [x + sx + 4.0, y + sy + 6.0],
         0x3CFE9A,
         false,
@@ -781,7 +955,7 @@ fn draw_solar(host: &dyn Host, event: &mut ScreenDrawEvent) {
     let sun = if d(generator::SOLAR_DATA_SEES_SUN) != 0 { 0xFFFFD34D } else { 0xFF3A3F44 };
     host.fill(event.batch, [x + ix, y + iy, iw, ih], 0xFF262A2F);
     host.fill(event.batch, [x + ix + 2.0, y + iy + 2.0, iw - 4.0, ih - 4.0], sun);
-    energy_bar(host, event.batch, event.origin, energy, generator::SOLAR_STORAGE);
+    energy_bar(host, event.batch, event.origin, energy, storage);
     host.text(event.batch, "Inventory", [x + 8.0, y + generator::INVENTORY_Y - 10.0], 0x404040, false);
 }
 
@@ -837,14 +1011,19 @@ impl Hooks for MekanismNative {
                 menu: Some(generator::BIO_MENU.to_owned()),
             });
         }
-        if event.block == generator::SOLAR {
+        if uses_solar_screen(event.block) {
             // One hidden placeholder slot, as the cube's.
+            let menu = match event.block {
+                generator::ADVANCED_SOLAR => generator::ADVANCED_SOLAR_MENU,
+                generator::WIND => generator::WIND_MENU,
+                _ => generator::SOLAR_MENU,
+            };
             return Some(ModContainer {
                 slots: 1,
                 faces: std::array::from_fn(|_| Vec::new()),
                 inputs: Vec::new(),
                 outputs: Vec::new(),
-                menu: Some(generator::SOLAR_MENU.to_owned()),
+                menu: Some(menu.to_owned()),
             });
         }
         cube(event.block)?;
@@ -883,6 +1062,17 @@ impl Hooks for MekanismNative {
                 capacity: generator::BIO_STORAGE,
                 max_insert: 0,
                 max_extract: generator::BIO_STORAGE,
+                insert_faces: [false; 6],
+                extract_faces: [true; 6],
+            });
+        }
+        if generator::is_multiblock(event.block) {
+            // Front and bottom in Mekanism; Horizon's faces are per block type, not per facing.
+            let storage = generator::panel_storage(event.block);
+            return Some(ModEnergyBuffer {
+                capacity: storage,
+                max_insert: 0,
+                max_extract: storage,
                 insert_faces: [false; 6],
                 extract_faces: [true; 6],
             });
@@ -932,6 +1122,14 @@ impl Hooks for MekanismNative {
         }
         if event.entity.id == generator::BIO {
             self.bio_tick(host, event);
+            return;
+        }
+        if event.entity.id == generator::ADVANCED_SOLAR {
+            self.advanced_solar_tick(host, event);
+            return;
+        }
+        if event.entity.id == generator::WIND {
+            self.wind_tick(host, event);
             return;
         }
         if is_debug(&event.entity.id) {
@@ -1064,7 +1262,7 @@ impl Hooks for MekanismNative {
             draw_heat(host, event);
             return;
         }
-        if event.block == generator::SOLAR {
+        if uses_solar_screen(event.block) {
             draw_solar(host, event);
             return;
         }
@@ -1133,6 +1331,34 @@ impl Hooks for MekanismNative {
 
     /// Button presses update the actual block entity on the server, then
     /// normal ContainerData sync refreshes the screen for every player.
+    /// The Wind Generator's tower and blades, drawn by its block entity (Mekanism's `RenderWindGenerator`).
+    fn standalone_models(&self, event: &mut StandaloneModelsEvent) {
+        event.models.extend(generator::WIND_PARTS.iter().map(|(model, _, _)| (*model).to_owned()));
+    }
+
+    fn block_entity_update_tag(&self, event: &mut BlockEntityUpdateTagEvent) -> Option<Compound> {
+        if &*event.entity.id != generator::WIND {
+            return None;
+        }
+        let mut tag = Compound::default();
+        write_int(&mut tag, WIND_ACTIVE, read_energy(&event.entity.nbt, WIND_ACTIVE));
+        Some(tag)
+    }
+
+    fn block_entity_submit(&self, host: &dyn Host, event: &mut BlockEntitySubmitEvent) {
+        if event.block == generator::WIND {
+            let active = read_energy(&event.entity.nbt, WIND_ACTIVE) != 0;
+            draw_wind(host, event.pos, active, event.draw);
+        }
+    }
+
+    fn block_entity_render_bounding_box(&self, _host: &dyn Host, event: &mut BlockEntityRenderBoundingBoxEvent) {
+        if event.block == generator::WIND {
+            // The blades reach about four blocks round the hub, four and a half up.
+            *event.bounds = [-4.5, 0.0, -4.5, 5.5, 9.0, 5.5];
+        }
+    }
+
     fn screen_tooltip(&self, _host: &dyn Host, event: &mut ScreenTooltipEvent) {
         if event.block == infuser::BLOCK {
             event.lines.extend(infuser::tooltip(event.data, event.at));
@@ -1140,8 +1366,8 @@ impl Hooks for MekanismNative {
             event.lines.extend(machine::tooltip(m, event.data, event.at));
         } else if event.block == generator::HEAT {
             event.lines.extend(generator::heat_tooltip(event.data, event.at));
-        } else if event.block == generator::SOLAR {
-            event.lines.extend(generator::solar_tooltip(event.data, event.at));
+        } else if uses_solar_screen(event.block) {
+            event.lines.extend(generator::solar_tooltip(event.block, event.data, event.at));
         } else if event.block == generator::BIO {
             event.lines.extend(generator::bio_tooltip(event.data, event.at));
         }
@@ -1171,6 +1397,19 @@ impl Hooks for MekanismNative {
     /// Remember what a cube holds before a player breaks it, for its drop.
     fn destroy_block(&self, host: &mut dyn Host, event: &mut DestroyBlockEvent) -> Flow {
         self.hums.lock().unwrap().remove(&(host.dimension().to_owned(), event.pos));
+        // Breaking a multiblock takes its bounding blocks with it; breaking a
+        // bounding block breaks the main block, which drops (Mekanism's BlockBounding).
+        if let Some(entity) = host.mod_block_entity(event.pos) {
+            if generator::is_multiblock(&entity.id) {
+                let block: &'static str = if &*entity.id == generator::WIND { generator::WIND } else { generator::ADVANCED_SOLAR };
+                remove_bounding(host, event.pos, block, None);
+            }
+        } else if host.block(event.pos) == generator::BOUNDING {
+            if let Some((block, main)) = bounding_main(host, event.pos) {
+                remove_bounding(host, main, block, Some(event.pos));
+                host.destroy_block(main, None, false);
+            }
+        }
         if let Some(entity) = host.mod_block_entity(event.pos) {
             if cube(&entity.id).is_some() {
                 let sides = read_sides(&entity.nbt).unwrap_or(cube::DEFAULT_SIDES);
@@ -1216,6 +1455,10 @@ impl Hooks for MekanismNative {
 
     /// Placing a cube item restores the energy and side config it carries.
     fn place_block(&self, host: &mut dyn Host, event: &mut PlaceBlockEvent) {
+        if generator::is_multiblock(&event.stack.item) {
+            place_multiblock(host, event.pos, &event.stack.item);
+            return;
+        }
         let Some((capacity, _)) = cube(&event.stack.item) else { return };
         let dimension = host.dimension().to_owned();
         self.broken.lock().unwrap().remove(&(dimension, event.pos));

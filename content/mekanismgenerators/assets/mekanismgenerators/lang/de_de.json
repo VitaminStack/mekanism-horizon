@@ -1,9 +1,12 @@
 {
+  "block.mekanismgenerators.advanced_solar_generator": "Erweiterter Solargenerator",
   "block.mekanismgenerators.bio_generator": "Biogenerator",
   "block.mekanismgenerators.heat_generator": "Wärmegenerator",
   "block.mekanismgenerators.solar_generator": "Solargenerator",
+  "block.mekanismgenerators.wind_generator": "Windgenerator",
   "item.mekanismgenerators.solar_panel": "Solarmodul",
   "sound_event.mekanismgenerators.tile.generator.bio": "Bio Generator summt",
   "sound_event.mekanismgenerators.tile.generator.heat": "Wärmegenerator summt",
-  "sound_event.mekanismgenerators.tile.generator.solar": "Solar Generator summt"
+  "sound_event.mekanismgenerators.tile.generator.solar": "Solar Generator summt",
+  "sound_event.mekanismgenerators.tile.generator.wind": "Windgenerator rauscht"
 }

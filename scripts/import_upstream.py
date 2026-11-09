@@ -50,7 +50,8 @@ INFUSE_TYPES = {f'{NS}:{t}' for t in ('carbon', 'redstone', 'diamond', 'refined_
 # Sound events whose block plays them (native/mekanism_native loops them while running).
 SOUNDS = {
     NS: ['tile.machine.metallurgic_infuser', 'tile.machine.enrichment_chamber', 'tile.machine.crusher'],
-    'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar', 'tile.generator.bio'],
+    'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar', 'tile.generator.bio',
+                           'tile.generator.wind'],
 }
 
 

@@ -3,6 +3,8 @@
   "values": [
     "mekanismgenerators:heat_generator",
     "mekanismgenerators:solar_generator",
-    "mekanismgenerators:bio_generator"
+    "mekanismgenerators:bio_generator",
+    "mekanismgenerators:advanced_solar_generator",
+    "mekanismgenerators:wind_generator"
   ]
 }

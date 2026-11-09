@@ -20,6 +20,7 @@
     "mekanism:block_refined_obsidian",
     "mekanism:block_refined_glowstone",
     "mekanism:steel_casing",
-    "mekanism:block_bio_fuel"
+    "mekanism:block_bio_fuel",
+    "mekanism:bounding_block"
   ]
 }

@@ -19,5 +19,14 @@
       }
     ],
     "subtitle": "sound_event.mekanismgenerators.tile.generator.solar"
+  },
+  "tile.generator.wind": {
+    "sounds": [
+      {
+        "attenuation_distance": 8,
+        "name": "mekanismgenerators:generator/wind"
+      }
+    ],
+    "subtitle": "sound_event.mekanismgenerators.tile.generator.wind"
   }
 }
