@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "chemical_input": {
+    "amount": 40,
+    "ingredient": "mekanism:refined_obsidian"
+  },
+  "experience": 0.4,
+  "item_input": {
+    "count": 1,
+    "ingredient": "#mekanism:alloys/reinforced"
+  },
+  "output": {
+    "id": "mekanism:alloy_atomic"
+  },
+  "per_tick_usage": false
+}

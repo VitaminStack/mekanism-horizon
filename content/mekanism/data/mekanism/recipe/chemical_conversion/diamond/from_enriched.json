@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:chemical_conversion",
+  "group": "mekanism:diamond",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:enriched/diamond"
+  },
+  "output": {
+    "amount": 80,
+    "id": "mekanism:diamond"
+  }
+}

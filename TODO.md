@@ -60,9 +60,9 @@
 - [x] Osmium-, Tin/Zinn-, Uranium-/Uran- und Fluorite-/Fluorit-Erze inklusive Deepslate-Varianten. *(Plus Blei und Salz.)*
 - [x] Weltgenerierung, Erzverteilung, Drops und Mining-Level (nur neue Chunks) testen. *(Werte aus Original-`OreType`/`WorldConfig`. Kein Glück/Behutsamkeit: Horizon-Loot kennt `apply_bonus`/`match_tool` nicht.)*
 - [x] Ingots, Nuggets, Dusts, Raw Materials, Storage Blocks (z.B. Bronze, Steel, Refined Glowstone, Refined Obsidian).
-- [ ] Steel Casing, Control Circuits (Basic/Advanced/Elite/Ultimate), Alloys und Enriched Materials. *(Registriert; die meisten Rezepte brauchen den Metallurgic Infuser (M05).)*
-- [ ] Crafting-, Smelting-, Blasting- und Resource-Tags nach Original-Rezepten. *(97 Vanilla-Rezepte + Tags importiert; Maschinenrezepte folgen mit ihren Maschinen.)*
-- [ ] Survival-Test: alle Materialien für erste Maschinen ohne Cheat erhältlich. *(Blockiert: Stahl, Circuits und Alloys brauchen Metallurgic Infuser (M05).)*
+- [ ] Steel Casing, Control Circuits (Basic/Advanced/Elite/Ultimate), Alloys und Enriched Materials. *(Registriert. Infusing-Rezepte laufen über den Metallurgic Infuser (Grundstufe aus M05; ingame getestet 09.11.2026: Carbon, Enriched Iron, Steel Dust, Steel Casing, Dump, Tooltips). Elite/Ultimate Circuits und Reinforced/Atomic Alloy brauchen Diamant-/Obsidian-Staub oder Enriched Materials: erst mit Crusher/Enrichment Chamber (M05) ohne Cheat.)*
+- [ ] Crafting-, Smelting-, Blasting- und Resource-Tags nach Original-Rezepten. *(Vanilla-Rezepte + Tags importiert, dazu `metallurgic_infusing` und Infuse-`chemical_conversion`. Fehlende NeoForge-`c:`-Tags für Vanilla-Items in `gen_resources.py` (`CONVENTION_TAGS`). Weitere Maschinenrezepte folgen mit ihren Maschinen.)*
+- [ ] Survival-Test: alle Materialien für erste Maschinen ohne Cheat erhältlich. *(Weg: Infuser craften, Kohle zu Carbon, Eisen zu Enriched Iron, dann Steel Dust, Steel Ingot (Ofen), Steel Casing; Osmium + Redstone zu Basic Circuit. Energie bisher nur aus Creative-/geladenem Cube: Generatoren erst M04.)*
 
 ## M03 - Energie- und Maschinen-Fundament [P0/P1]
 

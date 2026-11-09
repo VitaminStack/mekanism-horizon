@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "category": "building",
+  "chemical_input": {
+    "amount": 10,
+    "ingredient": "mekanism:bio"
+  },
+  "experience": 0.1,
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:sands"
+  },
+  "output": {
+    "id": "minecraft:dirt"
+  },
+  "per_tick_usage": false
+}

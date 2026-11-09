@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:chemical_conversion",
+  "group": "mekanism:redstone",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:enriched/redstone"
+  },
+  "output": {
+    "amount": 80,
+    "id": "mekanism:redstone"
+  }
+}

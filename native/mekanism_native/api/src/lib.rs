@@ -26,7 +26,15 @@
 //! a trait mod has no energy helper for other mods' blocks, so ejection reaches
 //! only Mekanism cubes.
 
+//!
+//! Metallurgic Infuser (`infuser.rs`; M05 groundwork, needed for M02's steel,
+//! circuits and alloys): the same block-entity, container, menu, screen and
+//! energy hooks, plus `recipes_of_type`/`recipe_ingredient`/`recipe_result`
+//! (API 36) for Mekanism's own `metallurgic_infusing` and `chemical_conversion`
+//! recipe files, shipped by the content mod.
+
 mod cube;
+mod infuser;
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
@@ -34,10 +42,10 @@ use std::sync::Mutex;
 use cube::{Mode, Sides};
 use horizon_client::mod_api::{
     BlockEntityContainerEvent, BlockEntityEnergyEvent, BlockEntityEvent, BlockEntityTickEvent,
-    BlockEntityTicksEvent, Compound, DestroyBlockEvent, Flow, Hooks, Host, ItemEnergyBuffer,
-    ItemEnergyBufferEvent, LevelHost, LootDropsEvent, MenuButtonEvent, ModContainer,
-    ModEnergyBuffer, NativeScreen, PlaceBlockEvent, ScreenClickEvent, ScreenDrawEvent,
-    ScreenEvent, StateForPlacementEvent, Tag, Text, TooltipEvent,
+    BlockEntityTicksEvent, Compound, DestroyBlockEvent, Flow, Hooks, Host, Ingredient,
+    ItemEnergyBuffer, ItemEnergyBufferEvent, ItemStack, LevelHost, LootDropsEvent, MenuButtonEvent,
+    ModContainer, ModEnergyBuffer, NativeScreen, PlaceBlockEvent, ScreenClickEvent,
+    ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StateForPlacementEvent, Tag, Text, TooltipEvent,
 };
 
 /// (block id, capacity, max insert/extract per call) from Mekanism's `EnergyCubeTier`.
@@ -132,15 +140,209 @@ fn update_ports(host: &mut dyn Host, pos: [i32; 3], sides: &Sides) {
     }
 }
 
+/// Block entity NBT of the infuser (besides Horizon's `energy`).
+const PROGRESS: &str = "mekanism_progress";
+/// `infuser::TYPES` index + 1; 0 while the buffer is empty.
+const INFUSE_TYPE: &str = "mekanism_infuse_type";
+const INFUSE: &str = "mekanism_infuse";
+
+/// A `mekanism:metallurgic_infusing` recipe: `item_input`, `chemical_input`, `output`.
+struct Infusing {
+    input: Ingredient,
+    count: u32,
+    kind: usize,
+    amount: i32,
+    output: ItemStack,
+}
+
+/// A `mekanism:chemical_conversion` recipe into an infuse type (one item).
+struct Conversion {
+    input: Ingredient,
+    kind: usize,
+    amount: i32,
+}
+
+/// Parsed recipes, kept while the server's recipe table is the same one
+/// (its slices' addresses and lengths); `/reload` gives new ones.
+#[derive(Default)]
+struct InfuserRecipes {
+    key: [usize; 4],
+    infusing: Vec<Infusing>,
+    conversion: Vec<Conversion>,
+}
+
+impl InfuserRecipes {
+    fn refresh(&mut self, host: &dyn Host) {
+        let infusing = host.recipes_of_type(infuser::INFUSING);
+        let conversion = host.recipes_of_type(infuser::CONVERSION);
+        let key = [infusing.as_ptr() as usize, infusing.len(), conversion.as_ptr() as usize, conversion.len()];
+        if key == self.key {
+            return;
+        }
+        self.key = key;
+        self.infusing = infusing
+            .iter()
+            .filter_map(|r| {
+                let j = &r.json;
+                let chem = &j["chemical_input"];
+                Some(Infusing {
+                    input: host.recipe_ingredient(&j["item_input"]["ingredient"])?,
+                    count: j["item_input"]["count"].as_u64().unwrap_or(1) as u32,
+                    kind: infuser::type_index(chem["ingredient"].as_str()?)?,
+                    amount: chem["amount"].as_i64()? as i32,
+                    output: host.recipe_result(&j["output"])?,
+                })
+            })
+            .collect();
+        self.conversion = conversion
+            .iter()
+            .filter_map(|r| {
+                let j = &r.json;
+                Some(Conversion {
+                    input: host.recipe_ingredient(&j["input"]["ingredient"])?,
+                    kind: infuser::type_index(j["output"]["id"].as_str()?)?,
+                    amount: j["output"]["amount"].as_i64()? as i32,
+                })
+            })
+            .collect();
+    }
+}
+
+fn read_tank(nbt: &Compound) -> infuser::Tank {
+    let kind = read_energy(nbt, INFUSE_TYPE);
+    let amount = read_energy(nbt, INFUSE).clamp(0, infuser::MAX_INFUSE);
+    if kind < 1 || kind as usize > infuser::TYPES.len() || amount == 0 {
+        return infuser::Tank::default();
+    }
+    infuser::Tank { kind: kind as usize - 1, amount }
+}
+
+/// `count` fewer of the stack; none when that empties it.
+fn shrink(stack: &ItemStack, count: u32) -> Option<ItemStack> {
+    (stack.count > count).then(|| ItemStack { count: stack.count - count, ..stack.clone() })
+}
+
+/// The output slot with `out` added, if it all fits (same item and components).
+fn merged(host: &dyn Host, slot: Option<&ItemStack>, out: &ItemStack) -> Option<ItemStack> {
+    let Some(have) = slot else { return Some(out.clone()) };
+    let max = host.max_stack_size(&out.item).unwrap_or(64);
+    (have.item == out.item && have.extra == out.extra && have.count + out.count <= max)
+        .then(|| ItemStack { count: have.count + out.count, ..have.clone() })
+}
+
+/// A vertical gauge filling from the bottom.
+fn gauge(host: &dyn Host, batch: &mut horizon_client::mod_api::HudBatch, rect: [f32; 4], fill: f32, argb: u32) {
+    let [x, y, w, h] = rect;
+    host.fill(batch, rect, 0xFF242A2F);
+    let inner = (h - 2.0) * fill.clamp(0.0, 1.0);
+    if inner > 0.0 {
+        host.fill(batch, [x + 1.0, y + h - 1.0 - inner, w - 2.0, inner], argb);
+    }
+}
+
+/// The infuser's screen, in Mekanism's layout: infuse gauge left of the
+/// infusion slot, progress bar between input and output, energy gauge right.
+fn draw_infuser(host: &dyn Host, event: &mut ScreenDrawEvent) {
+    let [x, y] = event.origin;
+    let d = |i: usize| event.data.get(i).copied().unwrap_or(0);
+    let (energy, progress, infuse, kind) =
+        (d(infuser::DATA_ENERGY), d(infuser::DATA_PROGRESS), d(infuser::DATA_INFUSE), d(infuser::DATA_TYPE));
+    let title = host.screen_title().unwrap_or_else(|| "Metallurgic Infuser".to_owned());
+    host.text(event.batch, &title, [x + 8.0, y + 6.0], 0x404040, false);
+
+    // Type name and amounts are in the gauges' tooltips (`infuser::tooltip`).
+    let color = kind.checked_sub(1).and_then(|k| infuser::TYPES.get(k as usize)).map_or(0, |t| t.2);
+    let at = |[rx, ry, w, h]: [f32; 4]| [x + rx, y + ry, w, h];
+    gauge(host, event.batch, at(infuser::INFUSE_GAUGE), infuse as f32 / infuser::MAX_INFUSE as f32, color);
+    gauge(host, event.batch, at(infuser::ENERGY_GAUGE), energy as f32 / infuser::CAPACITY as f32, 0xFF50C878);
+
+    let [px, py, pw, ph] = at(infuser::PROGRESS_BAR);
+    host.fill(event.batch, [px, py, pw, ph], 0xFF242A2F);
+    let done = progress as f32 / infuser::TICKS as f32;
+    if done > 0.0 {
+        host.fill(event.batch, [px + 1.0, py + 1.0, (pw - 2.0) * done, ph - 2.0], 0xFF3FA9F5);
+    }
+    let [bx, by, bw, bh] = at(infuser::DUMP_BUTTON);
+    host.fill(event.batch, [bx, by, bw, bh], 0xFF262A2F);
+    host.fill(event.batch, [bx + 1.0, by + 1.0, bw - 2.0, bh - 2.0], 0xFFAF4141);
+    host.text(event.batch, "x", [bx + 6.0, by + 2.0], 0xFFFFFF, true);
+    host.text(event.batch, &format!("{energy} FE"), [x + 128.0, y + 6.0], 0x404040, false);
+    host.text(event.batch, "Inventory", [x + 8.0, y + infuser::INVENTORY_Y - 10.0], 0x404040, false);
+}
+
 /// Each cube's energy and sides are synchronised by its block-entity menu data.
 /// Unlike `open_menu`, the block menu works for local and remote players.
 #[derive(Default)]
 struct MekanismNative {
     /// Energy and sides of cubes a player is breaking, for their drop.
     broken: Mutex<HashMap<(String, [i32; 3]), (i32, Sides)>>,
+    recipes: Mutex<InfuserRecipes>,
 }
 
 impl MekanismNative {
+    /// One infuser tick: fill the infuse buffer from the infusion slot, then run
+    /// the recipe that the input slot and buffer satisfy, as Mekanism's
+    /// `TileEntityMetallurgicInfuser`: the chemical and input are used when the
+    /// operation completes; progress restarts when no recipe fits.
+    fn infuser_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+        let pos = event.pos;
+        let entity = &*event.entity;
+        let mut items: Vec<Option<ItemStack>> = entity.items.clone();
+        items.resize(infuser::SLOTS, None);
+        let mut energy = read_energy(&entity.nbt, ENERGY).clamp(0, infuser::CAPACITY);
+        let mut progress = read_energy(&entity.nbt, PROGRESS).clamp(0, infuser::TICKS);
+        let mut tank = read_tank(&entity.nbt);
+
+        let mut recipes = self.recipes.lock().unwrap();
+        recipes.refresh(host);
+
+        if let Some(stack) = &items[infuser::SLOT_INFUSION] {
+            if let Some(c) = recipes.conversion.iter().find(|c| c.input.test(stack)) {
+                if tank.fits(c.kind, c.amount) {
+                    tank.add(c.kind, c.amount);
+                    items[infuser::SLOT_INFUSION] = shrink(stack, 1);
+                }
+            }
+        }
+
+        let ready = items[infuser::SLOT_INPUT].as_ref().and_then(|input| {
+            recipes
+                .infusing
+                .iter()
+                .find(|r| r.input.test(input) && input.count >= r.count && tank.has(r.kind, r.amount))
+                .and_then(|r| merged(host, items[infuser::SLOT_OUTPUT].as_ref(), &r.output).map(|out| (r, out)))
+        });
+        let mut active = false;
+        match ready {
+            Some((r, out)) => {
+                active = energy >= infuser::USAGE;
+                if infuser::step(&mut energy, &mut progress) {
+                    tank.take(r.amount);
+                    let input = items[infuser::SLOT_INPUT].as_ref().expect("recipe matched an input");
+                    items[infuser::SLOT_INPUT] = shrink(input, r.count);
+                    items[infuser::SLOT_OUTPUT] = Some(out);
+                }
+            }
+            None => progress = 0,
+        }
+        drop(recipes);
+
+        // Write only what changed: each write marks the entity changed.
+        let facing = facing(host, pos);
+        let e = &mut *event.entity;
+        if e.items != items {
+            e.items = items;
+        }
+        write_int(&mut e.nbt, ENERGY, energy);
+        write_int(&mut e.nbt, PROGRESS, progress);
+        write_int(&mut e.nbt, INFUSE, tank.amount);
+        write_int(&mut e.nbt, INFUSE_TYPE, if tank.amount > 0 { tank.kind as i32 + 1 } else { 0 });
+        let data = infuser::menu_data(energy, progress, tank, facing, active);
+        if e.data.as_slice() != data.as_slice() {
+            e.data = data.to_vec();
+        }
+    }
+
     /// Push energy out of the cube's output sides into neighbouring cubes whose
     /// side facing it takes input; at most the cube's transfer rate per tick.
     /// Each move adds to the neighbour what it takes from this cube: none is lost.
@@ -158,6 +360,15 @@ impl MekanismNative {
             let mut moved = 0;
             let give = (budget, *stored);
             host.change_mod_block_entity(at, &mut |m| {
+                if m.id == infuser::BLOCK {
+                    // Machines take energy on every side (no side config ported).
+                    let theirs = read_energy(&m.nbt, ENERGY);
+                    moved = cube::transfer(give.0, give.1, theirs, infuser::CAPACITY, infuser::CAPACITY);
+                    if moved > 0 {
+                        write_int(&mut m.nbt, ENERGY, theirs + moved);
+                    }
+                    return;
+                }
                 let Some((capacity, their_rate)) = cube(&m.id) else { return };
                 let their_side = cube::relative(cube::opposite(dir), their_facing);
                 let their_sides = read_sides(&m.nbt).unwrap_or(cube::DEFAULT_SIDES);
@@ -180,13 +391,25 @@ impl MekanismNative {
 
 impl Hooks for MekanismNative {
     fn block_entity(&self, _host: &mut dyn Host, event: &mut BlockEntityEvent) -> Option<(String, Compound)> {
-        (cube(event.block).is_some() || is_debug(event.block))
+        (cube(event.block).is_some() || is_debug(event.block) || event.block == infuser::BLOCK)
             .then(|| (event.block.to_owned(), Compound::new()))
     }
 
     /// The block's own menu, not the LAN-only `Host::open_menu` helper.
     /// The one placeholder slot is hidden; all interactions are buttons.
     fn block_entity_container(&self, _host: &dyn Host, event: &mut BlockEntityContainerEvent) -> Option<ModContainer> {
+        if event.block == infuser::BLOCK {
+            // Hoppers as on a furnace: top into the input, sides into the infusion
+            // slot, bottom takes the output (Mekanism's side config is not ported).
+            let side = vec![infuser::SLOT_INFUSION];
+            return Some(ModContainer {
+                slots: infuser::SLOTS,
+                faces: [vec![infuser::SLOT_OUTPUT], vec![infuser::SLOT_INPUT], side.clone(), side.clone(), side.clone(), side],
+                inputs: vec![infuser::SLOT_INFUSION, infuser::SLOT_INPUT],
+                outputs: vec![infuser::SLOT_OUTPUT],
+                menu: Some(infuser::MENU.to_owned()),
+            });
+        }
         cube(event.block)?;
         Some(ModContainer {
             slots: 1,
@@ -198,6 +421,15 @@ impl Hooks for MekanismNative {
     }
 
     fn block_entity_energy(&self, _host: &dyn Host, event: &mut BlockEntityEnergyEvent) -> Option<ModEnergyBuffer> {
+        if event.block == infuser::BLOCK {
+            return Some(ModEnergyBuffer {
+                capacity: infuser::CAPACITY,
+                max_insert: infuser::CAPACITY,
+                max_extract: 0,
+                insert_faces: [true; 6],
+                extract_faces: [false; 6],
+            });
+        }
         cube(event.block).map(|(capacity, rate)| ModEnergyBuffer {
             capacity,
             max_insert: rate,
@@ -208,12 +440,16 @@ impl Hooks for MekanismNative {
     }
 
     fn block_entity_ticks(&self, _host: &dyn Host, event: &mut BlockEntityTicksEvent) {
-        if cube(event.block).is_some() || is_debug(event.block) {
+        if cube(event.block).is_some() || is_debug(event.block) || event.block == infuser::BLOCK {
             event.ticks = true;
         }
     }
 
     fn block_entity_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+        if event.entity.id == infuser::BLOCK {
+            self.infuser_tick(host, event);
+            return;
+        }
         if is_debug(&event.entity.id) {
             let source = event.entity.id == DEBUG_SOURCE;
             let pos = event.pos;
@@ -264,9 +500,13 @@ impl Hooks for MekanismNative {
     }
 
     /// Mekanism turns the cube's front toward its placer.
+    /// Machines face the placer horizontally (Mekanism's `AttributeStateFacing`).
     fn state_for_placement(&self, level: &dyn LevelHost, event: &mut StateForPlacementEvent) -> Option<Option<horizon_client::mod_api::BlockStateId>> {
-        cube(&event.context.item)?;
-        let facing = cube::facing_from_look(event.context.yaw, event.context.pitch);
+        let pitch = if event.context.item == infuser::BLOCK { 0.0 } else { event.context.pitch };
+        if event.context.item != infuser::BLOCK {
+            cube(&event.context.item)?;
+        }
+        let facing = cube::facing_from_look(event.context.yaw, pitch);
         level
             .state_with_property(event.state, "facing", cube::DIR_NAMES[facing])
             .map(Some)
@@ -275,6 +515,17 @@ impl Hooks for MekanismNative {
     /// A Horizon mod screen replaces the default inventory artwork when the
     /// content menu for this block opens. Hide the dummy container slot.
     fn screen(&self, _host: &dyn Host, event: &mut ScreenEvent) -> Option<NativeScreen> {
+        if event.block == infuser::BLOCK {
+            return Some(NativeScreen {
+                width: infuser::WIDTH,
+                height: infuser::HEIGHT,
+                slots: infuser::SLOT_POS.iter().map(|&p| Some(p)).collect(),
+                inventory_y: infuser::INVENTORY_Y,
+                inventory_x: 8.0,
+                own_labels: true,
+                own_background: false,
+            });
+        }
         cube(event.block)?;
         Some(NativeScreen {
             width: 176.0,
@@ -289,6 +540,10 @@ impl Hooks for MekanismNative {
 
     /// Drawn on top of Horizon's plain panel; no item slots are used for labels.
     fn screen_draw(&self, host: &dyn Host, event: &mut ScreenDrawEvent) {
+        if event.block == infuser::BLOCK {
+            draw_infuser(host, event);
+            return;
+        }
         let Some((capacity, rate)) = cube(event.block) else { return };
         let [x, y] = event.origin;
         let stored = cube::read_amount(event.data, cube::DATA_ENERGY).clamp(0, capacity);
@@ -341,13 +596,30 @@ impl Hooks for MekanismNative {
     /// Mouse hits a side button, not an inventory slot. The click is sent
     /// via a ContainerButtonClick packet and handled in `menu_button`.
     fn screen_click(&self, _host: &dyn Host, event: &mut ScreenClickEvent) -> Option<i32> {
+        if event.block == infuser::BLOCK {
+            return infuser::inside(infuser::DUMP_BUTTON, event.at).then_some(infuser::BUTTON_DUMP);
+        }
         cube(event.block)?;
         cube::side_button_at(event.at, event.right)
     }
 
     /// Button presses update the actual block entity on the server, then
     /// normal ContainerData sync refreshes the screen for every player.
+    fn screen_tooltip(&self, _host: &dyn Host, event: &mut ScreenTooltipEvent) {
+        if event.block == infuser::BLOCK {
+            event.lines.extend(infuser::tooltip(event.data, event.at));
+        }
+    }
+
     fn menu_button(&self, host: &mut dyn Host, event: &mut MenuButtonEvent) {
+        if event.entity.id == infuser::BLOCK {
+            // Dump: the infuse buffer is emptied (voided), as Mekanism's dump button.
+            if event.id == infuser::BUTTON_DUMP {
+                write_int(&mut event.entity.nbt, INFUSE, 0);
+                write_int(&mut event.entity.nbt, INFUSE_TYPE, 0);
+            }
+            return;
+        }
         let Some((rel, forward)) = cube::side_button_action(event.id) else { return };
         if cube(&event.entity.id).is_none() { return; }
         let mut sides = read_sides(&event.entity.nbt).unwrap_or(cube::DEFAULT_SIDES);

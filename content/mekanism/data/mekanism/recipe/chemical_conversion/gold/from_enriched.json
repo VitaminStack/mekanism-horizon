@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:chemical_conversion",
+  "group": "mekanism:gold",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:enriched/gold"
+  },
+  "output": {
+    "amount": 80,
+    "id": "mekanism:gold"
+  }
+}

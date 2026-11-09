@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:chemical_conversion",
+  "group": "mekanism:tin",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:enriched/tin"
+  },
+  "output": {
+    "amount": 80,
+    "id": "mekanism:tin"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:chemical_conversion",
+  "group": "mekanism:refined_obsidian",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/refined_obsidian"
+  },
+  "output": {
+    "amount": 10,
+    "id": "mekanism:refined_obsidian"
+  }
+}

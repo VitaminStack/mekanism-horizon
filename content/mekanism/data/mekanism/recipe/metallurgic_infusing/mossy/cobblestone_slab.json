@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "category": "building",
+  "chemical_input": {
+    "amount": 10,
+    "ingredient": "mekanism:bio"
+  },
+  "experience": 0.1,
+  "group": "mekanism:mossy_cobble_addition",
+  "item_input": {
+    "count": 1,
+    "ingredient": "minecraft:cobblestone_slab"
+  },
+  "output": {
+    "id": "minecraft:mossy_cobblestone_slab"
+  },
+  "per_tick_usage": false
+}
