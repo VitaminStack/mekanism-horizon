@@ -17,6 +17,8 @@
   "block.mekanism.block_tin": "Zinnblock",
   "block.mekanism.block_uranium": "Uranblock",
   "block.mekanism.creative_energy_cube": "Kreativer Energiewürfel",
+  "block.mekanism.debug_energy_sink": "Debug-Energiesenke",
+  "block.mekanism.debug_energy_source": "Debug-Energiequelle",
   "block.mekanism.deepslate_fluorite_ore": "Tiefenschiefer-Fluoriterz",
   "block.mekanism.deepslate_lead_ore": "Tiefenschiefer-Bleierz",
   "block.mekanism.deepslate_osmium_ore": "Tiefenschiefer-Osmiumerz",

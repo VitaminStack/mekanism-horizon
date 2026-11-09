@@ -17,6 +17,8 @@ Build: `scripts/Build-Content.ps1` (Content), `scripts/Build-Native.ps1 -TrustNa
 | `energy: 123456` überlebt Speichern + Neustart | ok |
 | Energy Tablet speichert Energie | ok |
 | Tablet stapelt nicht (`max_stack_size` 1) | ausstehend |
-| Ein-/Ausgabe, Seiten, Limits, Leer/Voll (N08) | ausstehend |
+| Debug-Quelle füllt Basic Cube: 4.000/Tick, stoppt bei 4.000.000 (Agent Control) | ok |
+| Debug-Senke leert Cube: 4.000/Tick bis 0 | ok |
+| Seitenweise Ein-/Ausgabe über Horizons Energie-Pfad | ausstehend (braucht echte Quelle, M04/M05) |
 
 Screenshots: wurden im Chat geteilt, nicht im Repo abgelegt.

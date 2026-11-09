@@ -21,7 +21,7 @@
 - [x] **N05** Native-Mod mit dem Horizon Launcher bauen und mit bewusst erteilter Vertrauensfreigabe installieren; Logs prüfen. *(09.11.2026: `scripts/Build-Native.ps1 -TrustNativeCode`, Build `native-fdc87ae-8abc9345573f`, Ingame bestätigt.)*
 - [x] **N06** Beim Platzieren wird eine native Block-Entity mit Energie-Capability angelegt. *(09.11.2026 per Agent Control: alle 5 Cubes haben Block-Entity.)*
 - [x] **N07** Basic Energy Cube: 4.000.000 Kapazität, 4.000 Ein-/Ausgabe-Limit pro Aufruf (Standard aus Original-`EnergyCubeTier`; später konfigurierbar).
-- [ ] **N08** Energie mit Test-Hook/-Generator einfuegen und entnehmen; Seiten, Limits, Leer/Voll testen.
+- [x] **N08** Energie mit Test-Hook/-Generator einfuegen und entnehmen; Seiten, Limits, Leer/Voll testen. *(09.11.2026: `debug_energy_source`/`debug_energy_sink` per Agent Control: 4.000/Tick, Deckel bei 4.000.000, Entleeren bis 0. Schreiben die Cube-NBT direkt; Horizons eigener Seiten-Pfad (`insert_faces`) ungetestet.)*
 - [x] **N09** Welt speichern, Horizon beenden und wieder starten: gespeicherte Energie muss erhalten bleiben. *(09.11.2026: `energy: 123456` überlebt Speichern + Neustart.)*
 - [ ] **N10** Erfolgreichen Ingame-Test, Build-Log und Screenshots dokumentieren, committen, PR erstellen. *(Protokoll in `docs/TESTLOG.md`; offen: N08-Ergebnis, PR.)*
 
