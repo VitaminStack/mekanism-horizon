@@ -99,3 +99,21 @@ Build: Native `native-fdc87ae-482f2e77aeb3` (Branch `feat/m06-chemistry-foundati
 | Flüssigkeit im Fluid Tank sichtbar: Wasser und Lava je nach Füllstand, Füllstand folgt Änderungen, leerer Tank zeigt nichts (`native-fdc87ae-2f1bbd36b98c`) | ok |
 | Andere Flüssigkeiten: Sole als Wasser-Box in eigener Farbe, Füllstand stimmt (`native-fdc87ae-1ac2734b93a0`) | ok |
 | Flüssigkeit mit Shaderpack (Bliss) | Fehler: falsch dargestellt; ohne Shader korrekt. Liegt an Horizons Shader-Pfad für `draw_fluid_box`, nicht am Mod |
+
+## M05 Osmium Compressor, Combiner, Precision Sawmill (09.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-352025dc49dc`, Content aus Branch `feat/m05-sawmill-combiner-compressor`, Kreativwelt `TankTest`, Energie aus Creative Energy Cubes.
+
+| Test | Ergebnis |
+|---|---|
+| Compressor: Osmiumbarren im unteren Slot wird zu 200 mB Osmium; Refined-Obsidian-Staub zu Barren, 1 mB/Tick (Fortschritt 157, Osmium 43) | ok |
+| Compressor: zweiter Barren wird nachgeladen, wenn Platz ist; leerer Tank stoppt (`active=false`) | ok |
+| Compressor: Osmiumblock (1.800 mB) wird nicht in den 210-mB-Tank umgewandelt | ok |
+| Compressor-GUI: Titel, Slots, Osmium-Balken, Fortschritt, Energie (Screenshot) | ok |
+| Combiner: 8 Rohes Eisen + Bruchstein aus Tiefenschiefer zu Tiefenschiefer-Eisenerz, + Bruchstein zu Eisenerz | ok, nach Fix (fehlende `c:`-Tags) |
+| Combiner: anderes Item im Output-Slot pausiert, nach Leeren läuft es weiter | ok |
+| Sawmill: 6 Eichenstämme zu 36 Brettern + 1 Sägespäne (Chance 0,25) | ok, nach Fix (`mekanism:sawdust` registriert) |
+| Sawmill: Bett pausiert, solange Sägespäne den Zweitslot belegen; danach Bretter + 3 Wolle | ok |
+| Enrichment Chamber: Eisenerz zu 2 Eisenstaub (neuer Tag `c:ores/iron`); Infuser: Kohle + Eisenbarren zu Enriched Iron | ok |
+| Neustart: Inhalte, Osmium-Tank und Fortschritt (Combiner 182) bleiben | ok |
+| Sounds | nicht geprüft (Agent Control hört nicht) |

@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:sawing",
+  "category": "wood_type",
+  "experience": 0.1,
+  "group": "mekanism:log",
+  "input": {
+    "count": 1,
+    "ingredient": "#minecraft:mangrove_logs"
+  },
+  "main_output": {
+    "count": 6,
+    "id": "minecraft:mangrove_planks"
+  },
+  "secondary_chance": 0.25,
+  "secondary_output": {
+    "id": "mekanism:sawdust"
+  }
+}
