@@ -61,13 +61,13 @@
 - [x] Weltgenerierung, Erzverteilung, Drops und Mining-Level (nur neue Chunks) testen. *(Werte aus Original-`OreType`/`WorldConfig`. Kein Glück/Behutsamkeit: Horizon-Loot kennt `apply_bonus`/`match_tool` nicht.)*
 - [x] Ingots, Nuggets, Dusts, Raw Materials, Storage Blocks (z.B. Bronze, Steel, Refined Glowstone, Refined Obsidian).
 - [ ] Steel Casing, Control Circuits (Basic/Advanced/Elite/Ultimate), Alloys und Enriched Materials. *(Registriert. Infusing-Rezepte laufen über den Metallurgic Infuser (Grundstufe aus M05; ingame getestet 09.11.2026: Carbon, Enriched Iron, Steel Dust, Steel Casing, Dump, Tooltips). Elite/Ultimate Circuits und Reinforced/Atomic Alloy brauchen Diamant-/Obsidian-Staub oder Enriched Materials: erst mit Crusher/Enrichment Chamber (M05) ohne Cheat.)*
-- [ ] Crafting-, Smelting-, Blasting- und Resource-Tags nach Original-Rezepten. *(Vanilla-Rezepte + Tags importiert, dazu `metallurgic_infusing` und Infuse-`chemical_conversion`. Fehlende NeoForge-`c:`-Tags für Vanilla-Items in `gen_resources.py` (`CONVENTION_TAGS`). Weitere Maschinenrezepte folgen mit ihren Maschinen.)*
+- [x] Crafting-, Smelting-, Blasting- und Resource-Tags nach Original-Rezepten. *(Ingame bestätigt 09.11.2026: Steel Ingot im Ofen, Steel Casing, Infuser-Rezept. Vanilla-Rezepte + Tags importiert, dazu `metallurgic_infusing` und Infuse-`chemical_conversion`. Fehlende NeoForge-`c:`-Tags für Vanilla-Items in `gen_resources.py` (`CONVENTION_TAGS`). Weitere Maschinenrezepte folgen mit ihren Maschinen.)*
 - [ ] Survival-Test: alle Materialien für erste Maschinen ohne Cheat erhältlich. *(Weg: Infuser craften, Kohle zu Carbon, Eisen zu Enriched Iron, dann Steel Dust, Steel Ingot (Ofen), Steel Casing; Osmium + Redstone zu Basic Circuit. Energie bisher nur aus Creative-/geladenem Cube: Generatoren erst M04.)*
 
 ## M03 - Energie- und Maschinen-Fundament [P0/P1]
 
 - [ ] Joule/FE-Konvertierung, Overflow-Schutz und Einheiten in UI/API festlegen.
-- [ ] Energie in Items und Blöcken über gemeinsame Capabilities.
+- [x] Energie in Items und Blöcken über gemeinsame Capabilities. *(Horizons Energie-API: `item_energy_buffer` für Tablet und Cube-Items, `block_entity_energy` für Cubes und Infuser; ingame getestet 09.11.2026.)*
 - [x] Energy Tablet und alle Energy Cubes: Basic, Advanced, Elite, Ultimate, Creative. *(Getestet 09.11.2026. Platzhalter-Optik; Horizon zeigt keinen Item-Ladebalken; Creative auf i32::MAX begrenzt; gecraftete Cubes übernehmen keine gespeicherte Energie.)*
 - [x] Original-Tier-Werte, Transferlimits und Konfigurationen übernehmen. *(Tier-Werte aus `EnergyCubeTier`, Tablet aus `GearConfig`; nicht konfigurierbar.)*
 - [ ] Universal Cables (vier Tiers), Verbindungsgraph und Nachbar-Updates. *(Blockiert: Horizon-Native-API bietet Mods keine Energie-Helfer (`native_move_energy` ist spielintern).)*
