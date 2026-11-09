@@ -23,7 +23,7 @@
 - [x] **N07** Basic Energy Cube: 4.000.000 Kapazität, 4.000 Ein-/Ausgabe-Limit pro Aufruf (Standard aus Original-`EnergyCubeTier`; später konfigurierbar).
 - [x] **N08** Energie mit Test-Hook/-Generator einfuegen und entnehmen; Seiten, Limits, Leer/Voll testen. *(09.11.2026: `debug_energy_source`/`debug_energy_sink` per Agent Control: 4.000/Tick, Deckel bei 4.000.000, Entleeren bis 0. Schreiben die Cube-NBT direkt; Horizons eigener Seiten-Pfad (`insert_faces`) ungetestet.)*
 - [x] **N09** Welt speichern, Horizon beenden und wieder starten: gespeicherte Energie muss erhalten bleiben. *(09.11.2026: `energy: 123456` überlebt Speichern + Neustart.)*
-- [ ] **N10** Erfolgreichen Ingame-Test, Build-Log und Screenshots dokumentieren, committen, PR erstellen. *(Protokoll in `docs/TESTLOG.md`; offen: N08-Ergebnis, PR.)*
+- [x] **N10** Erfolgreichen Ingame-Test, Build-Log und Screenshots dokumentieren, committen, PR erstellen. *(09.11.2026: Protokoll in `docs/TESTLOG.md`; Screenshots nur im Chat.)*
 
 ## M00 - Funktionierende Projektbasis und Qualitaet [P0]
 
@@ -32,10 +32,10 @@
 - [x] Content-Mod per `Strg+B` in Visual Studio 2026 bauen.
 - [x] `.hmod` nach erfolgreichem Build automatisch in `horizon-mods/` kopieren.
 - [x] Osmiumbarren und Osmiumblock im Spiel getestet.
-- [ ] Lokale v0.2.0-Änderungen sicher versionieren; Remote und lokal abgleichen.
+- [x] Lokale v0.2.0-Änderungen sicher versionieren; Remote und lokal abgleichen. *(09.11.2026: Arbeitsbaum sauber, alle Branches gepusht.)*
 - [x] Horizon-Nightly, Native-Hook-API und Mekanism-Upstream-Commit pinnen.
-- [ ] Test- und Buildanleitung für Windows dokumentieren.
-- [ ] CI: Content-Validierung, Rust-Tests, JSON-Checks; Native-Build wenn reproduzierbar.
+- [x] Test- und Buildanleitung für Windows dokumentieren. *(`README-WINDOWS.md`.)*
+- [x] CI: Content-Validierung, Rust-Tests, JSON-Checks; Native-Build wenn reproduzierbar. *(`.github/workflows/ci.yml`; Native-Build nicht in CI, braucht Launcher.)*
 - [x] Lizenz und Copyright der Original-Assets/Codeuebernahmen prüfen und beilegen. *(MIT, `content/mekanism/LICENSE-MEKANISM`.)*
 
 ## M01 - Basic Energy Cube: erster wirklich funktionierender Block [P0]

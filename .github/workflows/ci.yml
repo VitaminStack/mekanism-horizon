@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # JSON syntax of all content files + structural checks of the manifest.
+      - name: Content validation
+        run: python scripts/validate_content.py
+
+      - name: Energy core tests
+        run: cargo test --manifest-path logic/energy/Cargo.toml
+
+      # Native build is not run: it needs the Horizon Launcher and its managed toolchain.

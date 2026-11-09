@@ -21,4 +21,6 @@ Build: `scripts/Build-Content.ps1` (Content), `scripts/Build-Native.ps1 -TrustNa
 | Debug-Senke leert Cube: 4.000/Tick bis 0 | ok |
 | Seitenweise Ein-/Ausgabe über Horizons Energie-Pfad | ausstehend (braucht echte Quelle, M04/M05) |
 
+Build-Log: Native-Build `native-fdc87ae-8abc9345573f` (`scripts/Build-Native.ps1 -TrustNativeCode`), Launcher-Log ohne Fehler.
+
 Screenshots: wurden im Chat geteilt, nicht im Repo abgelegt.
