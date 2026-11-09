@@ -53,11 +53,15 @@ def loot(id_, drop, count=None, explosion_proof=False):
 
 
 def block(id_, template, hardness, resistance, drop=None, count=None, requires_tool=True, extra=None,
-          explosion_proof=False):
+          explosion_proof=False, sounds=None):
     blocks.append(id_)
+    props = {'hardness': hardness, 'explosion_resistance': resistance, 'requires_tool': requires_tool}
+    if sounds:
+        # Sound type as a vanilla block id; overrides the template's (Horizon `properties.sounds`).
+        props['sounds'] = sounds
     put(f'data/{NS}/horizon/block/{id_}.json', {
         'template': template,
-        'properties': {'hardness': hardness, 'explosion_resistance': resistance, 'requires_tool': requires_tool},
+        'properties': props,
         **(extra or {}),
         'item': True,
     })
@@ -78,21 +82,25 @@ for i in MISC_ITEMS:
     item(i, 'minecraft:quartz' if i in ('fluorite_gem',) else 'minecraft:iron_ingot')
 
 # --- blocks (hardness/resistance from MekanismBlocks / BlockResource) ---
+# Sound types: Mekanism sets none on resource blocks and steel casing (vanilla default STONE), only
+# SAND on salt and DEEPSLATE on deepslate ores. Templates iron_block (METAL) and clay (GRAVEL) differ.
+STONE = 'minecraft:stone'
 for m in PRIMARY:
-    block(f'block_{m}', 'minecraft:iron_block', 5.0, 6.0)
+    block(f'block_{m}', 'minecraft:iron_block', 5.0, 6.0, sounds=STONE)
     block(f'block_raw_{m}', 'minecraft:raw_iron_block', 5.0, 6.0)
     block(f'{m}_ore', 'minecraft:iron_ore', 3.0, 3.0, f'raw_{m}')
     block(f'deepslate_{m}_ore', 'minecraft:deepslate_iron_ore', 4.5, 3.0, f'raw_{m}')
 for a in ALLOYS:
     # Refined obsidian is blast-proof in Mekanism (resistance 1200).
     block(f'block_{a}', 'minecraft:iron_block', 50.0 if a == 'refined_obsidian' else 5.0,
-          1200.0 if a == 'refined_obsidian' else 6.0)
+          1200.0 if a == 'refined_obsidian' else 6.0, sounds=STONE)
 block('block_fluorite', 'minecraft:quartz_block', 5.0, 6.0)
 block('fluorite_ore', 'minecraft:diamond_ore', 3.0, 3.0, 'fluorite_gem', (1, 4))
 block('deepslate_fluorite_ore', 'minecraft:deepslate_diamond_ore', 4.5, 3.0, 'fluorite_gem', (1, 4))
 block('block_charcoal', 'minecraft:coal_block', 5.0, 6.0)
-block('block_salt', 'minecraft:clay', 0.5, 0.5, 'salt', (4, 4), requires_tool=False)
-block('steel_casing', 'minecraft:iron_block', 3.5, 9.0)
+block('block_salt', 'minecraft:clay', 0.5, 0.5, 'salt', (4, 4), requires_tool=False,
+      sounds='minecraft:sand')
+block('steel_casing', 'minecraft:iron_block', 3.5, 9.0, sounds=STONE)
 
 # --- energy (M03): cubes are ticked/buffered by native/mekanism_native ---
 item('energy_tablet', stack=1)

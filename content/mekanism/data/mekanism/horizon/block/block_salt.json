@@ -3,7 +3,8 @@
   "properties": {
     "hardness": 0.5,
     "explosion_resistance": 0.5,
-    "requires_tool": false
+    "requires_tool": false,
+    "sounds": "minecraft:sand"
   },
   "item": true
 }

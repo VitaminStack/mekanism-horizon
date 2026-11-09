@@ -56,7 +56,7 @@
 ## M02 - Rohstoffe, Weltgenerierung und Grundrezepte [P1]
 
 - [x] Originale Registry-IDs von Items/Blöcken/Ressourcen inventarisieren. *(Ressourcen-IDs nach Mekanism 26.3 in `scripts/gen_resources.py`, Liste in `scripts/registry.json`.)*
-- [ ] Originaltexturen, Modelle, Blockstates, Sounds und Sprachen mit Lizenzhinweisen integrieren. *(Für Ressourcen per `scripts/import_upstream.py`; MIT-Lizenz in `content/mekanism/LICENSE-MEKANISM`. Sounds und Energy-Cube-Modell fehlen noch.)*
+- [ ] Originaltexturen, Modelle, Blockstates, Sounds und Sprachen mit Lizenzhinweisen integrieren. *(Für Ressourcen per `scripts/import_upstream.py`; MIT-Lizenz in `content/mekanism/LICENSE-MEKANISM`. Block-Sound-Typen wie Original (Stone, Deepslate, Salz = Sand; ingame getestet 09.11.2026). Energy-Cube-Modell per `scripts/import_energy_cube.py`. Alle 46 Mekanism-Sound-Events (`sounds.json`) gehören zu Maschinen, Items und GUI; Import folgt mit diesen Inhalten. Native Mods spielen derzeit nur Vanilla-Sound-Events.)*
 - [x] Osmium-, Tin/Zinn-, Uranium-/Uran- und Fluorite-/Fluorit-Erze inklusive Deepslate-Varianten. *(Plus Blei und Salz.)*
 - [x] Weltgenerierung, Erzverteilung, Drops und Mining-Level (nur neue Chunks) testen. *(Werte aus Original-`OreType`/`WorldConfig`. Kein Glück/Behutsamkeit: Horizon-Loot kennt `apply_bonus`/`match_tool` nicht.)*
 - [x] Ingots, Nuggets, Dusts, Raw Materials, Storage Blocks (z.B. Bronze, Steel, Refined Glowstone, Refined Obsidian).
