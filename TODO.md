@@ -7,7 +7,7 @@
 
 - **Original:** [mekanism/Mekanism, Branch `26.3`](https://github.com/mekanism/Mekanism/tree/26.3), abgeglichen mit Commit [`31bb4906`](https://github.com/mekanism/Mekanism/commit/31bb4906bc6c2ea4a2422d93cd1214df3ea7de4e).
 - **Originalversion aus `gradle.properties`:** Mekanism **10.8.0**, Minecraft **26.3**, NeoForge **26.3.0.101**, `release_type=alpha`. Dies ist eine Entwicklungsbasis, nicht automatisch eine stabile Release-Version.
-- **Horizon-Basis:** [`horizon-rust/horizon` @ `fdc87ae`](https://github.com/horizon-rust/horizon/commit/fdc87aecdbd116bf1e08adcd062fcbaea8c2e2ca) (Nightly 2026-11-08, installiert im Launcher), Native-Hooks-API noch nicht gegen diesen Commit geprüft. Pin steht in `native/mekanism_native/horizon-mixin.toml` und `api/Cargo.toml`.
+- **Horizon-Basis:** [`horizon-rust/horizon` @ `fdc87ae`](https://github.com/horizon-rust/horizon/commit/fdc87aecdbd116bf1e08adcd062fcbaea8c2e2ca) (Nightly 2026-11-08, installiert im Launcher), Native-Hooks-API 411; der Native-Mod wird gegen diesen Commit gebaut und ingame getestet. Pin steht in `native/mekanism_native/horizon-mixin.toml` und `api/Cargo.toml`.
 - **Geplanter Umfang:** Mekanism Core und danach die Original-Unterprojekte **Generators, Tools, Additions**.
 - **Status:** `[x]` bedeutet **bestätigt**. `[ ]` bedeutet offen, auch wenn schon Code/Dateien existieren. Nicht nur wegen eines erfolgreichen Builds abhaken.
 - **Jede Umsetzung:** Originalverhalten und Registry-IDs prüfen; Content (`.hmod`) und native Logik (`.hnmod`) sauber trennen; speichern/neuladen testen; Tests + Ingame-Nachweis im PR dokumentieren.
@@ -66,20 +66,20 @@
 
 ## M03 - Energie- und Maschinen-Fundament [P0/P1]
 
-- [ ] Joule/FE-Konvertierung, Overflow-Schutz und Einheiten in UI/API festlegen.
+- [x] Joule/FE-Konvertierung, Overflow-Schutz und Einheiten in UI/API festlegen. *(Entschieden 09.11.2026: 1:1 FE wie Mekanism 26.3, das keine Joule mehr hat (`docs/ENERGY-UNITS.md`). Overflow-Schutz in `energy::Acceptor::accept` mit Unit-Tests; Creative Cube auf `i32::MAX` begrenzt.)*
 - [x] Energie in Items und Blöcken über gemeinsame Capabilities. *(Horizons Energie-API: `item_energy_buffer` für Tablet und Cube-Items, `block_entity_energy` für Cubes und Infuser; ingame getestet 09.11.2026.)*
 - [x] Energy Tablet und alle Energy Cubes: Basic, Advanced, Elite, Ultimate, Creative. *(Getestet 09.11.2026. Platzhalter-Optik; Horizon zeigt keinen Item-Ladebalken; Creative auf i32::MAX begrenzt; gecraftete Cubes übernehmen keine gespeicherte Energie.)*
 - [x] Original-Tier-Werte, Transferlimits und Konfigurationen übernehmen. *(Tier-Werte aus `EnergyCubeTier`, Tablet aus `GearConfig`; nicht konfigurierbar.)*
 - [ ] Universal Cables (vier Tiers), Verbindungsgraph und Nachbar-Updates. *(Blockiert: Horizon-Native-API bietet Mods keine Energie-Helfer (`native_move_energy` ist spielintern).)*
 - [ ] Energieverteilung über Chunks, Server-Ticks und Redstone korrekt.
-- [ ] Gemeinsames Block-Entity-, Recipe-, Inventory- und Save/Load-Framework.
+- [x] Gemeinsames Block-Entity-, Recipe-, Inventory- und Save/Load-Framework. *(P0-Refactor, ingame getestet 09.11.2026: ein `Kind`-Dispatch für alle Hooks, Maschinen-Tabelle `machine::MACHINES` mit einem Tick/Container/Screen (`process.rs`), Rezept-Cache je Typ (`recipe.rs`), NBT-Helfer für Energie/Fortschritt/Puffer. Tanks (M06) nutzen denselben Dispatch.)*
 - [ ] Lasttest: 100+ Cables und Cubes; keine Energie-Duplikation bei Netz-Reload.
 
 ## M04 - Energieerzeugung / Generators-Grundstufe [P1]
 
 - [x] Heat Generator (Brennstoff, Umgebung und Ausgabeseiten). *(Ingame getestet 09.11.2026: eigener Content-Mod `content/mekanismgenerators` mit Upstream-IDs, Logik in `native/mekanism_native/api/src/generator.rs`. Lava-Tank 1000 mB, 100 mB/t, Lava-Nachbarn 7/Seite, Nether +10, Wärme-/Carnot-Modell wie Original, Energie aus der Front in Cube/Maschine. Nicht portiert: Energie-Slot, Redstone, Wärmeübertragung an Nachbarn.)*
 - [x] Solar Generator und Advanced Solar Generator. *(Solar Generator ingame getestet 09.11.2026: 2 FE/t Spitze, Biom-Faktor aus Vanilla-Klimatabelle, Tageszeit/Regen nach Vanilla-Formel, Energie nach unten. Advanced Solar ingame getestet 09.11.2026: 12 FE/t Spitze, Multiblock mit Bounding-Blöcken (Säule + 3×3-Paneel), braucht mehr als 4 der 9 Himmelsprüfungen, Speicher 240 FE; Abbau eines Teils baut alles ab, fehlender Platz lässt den Block als Item fallen. Modell: Fuß als Blockmodell, Oberteil vom Native-Mod einen Block höher gezeichnet (Horizon ignoriert das Root-`transform` des Originals), per `scripts/import_generator_models.py`.)*
-- [x] Wind Generator (Höhe/Wetter nach Original). *(Ingame getestet 09.11.2026: 1–5 FE/t linear nach Höhe der Spitze (y 24 bis Weltobergrenze), Spitze muss Himmel sehen, Speicher 100 FE, Multiblock 5 hoch, Sound (Wetter). Modell: Basis als Blockmodell, Turm und Rotor per `scripts/import_generator_models.py` aus dem Blockbench-Original, vom Native-Mod gezeichnet, Rotor dreht sich im Betrieb. Item-Icon: verkleinertes Vollmodell statt Mekanisms Spezial-Renderer. Nicht portiert: `c:no_wind`-Dimensionen, Bildschirm über Bounding-Block öffnen.)*
+- [x] Wind Generator (Höhe/Wetter nach Original). *(Ingame getestet 09.11.2026: 1–5 FE/t linear nach Höhe der Spitze (y 24 bis Weltobergrenze), Spitze muss Himmel sehen, Speicher 100 FE, Multiblock 5 hoch, Sound (Wetter). Modell: Basis als Blockmodell, Turm und Rotor per `scripts/import_generator_models.py` aus dem Blockbench-Original, vom Native-Mod gezeichnet, Rotor dreht sich im Betrieb. Item-Icon: verkleinertes Vollmodell statt Mekanisms Spezial-Renderer. Bildschirm über jeden Bounding-Block (gespiegeltes Menü), Abbau ohne Geisterblock, kein Drop im Kreativmodus: ingame getestet 09.11.2026 (P0-Refactor). Nicht portiert: `c:no_wind`-Dimensionen.)*
 - [x] Bio Generator und Bio Fuel. *(Ingame getestet 09.11.2026: 25 FE/t, 1 mB/t aus 200-mB-Tank, 64 mB je Bio Fuel, Speicher 600 FE, Energie aus der Front, Sound. Bio Fuel aus dem Crusher (alle `crushing/biofuel`-Rezepte), Block of Bio Fuel. Nicht portiert: Befüllen per Fluid-Container/Pipe, Energie-Slot, Redstone; Block of Bio Fuel als Ofen-Brennstoff.)*
 - [ ] Gas-Burning Generator, nachdem Chemie/Fluids funktionieren.
 - [ ] GUIs, Energieabgabe, Upgrades und Balancing der Generatoren.
@@ -87,7 +87,7 @@
 
 ## M05 - Maschinen und erste Processing-Ketten [P1]
 
-- [ ] Allgemeines Rezept-System: Inputs, Outputs, Energie je Tick, Fortschritt, Nebenprodukte.
+- [ ] Allgemeines Rezept-System: Inputs, Outputs, Energie je Tick, Fortschritt, Nebenprodukte. *(Teilweise: `recipe::Recipe` liest Item-Input mit Menge, optionalen Chemie-Input und Output für alle Maschinen-Rezepttypen; Energie je Tick und Fortschritt über `machine::step`, ingame getestet 09.11.2026. Fehlt: Nebenprodukte (z.B. Precision Sawmill), Fluid-/Chemie-Outputs.)*
 - [ ] Maschinen-Inventare, Menüs, GUI, Upgrades, Auto-Eject, Sided I/O, Redstone-Modi.
 - [x] Metallurgic Infuser und Infusions-Ressourcen. *(Ingame getestet 09.11.2026. Werte aus Original; 8 Infuse-Typen, alle `metallurgic_infusing`-Rezepte. Fehlt: Energie-Slot, Upgrades, Side-Config, Redstone; Infuse/Energie bleiben beim Abbau nicht am Item; Balkenfarben genähert.)*
 - [x] Enrichment Chamber. *(Ingame getestet 09.11.2026: `native/mekanism_native/api/src/machine.rs`, 5 FE/t, 200 Ticks, Speicher 20 FE, alle `mekanism:enriching`-Rezepte, Upstream-Modell mit `active`, Sound. Fehlt wie beim Infuser: Energie-Slot, Upgrades, Side-Config, Redstone.)*
@@ -110,10 +110,10 @@
 6. `feat/m06-nutrition-pigments` - Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine; danach Tank-/Durchsatz-/Neustart-Tests.
 
 
-- [ ] Chemie-IDs/Registry sowie Netzwerk-/Datapack-Synchronisation planen. *(Entwurf in `docs/CHEMISTRY.md`, Tabellen per `scripts/gen_chemicals.py` (18 Fluids, 64 Chemicals); Native-Build + Ingame-Test offen.)*
-- [ ] Fluids: Water, Steam, Brine, Lithium, Heavy Water, Nutritional Paste etc.
-- [ ] Chemicals: Hydrogen, Oxygen, Chlorine, Sulfur-Komponenten, Ethene, Slurries, Pigments, Isotope etc.
-- [ ] Fluid Tank und Chemical Tank (Basic/Advanced/Elite/Ultimate/Creative). *(Code + Content + Unit-Tests auf `feat/m06-chemistry-foundation`; Native-Build und Ingame-Test offen.)*
+- [x] Chemie-IDs/Registry sowie Netzwerk-/Datapack-Synchronisation planen. *(Plan in `docs/CHEMISTRY.md`, Tabellen per `scripts/gen_chemicals.py` (18 Fluids, 64 Chemicals). Chemicals laufen als `mekanism:chemical/<id>`-Fluids in Horizons Block-Entity-Tanks, Inhalt per Update-Tag zum Client; ingame getestet 09.11.2026 mit Wasserstoff und Sole.)*
+- [ ] Fluids: Water, Steam, Brine, Lithium, Heavy Water, Nutritional Paste etc. *(IDs, Namen und Farben in `chemicals_table.rs`; Tanks speichern und zeigen sie. Offen: Herstellung durch Maschinen, Eimer für Mod-Fluids (Horizon hat keine).)*
+- [ ] Chemicals: Hydrogen, Oxygen, Chlorine, Sulfur-Komponenten, Ethene, Slurries, Pigments, Isotope etc. *(IDs, Namen und Farben in `chemicals_table.rs`; Chemical Tank speichert sie. Offen: Herstellung durch Maschinen.)*
+- [x] Fluid Tank und Chemical Tank (Basic/Advanced/Elite/Ultimate/Creative). *(Ingame getestet 09.11.2026 per `horizon-ctl` (`docs/TESTLOG.md`, M06 Tanks): Füllen, Eimer (Wasser/Lava), Auto-eject nach unten, Dumping/Dumping Excess, Creative bleibt voll, Item behält Inhalt, Flüssigkeit im Glas sichtbar. Tier-Werte per Unit-Test. Nicht portiert: Item-Füll-Slots, Chemie-Side-Config, Edit-Mode, Redstone; Lava-Tank gibt kein Blocklicht; mit Shaderpack falsch dargestellt (Horizon).)*
 - [ ] Mechanical Pipes und Pressurized Tubes (vier Tiers).
 - [ ] Thermodynamic Conductors und Heat-System.
 - [ ] Electric Pump und Fluidic Plenisher.

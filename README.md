@@ -8,12 +8,12 @@ Inoffizieller Port von [Mekanism](https://github.com/mekanism/Mekanism) für [Mi
 
 <!-- progress:start -->
 ```text
-Gesamt                      ██████░░░░░░░░░░░░░░  30%  (45/150)
+Gesamt                      ███████░░░░░░░░░░░░░  33%  (49/150)
 
 Projektbasis                ████████████████████ 100%  (10/10)
 Energy Cube                 ████████████████████ 100%  (10/10)
-Rohstoffe & Energie         ██████████░░░░░░░░░░  52%  (12/23)
-Maschinen & Chemie          ██░░░░░░░░░░░░░░░░░░  12%  (3/26)
+Rohstoffe & Energie         ████████████░░░░░░░░  61%  (14/23)
+Maschinen & Chemie          ████░░░░░░░░░░░░░░░░  19%  (5/26)
 Automation & Logistik       ░░░░░░░░░░░░░░░░░░░░   0%  (0/17)
 Multiblocks & Reaktoren     ░░░░░░░░░░░░░░░░░░░░   0%  (0/16)
 Tools & Additions           ░░░░░░░░░░░░░░░░░░░░   0%  (0/19)
@@ -39,7 +39,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content
 
 Voraussetzungen, Spielordner-Konfiguration und separater Native-Build: **[Windows-Anleitung](README-WINDOWS.md)**.
 
-> Osmium und der platzierbare Basic Energy Cube wurden im Spiel getestet. Der native Rust-Build war erfolgreich; **Energiespeicherung und -übertragung sind noch nicht im Spiel bestätigt**. Nur in Testwelten verwenden.
+> Im Spiel getestet: Rohstoffe und Erze, Energy Cubes und Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Heat-, Solar-, Advanced-Solar-, Bio- und Wind-Generator sowie Fluid und Chemical Tanks (`docs/TESTLOG.md`). Kabel, Pipes und die meisten Maschinen fehlen noch. Nur in Testwelten verwenden.
 
 [Technische Details](docs/ENERGY-CUBE.md) · [Aufgabenliste](TODO.md) · [Lizenz](LICENSE)
 
