@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:chemical_tank",
+  "key": {
+    "A": "#mekanism:alloys/reinforced",
+    "O": "#c:ingots/osmium",
+    "P": "mekanism:advanced_chemical_tank"
+  },
+  "pattern": [
+    "AOA",
+    "OPO",
+    "AOA"
+  ],
+  "result": {
+    "id": "mekanism:elite_chemical_tank"
+  }
+}

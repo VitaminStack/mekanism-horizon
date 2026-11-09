@@ -182,6 +182,35 @@ put(f'data/{GEN}/horizon/menu/bio_generator.json', {'slots': 1, 'data_slots': 4,
 put(f'data/{GEN}/horizon/menu/heat_generator.json', {'slots': 1, 'data_slots': 7, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/solar_generator.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
 
+# --- tanks (M06): contents are Horizon block-entity fluid tanks, see native/.../tank.rs ---
+# Fluid tank: Mekanism's `active` blockstate (valve lit while ejecting down); chemical tank: `facing`
+# (turned toward the placer by the native mod). BlockTile strength 3.5 / 16 as for machines.
+# Loot has no explosion condition (Mekanism copies the contents); the native mod puts them on the drop.
+TANK_STATE = {
+    'fluid': {'state_properties': {'active': {'type': 'boolean'}},
+              'default_state': {'facing': 'north', 'active': 'false'}},
+    'chemical': {'default_state': {'facing': 'north'}},
+}
+for family, state in TANK_STATE.items():
+    for tier in CUBE_TIERS:
+        block(f'{tier}_{family}_tank', 'minecraft:barrel', 3.5, 16.0, extra=state, explosion_proof=True)
+    put(f'data/{NS}/horizon/menu/{family}_tank.json', {'slots': 1, 'data_slots': 4, 'results': [0]})
+# Upstream's fluid tank item definitions use a custom item model type (the contents drawn inside);
+# here the plain block model (import_upstream.py ITEM_SKIP leaves these alone).
+for tier in CUBE_TIERS:
+    put(f'assets/{NS}/items/{tier}_fluid_tank.json',
+        {'model': {'type': 'minecraft:model', 'model': f'{NS}:block/fluid_tank'}})
+
+# Pushes hydrogen into neighbouring tanks (native `DEBUG_CHEMICAL_SOURCE`), for testing chemical
+# tanks until a machine makes chemicals.
+block('debug_chemical_source', 'minecraft:iron_block', 1.0, 1.0, requires_tool=False)
+put(f'assets/{NS}/models/block/debug_chemical_source.json',
+    {'parent': 'minecraft:block/cube_all', 'textures': {'all': 'minecraft:block/lapis_block'}})
+put(f'assets/{NS}/blockstates/debug_chemical_source.json',
+    {'variants': {'': {'model': f'{NS}:block/debug_chemical_source'}}})
+put(f'assets/{NS}/items/debug_chemical_source.json',
+    {'model': {'type': 'minecraft:model', 'model': f'{NS}:block/debug_chemical_source'}})
+
 # Debug blocks for testing the cubes (TODO N08), ticked by native/mekanism_native.
 for did, tex in (('debug_energy_source', 'redstone_block'), ('debug_energy_sink', 'coal_block')):
     block(did, 'minecraft:iron_block', 1.0, 1.0, requires_tool=False)
@@ -280,7 +309,9 @@ for tag, values in CONVENTION_TAGS.items():
 
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
-    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS] + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'enrichment_chamber', 'crusher')]})
+    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
+     + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
+     + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'enrichment_chamber', 'crusher')]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in ('heat_generator', 'solar_generator', 'bio_generator',
                                                          'advanced_solar_generator', 'wind_generator')]}, GEN)

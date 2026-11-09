@@ -9,6 +9,8 @@
 //!   `process`: their tick, container and screen; `recipe`: Mekanism's recipe files.
 //! - `generator` (Horizon-free) and `generators`: Heat, Solar, Bio, Advanced
 //!   Solar and Wind Generator.
+//! - `chemicals`, `tank` (Horizon-free) and `tanks`: fluids, chemicals and the
+//!   Fluid and Chemical Tanks (M06).
 //!
 //! Hooks used (native hooks API; see Horizon docs/native-mods.md):
 //! - `block_entity` (API 15): a saved block entity for each block.
@@ -26,6 +28,8 @@
 //!   buffers, saved by Horizon in the stack's `minecraft:custom_data` as `horizon_energy`.
 //! - `tooltip` (API 12): a cube item's stored energy.
 //! - `recipes_of_type`/`recipe_ingredient`/`recipe_result` (API 36): recipes.
+//! - `block_entity_fluids`, `block_entity_accepts_fluid` (API 54), `use_item_on`
+//!   (API 13): the tanks' contents and buckets (`tanks.rs`).
 //! - `Host::play_sound` (API 61): machines and generators loop Mekanism's
 //!   sound while running, replayed when the clip ends.
 //!
@@ -36,6 +40,7 @@
 //! a trait mod has no energy helper for other mods' blocks, so pushes reach
 //! only Mekanism blocks (docs/upstream/horizon-energy-host.md).
 
+mod chemicals;
 mod cube;
 mod energy;
 mod generator;
@@ -44,18 +49,21 @@ mod infuser;
 mod machine;
 mod process;
 mod recipe;
+mod tank;
+mod tanks;
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
 
 use cube::{Mode, Sides};
 use horizon_client::mod_api::{
-    BlockEntityContainerEvent, BlockEntityEnergyEvent, BlockEntityEvent, BlockEntityRenderBoundingBoxEvent,
-    BlockEntitySubmitEvent, BlockEntityTickEvent, BlockEntityTicksEvent, BlockEntityUpdateTagEvent, Compound,
-    DestroyBlockEvent, Flow, Hooks, Host, ItemEnergyBuffer, ItemEnergyBufferEvent, ItemStack, LevelHost,
-    LootDropsEvent, MenuButtonEvent, ModContainer, ModEnergyBuffer, NativeScreen, PlaceBlockEvent,
-    ScreenClickEvent, ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent,
-    StateForPlacementEvent, Tag, Text, TooltipEvent,
+    BlockEntityAcceptsFluidEvent, BlockEntityContainerEvent, BlockEntityEnergyEvent, BlockEntityEvent,
+    BlockEntityFluidsEvent, BlockEntityRenderBoundingBoxEvent, BlockEntitySubmitEvent, BlockEntityTickEvent,
+    BlockEntityTicksEvent, BlockEntityUpdateTagEvent, Compound, DestroyBlockEvent, Flow, Hooks, Host,
+    ItemEnergyBuffer, ItemEnergyBufferEvent, ItemStack, LevelHost, LootDropsEvent, MenuButtonEvent,
+    ModContainer, ModEnergyBuffer, ModFluidTanks, NativeScreen, PlaceBlockEvent, ScreenClickEvent,
+    ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent, StateForPlacementEvent, Tag,
+    Text, TooltipEvent, UseItemOnEvent,
 };
 use machine::Machine;
 
@@ -96,6 +104,9 @@ enum Kind {
     Generator(&'static str),
     /// A multiblock's bounding block (`generator::BOUNDING`).
     Bounding,
+    Tank(&'static tank::Tier),
+    /// `tanks::DEBUG_CHEMICAL_SOURCE`.
+    DebugChemical,
 }
 
 fn kind(block: &str) -> Option<Kind> {
@@ -110,6 +121,12 @@ fn kind(block: &str) -> Option<Kind> {
     }
     if block == generator::BOUNDING {
         return Some(Kind::Bounding);
+    }
+    if let Some(t) = tank::tier_of(block) {
+        return Some(Kind::Tank(t));
+    }
+    if block == tanks::DEBUG_CHEMICAL_SOURCE {
+        return Some(Kind::DebugChemical);
     }
     generators::find(block).map(Kind::Generator)
 }
@@ -193,6 +210,8 @@ fn gauge(host: &dyn Host, batch: &mut horizon_client::mod_api::HudBatch, rect: [
 struct MekanismNative {
     /// Energy and sides of cubes a player is breaking, for their drop.
     broken: Mutex<HashMap<(String, [i32; 3]), (i32, Sides)>>,
+    /// Contents and mode of tanks a player is breaking, for their drop.
+    broken_tanks: Mutex<HashMap<(String, [i32; 3]), tanks::Contents>>,
     recipes: Mutex<recipe::Recipes>,
     /// Ticks until each running block's loop sound plays again (not saved).
     hums: Mutex<HashMap<(String, [i32; 3]), i32>>,
@@ -381,6 +400,7 @@ impl Hooks for MekanismNative {
             Kind::Machine(m) => Some(process::container(m)),
             Kind::Generator(g) => Some(generators::container(g)),
             Kind::Bounding => Some(generators::bounding_container()),
+            Kind::Tank(t) => Some(tanks::container(t)),
             // One hidden placeholder slot; all interactions are buttons.
             Kind::Cube { .. } => Some(ModContainer {
                 slots: 1,
@@ -389,7 +409,7 @@ impl Hooks for MekanismNative {
                 outputs: Vec::new(),
                 menu: Some(CUBE_MENU.to_owned()),
             }),
-            Kind::Debug { .. } => None,
+            Kind::Debug { .. } | Kind::DebugChemical => None,
         }
     }
 
@@ -411,8 +431,31 @@ impl Hooks for MekanismNative {
                 insert_faces: [true; 6],
                 extract_faces: [true; 6],
             }),
-            Kind::Debug { .. } | Kind::Bounding => None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical => None,
         }
+    }
+
+    /// One tank per tank block, reached from every side.
+    fn block_entity_fluids(&self, _host: &dyn Host, event: &mut BlockEntityFluidsEvent) -> Option<ModFluidTanks> {
+        match kind(event.block)? {
+            Kind::Tank(t) => Some(tanks::fluids(t)),
+            _ => None,
+        }
+    }
+
+    /// Fluid tanks take no chemicals and chemical tanks no fluids.
+    fn block_entity_accepts_fluid(&self, _host: &dyn Host, event: &mut BlockEntityAcceptsFluidEvent) -> Flow {
+        match kind(event.block) {
+            Some(Kind::Tank(t)) if !tank::accepts(t.family, event.fluid) => Flow::Cancel,
+            _ => Flow::Continue,
+        }
+    }
+
+    fn use_item_on(&self, host: &mut dyn Host, event: &mut UseItemOnEvent) -> Flow {
+        let Some(Kind::Tank(t)) = host.mod_block_entity(event.pos).and_then(|e| kind(&e.id)) else {
+            return Flow::Continue;
+        };
+        if tanks::use_item_on(host, event, t) { Flow::Cancel } else { Flow::Continue }
     }
 
     fn block_entity_ticks(&self, _host: &dyn Host, event: &mut BlockEntityTicksEvent) {
@@ -428,17 +471,21 @@ impl Hooks for MekanismNative {
             Some(Kind::Cube { capacity, rate }) => self.cube_tick(host, event, capacity, rate),
             Some(Kind::Debug { source }) => debug_tick(host, event.pos, source),
             Some(Kind::Bounding) => generators::bounding_tick(host, event),
+            Some(Kind::Tank(t)) => tanks::tick(host, event, t),
+            Some(Kind::DebugChemical) => tanks::debug_tick(host, event.pos),
             None => {}
         }
     }
 
-    /// Mekanism turns the cube's front toward its placer; machines and
-    /// generators face the placer horizontally (Mekanism's `AttributeStateFacing`).
+    /// Mekanism turns the cube's front toward its placer; machines, generators
+    /// and chemical tanks face the placer horizontally (Mekanism's
+    /// `AttributeStateFacing`); fluid tanks keep the template's.
     fn state_for_placement(&self, level: &dyn LevelHost, event: &mut StateForPlacementEvent) -> Option<Option<horizon_client::mod_api::BlockStateId>> {
         let pitch = match kind(&event.context.item)? {
             Kind::Cube { .. } => event.context.pitch,
             Kind::Machine(_) | Kind::Generator(_) => 0.0,
-            Kind::Debug { .. } | Kind::Bounding => return None,
+            Kind::Tank(t) if t.family == tank::Family::Chemical => 0.0,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical => return None,
         };
         let facing = cube::facing_from_look(event.context.yaw, pitch);
         level
@@ -454,6 +501,7 @@ impl Hooks for MekanismNative {
             Kind::Generator(g) => Some(generators::screen(g)),
             // Only the Advanced Solar and the Wind Generator are multiblocks: one layout.
             Kind::Bounding => Some(generators::screen(generator::WIND)),
+            Kind::Tank(_) => Some(tanks::screen()),
             // The cube's dummy container slot is hidden.
             Kind::Cube { .. } => Some(NativeScreen {
                 width: 176.0,
@@ -464,7 +512,7 @@ impl Hooks for MekanismNative {
                 own_labels: true,
                 own_background: false,
             }),
-            Kind::Debug { .. } => None,
+            Kind::Debug { .. } | Kind::DebugChemical => None,
         }
     }
 
@@ -479,6 +527,7 @@ impl Hooks for MekanismNative {
                 }
             }
             Some(Kind::Cube { capacity, rate }) => draw_cube(host, event, capacity, rate),
+            Some(Kind::Tank(t)) => tanks::draw(host, event, t),
             _ => {}
         }
     }
@@ -489,6 +538,7 @@ impl Hooks for MekanismNative {
         match kind(event.block)? {
             Kind::Machine(m) => process::click(m, event.at),
             Kind::Cube { .. } => cube::side_button_at(event.at, event.right),
+            Kind::Tank(_) => tank::button_at(event.at, event.right),
             _ => None,
         }
     }
@@ -502,6 +552,7 @@ impl Hooks for MekanismNative {
                     event.lines.extend(generators::tooltip(g, event.data, event.at));
                 }
             }
+            Some(Kind::Tank(t)) => event.lines.extend(tank::tooltip(t, event.data, event.at)),
             _ => {}
         }
     }
@@ -511,6 +562,11 @@ impl Hooks for MekanismNative {
     fn menu_button(&self, host: &mut dyn Host, event: &mut MenuButtonEvent) {
         match kind(&event.entity.id) {
             Some(Kind::Machine(m)) => process::button(m, &mut event.entity.nbt, event.id),
+            Some(Kind::Tank(t)) => {
+                if let Some(data) = tanks::button(t, &mut event.entity.nbt, event.id) {
+                    event.entity.data = data;
+                }
+            }
             Some(Kind::Cube { .. }) => {
                 let Some((rel, forward)) = cube::side_button_action(event.id) else { return };
                 let mut sides = read_sides(&event.entity.nbt).unwrap_or(cube::DEFAULT_SIDES);
@@ -561,7 +617,7 @@ impl Hooks for MekanismNative {
         }
     }
 
-    /// Remember what a cube holds before a player breaks it, for its drop.
+    /// Remember what a cube or tank holds before a player breaks it, for its drop.
     fn destroy_block(&self, host: &mut dyn Host, event: &mut DestroyBlockEvent) -> Flow {
         self.hums.lock().unwrap().remove(&(host.dimension().to_owned(), event.pos));
         // Breaking a multiblock takes its bounding blocks with it; breaking a
@@ -580,12 +636,16 @@ impl Hooks for MekanismNative {
             }
         }
         if let Some(entity) = host.mod_block_entity(event.pos) {
-            if cube::tier(&entity.id).is_some() {
-                let sides = read_sides(&entity.nbt).unwrap_or(cube::DEFAULT_SIDES);
-                self.broken.lock().unwrap().insert(
-                    (host.dimension().to_owned(), event.pos),
-                    (read_energy(&entity.nbt, ENERGY), sides),
-                );
+            let place = (host.dimension().to_owned(), event.pos);
+            match kind(&entity.id) {
+                Some(Kind::Cube { .. }) => {
+                    let sides = read_sides(&entity.nbt).unwrap_or(cube::DEFAULT_SIDES);
+                    self.broken.lock().unwrap().insert(place, (read_energy(&entity.nbt, ENERGY), sides));
+                }
+                Some(Kind::Tank(_)) => {
+                    self.broken_tanks.lock().unwrap().insert(place, tanks::contents(&entity.nbt));
+                }
+                _ => {}
             }
         }
         Flow::Continue
@@ -596,6 +656,9 @@ impl Hooks for MekanismNative {
     fn loot_drops(&self, host: &mut dyn Host, event: &mut LootDropsEvent) {
         let Some((pos, _)) = event.context.block else { return };
         let place = (event.context.dimension.to_owned(), pos);
+        if let Some(contents) = self.broken_tanks.lock().unwrap().remove(&place) {
+            tanks::fill_drops(host, &mut event.drops, contents);
+        }
         let remembered = self.broken.lock().unwrap().remove(&place);
         let held = host
             .mod_block_entity(pos)
@@ -622,10 +685,15 @@ impl Hooks for MekanismNative {
         }
     }
 
-    /// Placing a cube item restores the energy and side config it carries.
+    /// Placing a cube or tank item restores what it carries.
     fn place_block(&self, host: &mut dyn Host, event: &mut PlaceBlockEvent) {
         if generator::is_multiblock(&event.stack.item) {
             generators::place_multiblock(host, event.pos, &event.stack.item);
+            return;
+        }
+        if let Some(t) = tank::tier_of(&event.stack.item) {
+            self.broken_tanks.lock().unwrap().remove(&(host.dimension().to_owned(), event.pos));
+            tanks::place(host, event.pos, &event.stack, t);
             return;
         }
         let Some((capacity, _)) = cube::tier(&event.stack.item) else { return };
@@ -652,6 +720,10 @@ impl Hooks for MekanismNative {
     }
 
     fn tooltip(&self, _host: &dyn Host, event: &mut TooltipEvent) {
+        if let Some(t) = tank::tier_of(&event.stack.item) {
+            event.lines.push(tanks::tooltip(&event.stack, t));
+            return;
+        }
         let Some((capacity, _)) = cube::tier(&event.stack.item) else { return };
         let stored = event.stack.custom_data().map_or(0, |d| read_energy(d, ITEM_ENERGY));
         let line = Text::translate_with_fallback(

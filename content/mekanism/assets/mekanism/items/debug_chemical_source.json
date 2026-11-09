@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "mekanism:block/debug_chemical_source"
+  }
+}

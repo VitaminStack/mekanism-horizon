@@ -100,10 +100,20 @@
 
 ## M06 - Fluids, Chemicals und Rohstoffverarbeitung [P1]
 
-- [ ] Chemie-IDs/Registry sowie Netzwerk-/Datapack-Synchronisation planen.
+**Gruppen (je eigener Branch, in dieser Reihenfolge):**
+
+1. `feat/m06-chemistry-foundation` - Chemie-IDs/Registry, Fluids, Chemicals, Fluid Tank, Chemical Tank.
+2. `feat/m06-transport-heat` - Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors, Heat-System.
+3. `feat/m06-basic-chemical-machines` - Electric Pump, Fluidic Plenisher, Electrolytic Separator, Chemical Oxidizer, Chemical Infuser, Rotary Condensentrator.
+4. `feat/m06-ore-processing` - Purification Chamber, Chemical Injection Chamber, Dissolution Chamber, Washer, Crystallizer, Erzverarbeitung End-to-End.
+5. `feat/m06-advanced-chemistry` - Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator.
+6. `feat/m06-nutrition-pigments` - Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine; danach Tank-/Durchsatz-/Neustart-Tests.
+
+
+- [ ] Chemie-IDs/Registry sowie Netzwerk-/Datapack-Synchronisation planen. *(Entwurf in `docs/CHEMISTRY.md`, Tabellen per `scripts/gen_chemicals.py` (18 Fluids, 64 Chemicals); Native-Build + Ingame-Test offen.)*
 - [ ] Fluids: Water, Steam, Brine, Lithium, Heavy Water, Nutritional Paste etc.
 - [ ] Chemicals: Hydrogen, Oxygen, Chlorine, Sulfur-Komponenten, Ethene, Slurries, Pigments, Isotope etc.
-- [ ] Fluid Tank und Chemical Tank (Basic/Advanced/Elite/Ultimate/Creative).
+- [ ] Fluid Tank und Chemical Tank (Basic/Advanced/Elite/Ultimate/Creative). *(Code + Content + Unit-Tests auf `feat/m06-chemistry-foundation`; Native-Build und Ingame-Test offen.)*
 - [ ] Mechanical Pipes und Pressurized Tubes (vier Tiers).
 - [ ] Thermodynamic Conductors und Heat-System.
 - [ ] Electric Pump und Fluidic Plenisher.

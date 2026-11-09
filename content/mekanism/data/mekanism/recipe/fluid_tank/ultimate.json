@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:fluid_tank",
+  "key": {
+    "A": "#mekanism:alloys/atomic",
+    "I": "#c:ingots/iron",
+    "P": "mekanism:elite_fluid_tank"
+  },
+  "pattern": [
+    "AIA",
+    "IPI",
+    "AIA"
+  ],
+  "result": {
+    "id": "mekanism:ultimate_fluid_tank"
+  }
+}
