@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "G": "#c:glass_panes",
+    "O": "#c:ingots/osmium",
+    "R": "#c:dusts/redstone"
+  },
+  "pattern": [
+    "GGG",
+    "RAR",
+    "OOO"
+  ],
+  "result": {
+    "id": "mekanismgenerators:solar_panel"
+  }
+}

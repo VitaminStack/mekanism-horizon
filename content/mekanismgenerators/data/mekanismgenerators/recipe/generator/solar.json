@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": "mekanismgenerators:solar_panel",
+    "A": "#mekanism:alloys/infused",
+    "E": "mekanism:energy_tablet",
+    "I": "#c:ingots/iron",
+    "O": "#c:ingots/osmium"
+  },
+  "pattern": [
+    "###",
+    "AIA",
+    "OEO"
+  ],
+  "result": {
+    "id": "mekanismgenerators:solar_generator"
+  }
+}

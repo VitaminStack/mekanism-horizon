@@ -32,8 +32,15 @@
 //! energy hooks, plus `recipes_of_type`/`recipe_ingredient`/`recipe_result`
 //! (API 36) for Mekanism's own `metallurgic_infusing` and `chemical_conversion`
 //! recipe files, shipped by the content mod.
+//!
+//! Heat and Solar Generator (`generator.rs`; M04, ids of the separate
+//! `mekanismgenerators` content mod): the same block-entity, container, menu,
+//! screen and energy hooks; they read the world through `Host::block`,
+//! `biome`, `light`, `weather`, `day_time` and `dimension` (API 20/97), and
+//! push their energy into the neighbouring cube or machine on their output side.
 
 mod cube;
+mod generator;
 mod infuser;
 
 use std::collections::{BTreeMap, HashMap};
@@ -145,6 +152,9 @@ const PROGRESS: &str = "mekanism_progress";
 /// `infuser::TYPES` index + 1; 0 while the buffer is empty.
 const INFUSE_TYPE: &str = "mekanism_infuse_type";
 const INFUSE: &str = "mekanism_infuse";
+/// Block entity NBT of the Heat Generator: stored heat (Tag::Double) and lava in mB.
+const HEAT: &str = "mekanism_heat";
+const LAVA: &str = "mekanism_lava";
 
 /// A `mekanism:metallurgic_infusing` recipe: `item_input`, `chemical_input`, `output`.
 struct Infusing {
@@ -345,7 +355,6 @@ impl MekanismNative {
 
     /// Push energy out of the cube's output sides into neighbouring cubes whose
     /// side facing it takes input; at most the cube's transfer rate per tick.
-    /// Each move adds to the neighbour what it takes from this cube: none is lost.
     fn eject(&self, host: &mut dyn Host, pos: [i32; 3], rate: i32, stored: &mut i32, sides: &Sides) -> i32 {
         let f = facing(host, pos);
         let mut budget = rate;
@@ -354,44 +363,214 @@ impl MekanismNative {
             if *mode != Mode::Output || budget <= 0 || *stored <= 0 {
                 continue;
             }
-            let dir = cube::absolute(rel, f);
-            let at = offset(pos, dir);
-            let their_facing = facing(host, at);
-            let mut moved = 0;
-            let give = (budget, *stored);
-            host.change_mod_block_entity(at, &mut |m| {
-                if m.id == infuser::BLOCK {
-                    // Machines take energy on every side (no side config ported).
-                    let theirs = read_energy(&m.nbt, ENERGY);
-                    moved = cube::transfer(give.0, give.1, theirs, infuser::CAPACITY, infuser::CAPACITY);
-                    if moved > 0 {
-                        write_int(&mut m.nbt, ENERGY, theirs + moved);
-                    }
-                    return;
-                }
-                let Some((capacity, their_rate)) = cube(&m.id) else { return };
-                let their_side = cube::relative(cube::opposite(dir), their_facing);
-                let their_sides = read_sides(&m.nbt).unwrap_or(cube::DEFAULT_SIDES);
-                if their_sides[their_side] != Mode::Input {
-                    return;
-                }
-                let theirs = read_energy(&m.nbt, ENERGY);
-                moved = cube::transfer(give.0, give.1, theirs, capacity, their_rate);
-                if moved > 0 {
-                    write_int(&mut m.nbt, ENERGY, theirs + moved);
-                }
-            });
+            let moved = give(host, pos, cube::absolute(rel, f), budget, *stored);
             *stored -= moved;
             budget -= moved;
             moved_total += moved;
         }
         moved_total
     }
+
+    /// One Heat Generator tick: the fuel slot fills the lava tank (a lava
+    /// bucket whole, leaving the bucket; a furnace fuel by its burn time), then
+    /// `generator::Heat::tick`, then the energy goes out of the front.
+    fn heat_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+        let pos = event.pos;
+        let entity = &*event.entity;
+        let mut items: Vec<Option<ItemStack>> = entity.items.clone();
+        items.resize(1, None);
+        let ambient = generator::ambient_temp(generator::climate(host.biome(pos).as_deref()).0 as f64);
+        let mut state = generator::Heat {
+            heat: read_double(&entity.nbt, HEAT).unwrap_or_else(|| generator::Heat::new(ambient).heat),
+            energy: read_energy(&entity.nbt, ENERGY).clamp(0, generator::HEAT_STORAGE),
+            lava: read_energy(&entity.nbt, LAVA).clamp(0, generator::LAVA_TANK),
+        };
+
+        if let Some(stack) = &items[0] {
+            if &*stack.item == "minecraft:lava_bucket" {
+                if state.lava + generator::LAVA_TANK <= generator::LAVA_TANK {
+                    if let Some(bucket) = host.item_from_snbt("{id:\"minecraft:bucket\",count:1}") {
+                        state.lava += generator::LAVA_TANK;
+                        items[0] = Some(bucket);
+                    }
+                }
+            } else if let Some(lava) = burn_time(host, stack).map(generator::fuel_lava) {
+                if lava > 0 && state.lava + lava <= generator::LAVA_TANK {
+                    state.lava += lava;
+                    items[0] = shrink(stack, 1);
+                }
+            }
+        }
+
+        let lava_sides = (0..6).filter(|&d| host.block(offset(pos, d)) == "minecraft:lava").count() as u32;
+        let nether = host.dimension() == "minecraft:the_nether";
+        let tick = state.tick(generator::boost(lava_sides, nether), ambient);
+        let f = facing(host, pos);
+        state.energy -= give(host, pos, f, state.energy, state.energy);
+        // The model glows while burning; set the property only on change.
+        let want = if tick.active { "true" } else { "false" };
+        if host.block_property(pos, "active").as_deref() != Some(want) {
+            host.set_block_property(pos, "active", want);
+        }
+
+        let e = &mut *event.entity;
+        if e.items != items {
+            e.items = items;
+        }
+        write_int(&mut e.nbt, ENERGY, state.energy);
+        write_int(&mut e.nbt, LAVA, state.lava);
+        let k = key(&e.nbt, HEAT);
+        e.nbt.insert(k, Tag::Double(state.heat.to_bits()));
+        let data = generator::heat_menu_data(&state, &tick, f);
+        if e.data.as_slice() != data.as_slice() {
+            e.data = data.to_vec();
+        }
+    }
+
+    /// One Solar Generator tick: produce while it sees the sun, then the energy
+    /// goes out of the bottom.
+    fn solar_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+        let pos = event.pos;
+        let mut stored = read_energy(&event.entity.nbt, ENERGY).clamp(0, generator::SOLAR_STORAGE);
+        let dimension = host.dimension();
+        let sky_light = dimension != "minecraft:the_nether" && dimension != "minecraft:the_end";
+        let (rain, thunder) = host.weather();
+        let darkness = generator::sky_darkness(host.day_time(), rain, thunder);
+        // The panel is a full block here: the sky light it gets is the block's above it.
+        let sees = generator::sees_sun(sky_light, darkness, host.light(offset(pos, cube::UP)).1);
+        let peak = generator::peak_multiplier(generator::climate(host.biome(pos).as_deref()));
+        let produced = generator::solar_production(sees, darkness, peak).min(generator::SOLAR_STORAGE - stored);
+        stored += produced;
+        stored -= give(host, pos, cube::DOWN, stored, stored);
+
+        let f = facing(host, pos);
+        let e = &mut *event.entity;
+        write_int(&mut e.nbt, ENERGY, stored);
+        let data = generator::solar_menu_data(stored, produced, sees, f, peak);
+        if e.data.as_slice() != data.as_slice() {
+            e.data = data.to_vec();
+        }
+    }
+}
+
+/// Move up to `budget` of `stored` into the block on side `dir` of `pos`: a
+/// cube whose side facing it takes input, or a machine (every side takes
+/// energy; no side config ported). Returns what moved: what the neighbour gains
+/// the giver loses, so none is lost or made.
+fn give(host: &mut dyn Host, pos: [i32; 3], dir: usize, budget: i32, stored: i32) -> i32 {
+    if budget <= 0 || stored <= 0 {
+        return 0;
+    }
+    let at = offset(pos, dir);
+    let their_facing = facing(host, at);
+    let mut moved = 0;
+    host.change_mod_block_entity(at, &mut |m| {
+        if m.id == infuser::BLOCK {
+            let theirs = read_energy(&m.nbt, ENERGY);
+            moved = cube::transfer(budget, stored, theirs, infuser::CAPACITY, infuser::CAPACITY);
+            if moved > 0 {
+                write_int(&mut m.nbt, ENERGY, theirs + moved);
+            }
+            return;
+        }
+        let Some((capacity, their_rate)) = cube(&m.id) else { return };
+        let their_side = cube::relative(cube::opposite(dir), their_facing);
+        let their_sides = read_sides(&m.nbt).unwrap_or(cube::DEFAULT_SIDES);
+        if their_sides[their_side] != Mode::Input {
+            return;
+        }
+        let theirs = read_energy(&m.nbt, ENERGY);
+        moved = cube::transfer(budget, stored, theirs, capacity, their_rate);
+        if moved > 0 {
+            write_int(&mut m.nbt, ENERGY, theirs + moved);
+        }
+    });
+    moved
+}
+
+/// A furnace fuel's burn time: vanilla's fuels by id, then by item tag.
+fn burn_time(host: &dyn Host, stack: &ItemStack) -> Option<i32> {
+    generator::fuel_burn_time(&stack.item).or_else(|| {
+        generator::FUEL_TAGS
+            .iter()
+            .find(|(tag, _)| host.server_item_in_tag(stack, tag).unwrap_or(false))
+            .map(|&(_, t)| t)
+    })
+}
+
+fn read_double(nbt: &Compound, name: &'static str) -> Option<f64> {
+    match nbt.get(&key(nbt, name)) {
+        Some(Tag::Double(bits)) => Some(f64::from_bits(*bits)).filter(|v| v.is_finite() && *v >= 0.0),
+        _ => None,
+    }
+}
+
+fn is_generator(block: &str) -> bool {
+    block == generator::HEAT || block == generator::SOLAR
+}
+
+/// Machines and generators face the placer horizontally (Mekanism's `AttributeStateFacing`).
+fn faces_horizontally(block: &str) -> bool {
+    block == infuser::BLOCK || is_generator(block)
+}
+
+/// A vertical energy bar with its own fill colour.
+fn energy_bar(host: &dyn Host, batch: &mut horizon_client::mod_api::HudBatch, origin: [f32; 2], energy: i32, capacity: i32) {
+    let [x, y, w, h] = generator::ENERGY_BAR;
+    gauge(host, batch, [origin[0] + x, origin[1] + y, w, h], energy as f32 / capacity as f32, 0xFF50C878);
+}
+
+/// The Heat Generator's screen: fuel slot left, lava gauge in the middle,
+/// energy bar right; the temperature under the fuel slot.
+fn draw_heat(host: &dyn Host, event: &mut ScreenDrawEvent) {
+    let [x, y] = event.origin;
+    let d = |i: usize| event.data.get(i).copied().unwrap_or(0);
+    let title = host.screen_title().unwrap_or_else(|| "Heat Generator".to_owned());
+    host.text(event.batch, &title, [x + 8.0, y + 6.0], 0x404040, false);
+    let [gx, gy, gw, gh] = generator::HEAT_LAVA_GAUGE;
+    let lava = d(generator::HEAT_DATA_LAVA) as f32 / generator::LAVA_TANK as f32;
+    gauge(host, event.batch, [x + gx, y + gy, gw, gh], lava, 0xFFE8641E);
+    energy_bar(host, event.batch, event.origin, d(generator::HEAT_DATA_ENERGY), generator::HEAT_STORAGE);
+    host.text(event.batch, &format!("{} K", d(generator::HEAT_DATA_TEMP)), [x + 8.0, y + 58.0], 0x404040, false);
+    host.text(event.batch, &format!("{} FE/t", d(generator::HEAT_DATA_PRODUCING)), [x + 124.0, y + 6.0], 0x404040, false);
+    host.text(event.batch, "Inventory", [x + 8.0, y + generator::INVENTORY_Y - 10.0], 0x404040, false);
+}
+
+/// The Solar Generator's screen: Mekanism's inner screen with energy and
+/// production, the sun indicator left of it, the energy bar right.
+fn draw_solar(host: &dyn Host, event: &mut ScreenDrawEvent) {
+    let [x, y] = event.origin;
+    let d = |i: usize| event.data.get(i).copied().unwrap_or(0);
+    let title = host.screen_title().unwrap_or_else(|| "Solar Generator".to_owned());
+    host.text(event.batch, &title, [x + 8.0, y + 6.0], 0x404040, false);
+    let [sx, sy, sw, sh] = generator::SOLAR_SCREEN;
+    host.fill(event.batch, [x + sx, y + sy, sw, sh], 0xFF1C2620);
+    let energy = d(generator::SOLAR_DATA_ENERGY);
+    host.text(
+        event.batch,
+        &format!("{} / {} FE", cube::si(energy as i64), cube::si(generator::SOLAR_STORAGE as i64)),
+        [x + sx + 4.0, y + sy + 6.0],
+        0x3CFE9A,
+        false,
+    );
+    host.text(
+        event.batch,
+        &format!("{} FE/t", d(generator::SOLAR_DATA_PRODUCING)),
+        [x + sx + 4.0, y + sy + 22.0],
+        0x3CFE9A,
+        false,
+    );
+    let [ix, iy, iw, ih] = generator::SOLAR_SUN;
+    let sun = if d(generator::SOLAR_DATA_SEES_SUN) != 0 { 0xFFFFD34D } else { 0xFF3A3F44 };
+    host.fill(event.batch, [x + ix, y + iy, iw, ih], 0xFF262A2F);
+    host.fill(event.batch, [x + ix + 2.0, y + iy + 2.0, iw - 4.0, ih - 4.0], sun);
+    energy_bar(host, event.batch, event.origin, energy, generator::SOLAR_STORAGE);
+    host.text(event.batch, "Inventory", [x + 8.0, y + generator::INVENTORY_Y - 10.0], 0x404040, false);
 }
 
 impl Hooks for MekanismNative {
     fn block_entity(&self, _host: &mut dyn Host, event: &mut BlockEntityEvent) -> Option<(String, Compound)> {
-        (cube(event.block).is_some() || is_debug(event.block) || event.block == infuser::BLOCK)
+        (cube(event.block).is_some() || is_debug(event.block) || event.block == infuser::BLOCK || is_generator(event.block))
             .then(|| (event.block.to_owned(), Compound::new()))
     }
 
@@ -408,6 +587,26 @@ impl Hooks for MekanismNative {
                 inputs: vec![infuser::SLOT_INFUSION, infuser::SLOT_INPUT],
                 outputs: vec![infuser::SLOT_OUTPUT],
                 menu: Some(infuser::MENU.to_owned()),
+            });
+        }
+        if event.block == generator::HEAT {
+            // Hoppers fill the fuel slot from any side.
+            return Some(ModContainer {
+                slots: 1,
+                faces: std::array::from_fn(|_| vec![0]),
+                inputs: vec![0],
+                outputs: Vec::new(),
+                menu: Some(generator::HEAT_MENU.to_owned()),
+            });
+        }
+        if event.block == generator::SOLAR {
+            // One hidden placeholder slot, as the cube's.
+            return Some(ModContainer {
+                slots: 1,
+                faces: std::array::from_fn(|_| Vec::new()),
+                inputs: Vec::new(),
+                outputs: Vec::new(),
+                menu: Some(generator::SOLAR_MENU.to_owned()),
             });
         }
         cube(event.block)?;
@@ -430,6 +629,28 @@ impl Hooks for MekanismNative {
                 extract_faces: [false; 6],
             });
         }
+        // Generators only give. Horizon's faces are per block type, not per facing:
+        // other mods may take the Heat Generator's energy on any side.
+        if event.block == generator::HEAT {
+            return Some(ModEnergyBuffer {
+                capacity: generator::HEAT_STORAGE,
+                max_insert: 0,
+                max_extract: generator::HEAT_STORAGE,
+                insert_faces: [false; 6],
+                extract_faces: [true; 6],
+            });
+        }
+        if event.block == generator::SOLAR {
+            let mut bottom = [false; 6];
+            bottom[cube::DOWN] = true;
+            return Some(ModEnergyBuffer {
+                capacity: generator::SOLAR_STORAGE,
+                max_insert: 0,
+                max_extract: generator::SOLAR_STORAGE,
+                insert_faces: [false; 6],
+                extract_faces: bottom,
+            });
+        }
         cube(event.block).map(|(capacity, rate)| ModEnergyBuffer {
             capacity,
             max_insert: rate,
@@ -440,7 +661,7 @@ impl Hooks for MekanismNative {
     }
 
     fn block_entity_ticks(&self, _host: &dyn Host, event: &mut BlockEntityTicksEvent) {
-        if cube(event.block).is_some() || is_debug(event.block) || event.block == infuser::BLOCK {
+        if cube(event.block).is_some() || is_debug(event.block) || event.block == infuser::BLOCK || is_generator(event.block) {
             event.ticks = true;
         }
     }
@@ -448,6 +669,14 @@ impl Hooks for MekanismNative {
     fn block_entity_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
         if event.entity.id == infuser::BLOCK {
             self.infuser_tick(host, event);
+            return;
+        }
+        if event.entity.id == generator::HEAT {
+            self.heat_tick(host, event);
+            return;
+        }
+        if event.entity.id == generator::SOLAR {
+            self.solar_tick(host, event);
             return;
         }
         if is_debug(&event.entity.id) {
@@ -500,10 +729,11 @@ impl Hooks for MekanismNative {
     }
 
     /// Mekanism turns the cube's front toward its placer.
-    /// Machines face the placer horizontally (Mekanism's `AttributeStateFacing`).
+    /// Machines and generators face the placer horizontally (Mekanism's `AttributeStateFacing`).
     fn state_for_placement(&self, level: &dyn LevelHost, event: &mut StateForPlacementEvent) -> Option<Option<horizon_client::mod_api::BlockStateId>> {
-        let pitch = if event.context.item == infuser::BLOCK { 0.0 } else { event.context.pitch };
-        if event.context.item != infuser::BLOCK {
+        let horizontal = faces_horizontally(&event.context.item);
+        let pitch = if horizontal { 0.0 } else { event.context.pitch };
+        if !horizontal {
             cube(&event.context.item)?;
         }
         let facing = cube::facing_from_look(event.context.yaw, pitch);
@@ -526,6 +756,18 @@ impl Hooks for MekanismNative {
                 own_background: false,
             });
         }
+        if is_generator(event.block) {
+            let fuel = (event.block == generator::HEAT).then_some(generator::HEAT_FUEL_SLOT);
+            return Some(NativeScreen {
+                width: generator::WIDTH,
+                height: generator::HEIGHT,
+                slots: vec![fuel],
+                inventory_y: generator::INVENTORY_Y,
+                inventory_x: 8.0,
+                own_labels: true,
+                own_background: false,
+            });
+        }
         cube(event.block)?;
         Some(NativeScreen {
             width: 176.0,
@@ -542,6 +784,14 @@ impl Hooks for MekanismNative {
     fn screen_draw(&self, host: &dyn Host, event: &mut ScreenDrawEvent) {
         if event.block == infuser::BLOCK {
             draw_infuser(host, event);
+            return;
+        }
+        if event.block == generator::HEAT {
+            draw_heat(host, event);
+            return;
+        }
+        if event.block == generator::SOLAR {
+            draw_solar(host, event);
             return;
         }
         let Some((capacity, rate)) = cube(event.block) else { return };
@@ -608,6 +858,10 @@ impl Hooks for MekanismNative {
     fn screen_tooltip(&self, _host: &dyn Host, event: &mut ScreenTooltipEvent) {
         if event.block == infuser::BLOCK {
             event.lines.extend(infuser::tooltip(event.data, event.at));
+        } else if event.block == generator::HEAT {
+            event.lines.extend(generator::heat_tooltip(event.data, event.at));
+        } else if event.block == generator::SOLAR {
+            event.lines.extend(generator::solar_tooltip(event.data, event.at));
         }
     }
 

@@ -77,8 +77,8 @@
 
 ## M04 - Energieerzeugung / Generators-Grundstufe [P1]
 
-- [ ] Heat Generator (Brennstoff, Umgebung und Ausgabeseiten).
-- [ ] Solar Generator und Advanced Solar Generator.
+- [ ] Heat Generator (Brennstoff, Umgebung und Ausgabeseiten). *(Implementiert, ingame ungetestet: eigener Content-Mod `content/mekanismgenerators` mit Upstream-IDs, Logik in `native/mekanism_native/api/src/generator.rs`. Lava-Tank 1000 mB, 100 mB/t, Lava-Nachbarn 7/Seite, Nether +10, Wärme-/Carnot-Modell wie Original, Energie aus der Front in Cube/Maschine. Nicht portiert: Energie-Slot, Redstone, Wärmeübertragung an Nachbarn.)*
+- [ ] Solar Generator und Advanced Solar Generator. *(Solar Generator implementiert, ingame ungetestet: 2 FE/t Spitze, Biom-Faktor aus Vanilla-Klimatabelle, Tageszeit/Regen nach Vanilla-Formel, Energie nach unten. Advanced Solar ist Multiblock: offen.)*
 - [ ] Wind Generator (Höhe/Wetter nach Original).
 - [ ] Bio Generator und Bio Fuel.
 - [ ] Gas-Burning Generator, nachdem Chemie/Fluids funktionieren.

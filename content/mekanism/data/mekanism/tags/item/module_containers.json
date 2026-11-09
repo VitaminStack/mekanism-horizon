@@ -1,8 +1,0 @@
-{
-  "replace": false,
-  "values": [
-    "#mekanism:module_containers/colorable",
-    "#mekanism:module_containers/armor",
-    "#mekanism:module_containers/held"
-  ]
-}

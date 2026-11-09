@@ -1,6 +1,7 @@
 """Generate the Horizon-specific half of Mekanism's resource content (M02):
-registry declarations (`data/mekanism/horizon/`), block loot and ore
-generation. Assets, recipes, tags and names come from upstream through
+registry declarations (`data/<mod>/horizon/`), block loot and ore
+generation, for both content mods: `content/mekanism` and, as upstream ships
+the generators as their own mod, `content/mekanismgenerators` (M04). Assets, recipes, tags and names come from upstream through
 `scripts/import_upstream.py`, which runs after this one.
 
 IDs and ore-generation defaults follow Mekanism 26.3 (`MekanismItems`,
@@ -10,8 +11,8 @@ from pathlib import Path
 import json
 
 ROOT = Path(__file__).resolve().parents[1]
-C = ROOT / 'content' / 'mekanism'
 NS = 'mekanism'
+GEN = 'mekanismgenerators'
 REGISTRY = ROOT / 'scripts' / 'registry.json'
 
 PRIMARY = ['osmium', 'tin', 'lead', 'uranium']
@@ -25,47 +26,51 @@ MISC_ITEMS = ['fluorite_gem', 'salt',
               'enriched_carbon', 'enriched_redstone', 'enriched_diamond', 'enriched_refined_obsidian',
               'enriched_tin', 'enriched_gold', 'enriched_iron']
 
-items, blocks = [], []          # registry ids in declaration order
+# registry ids in declaration order, per content mod (= namespace)
+registry = {ns: {'items': [], 'blocks': []} for ns in (NS, GEN)}
 
 
-def put(rel, obj):
-    path = C / rel
+def put(rel, obj, ns=NS):
+    path = ROOT / 'content' / ns / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 
 
-def item(id_, template='minecraft:iron_ingot', stack=64):
-    items.append(id_)
-    put(f'data/{NS}/horizon/item/{id_}.json', {'template': template, 'rarity': 'common', 'max_stack_size': stack})
+def item(id_, template='minecraft:iron_ingot', stack=64, ns=NS):
+    registry[ns]['items'].append(id_)
+    put(f'data/{ns}/horizon/item/{id_}.json', {'template': template, 'rarity': 'common', 'max_stack_size': stack},
+        ns)
 
 
-def loot(id_, drop, count=None, explosion_proof=False):
-    entry = {'type': 'minecraft:item', 'name': f'{NS}:{drop}'}
+def loot(id_, drop, count=None, explosion_proof=False, ns=NS):
+    entry = {'type': 'minecraft:item', 'name': f'{ns}:{drop}'}
     if count:
         entry['functions'] = [{'function': 'minecraft:set_count',
                                'count': {'type': 'minecraft:uniform', 'min': count[0], 'max': count[1]}}]
-    put(f'data/{NS}/loot_table/blocks/{id_}.json', {
+    put(f'data/{ns}/loot_table/blocks/{id_}.json', {
         'type': 'minecraft:block',
         'pools': [{'entries': [entry], 'rolls': 1} if explosion_proof else
                   {'condition': {'type': 'minecraft:survives_explosion'}, 'entries': [entry], 'rolls': 1}],
-        'random_sequence': f'{NS}:blocks/{id_}',
-    })
+        'random_sequence': f'{ns}:blocks/{id_}',
+    }, ns)
 
 
 def block(id_, template, hardness, resistance, drop=None, count=None, requires_tool=True, extra=None,
-          explosion_proof=False, sounds=None):
-    blocks.append(id_)
+          explosion_proof=False, sounds=None, ns=NS, occludes=True):
+    registry[ns]['blocks'].append(id_)
     props = {'hardness': hardness, 'explosion_resistance': resistance, 'requires_tool': requires_tool}
     if sounds:
         # Sound type as a vanilla block id; overrides the template's (Horizon `properties.sounds`).
         props['sounds'] = sounds
-    put(f'data/{NS}/horizon/block/{id_}.json', {
+    if not occludes:
+        props['occludes'] = False
+    put(f'data/{ns}/horizon/block/{id_}.json', {
         'template': template,
         'properties': props,
         **(extra or {}),
         'item': True,
-    })
-    loot(id_, drop or id_, count, explosion_proof)
+    }, ns)
+    loot(id_, drop or id_, count, explosion_proof, ns)
 
 
 # --- items ---
@@ -129,9 +134,34 @@ block('metallurgic_infuser', 'minecraft:barrel', 3.5, 16.0,
 put(f'data/{NS}/horizon/menu/metallurgic_infuser.json', {'slots': 3, 'data_slots': 6, 'results': [2]})
 # Upstream has no blockstate file for machines (its client code builds it); same model per facing.
 FACING_Y = {'north': 0, 'east': 90, 'south': 180, 'west': 270, 'up': 0, 'down': 0}
-put(f'assets/{NS}/blockstates/metallurgic_infuser.json', {'variants': {
-    f'facing={f}': {'model': f'{NS}:block/metallurgic_infuser', **({'y': y} if y else {})}
-    for f, y in FACING_Y.items()}})
+
+
+def facing_blockstate(id_, ns=NS):
+    put(f'assets/{ns}/blockstates/{id_}.json', {'variants': {
+        f'facing={f}': {'model': f'{ns}:block/{id_}', **({'y': y} if y else {})}
+        for f, y in FACING_Y.items()}}, ns)
+
+
+facing_blockstate('metallurgic_infuser')
+
+# --- generators (M04), content mod `mekanismgenerators`: ticked, powered and drawn by
+# native/mekanism_native. BlockTile.defaultProperties (3.5, 16) as the infuser; the barrel template
+# gives `facing` and the menu, the native mod turns the front toward the placer, horizontally.
+# Heat Generator slot 0: fuel (lava bucket or furnace fuel). The Solar Generator has no slot of its
+# own (one hidden placeholder). Mekanism's energy (charging) slot is not ported on either.
+# Wind and Advanced Solar Generator are multiblocks (bounding blocks): not yet.
+MACHINE_STATE = {'default_state': {'facing': 'north'}}
+# Upstream's blockstate picks the model by `active` (the drum glows while burning), set by the native mod.
+# The models are not full cubes: `occludes: false` keeps the faces of the blocks beside them drawn.
+block('heat_generator', 'minecraft:barrel', 3.5, 16.0, ns=GEN, occludes=False, extra={
+    'state_properties': {'active': {'type': 'boolean'}},
+    'default_state': {'facing': 'north', 'active': 'false'}})
+block('solar_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
+item('solar_panel', ns=GEN)
+put(f'data/{GEN}/horizon/menu/heat_generator.json', {'slots': 1, 'data_slots': 7, 'results': []}, GEN)
+put(f'data/{GEN}/horizon/menu/solar_generator.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
+for gid in ('heat_generator', 'solar_generator'):
+    facing_blockstate(gid, GEN)
 
 # Debug blocks for testing the cubes (TODO N08), ticked by native/mekanism_native.
 for did, tex in (('debug_energy_source', 'redstone_block'), ('debug_energy_sink', 'coal_block')):
@@ -216,6 +246,7 @@ COLORS = ['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 
 CONVENTION_TAGS = {
     'cobblestones/normal': ['minecraft:cobblestone'],
     'glass_blocks/cheap': ['minecraft:glass'] + [f'minecraft:{c}_stained_glass' for c in COLORS],
+    'glass_panes': ['minecraft:glass_pane'] + [f'minecraft:{c}_stained_glass_pane' for c in COLORS],
     'ingots/copper': ['minecraft:copper_ingot'],
     'mushrooms': ['minecraft:brown_mushroom', 'minecraft:red_mushroom'],
     'netherracks': ['minecraft:netherrack'],
@@ -231,14 +262,16 @@ for tag, values in CONVENTION_TAGS.items():
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS] + [f'{NS}:metallurgic_infuser']})
+put('data/minecraft/tags/block/mineable/pickaxe.json',
+    {'replace': False, 'values': [f'{GEN}:heat_generator', f'{GEN}:solar_generator']}, GEN)
 
 # Hand-written content stays declared too, so the importer covers it.
-for f in (C / f'data/{NS}/horizon/item').glob('*.json'):
-    if f.stem not in items:
-        items.append(f.stem)
-for f in (C / f'data/{NS}/horizon/block').glob('*.json'):
-    if f.stem not in blocks:
-        blocks.append(f.stem)
-REGISTRY.write_text(json.dumps({'items': sorted(items), 'blocks': sorted(blocks)}, indent=2) + '\n',
-                    encoding='utf-8')
-print(f'{len(items)} items, {len(blocks)} blocks declared')
+for ns, reg in registry.items():
+    for kind in ('item', 'block'):
+        for f in (ROOT / 'content' / ns / f'data/{ns}/horizon/{kind}').glob('*.json'):
+            if f.stem not in reg[f'{kind}s']:
+                reg[f'{kind}s'].append(f.stem)
+REGISTRY.write_text(json.dumps({ns: {k: sorted(v) for k, v in reg.items()} for ns, reg in registry.items()},
+                               indent=2) + '\n', encoding='utf-8')
+for ns, reg in registry.items():
+    print(f'{ns}: {len(reg["items"])} items, {len(reg["blocks"])} blocks declared')

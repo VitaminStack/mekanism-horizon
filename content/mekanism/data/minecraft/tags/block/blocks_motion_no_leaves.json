@@ -1,15 +1,9 @@
 {
   "replace": false,
   "values": [
-    "#mekanism:bins",
-    "#mekanism:chemical_tanks",
-    "#mekanism:fluid_tanks",
     "#mekanism:energy_cubes",
-    "#mekanism:transmitters",
     "#mekanism:personal_storage",
-    "#mekanism:heaters",
     "#mekanism:factory_supported",
-    "#mekanism:structures",
     "mekanism:block_osmium",
     "mekanism:block_raw_osmium",
     "mekanism:block_tin",

@@ -10,6 +10,10 @@ pub mod cube;
 #[path = "../../../native/mekanism_native/api/src/infuser.rs"]
 pub mod infuser;
 
+/// Heat and Solar Generator logic (M04).
+#[path = "../../../native/mekanism_native/api/src/generator.rs"]
+pub mod generator;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {
     stored: u64,

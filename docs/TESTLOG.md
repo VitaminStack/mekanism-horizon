@@ -44,3 +44,18 @@ Build: Native `native-fdc87ae-f7d32c38dabb` (mit GUI-Patch: Barrel-Template + Bl
 | Tooltip mit Energie | ausstehend (nicht per Agent Control lesbar) |
 
 Einmal sprang B beim ersten Platzieren von 252.000 auf 504.000. Nicht reproduzierbar (2 Wiederholungen ohne Abweichung); Würfel A trug danach `components.custom_data` mit 252.000, wurde also zwischendurch von Hand abgebaut und neu gesetzt. Vermutlich kam die Energie aus diesem Item, nicht aus einer Duplikation.
+
+## M04 Heat und Solar Generator (09.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-c77934992415`; Content-Mods `mekanism` und `mekanismgenerators` (letzterer muss in `horizon-mods.txt` als `mod.mekanismgenerators:true` an sein, neue Mods starten aus).
+
+| Test | Ergebnis |
+|---|---|
+| Beide Generatoren per `setblock`, Block-Entity wird angelegt | ok |
+| Solar (Tag, unter freiem Himmel) über Basic Cube: Energie fließt nach unten in den Cube (110, 535 FE) | ok |
+| Heat Generator: Kohle in den Slot wird zu 80 mB Lava je Stück und in 100-mB-Schritten verbrannt | ok |
+| Heat Generator: Energie aus der Front in einen Cube (234 FE) | ok |
+| Lava an den Seiten (auch fließend) hebt die Temperatur (5 Seiten: 285 K auf etwa 337 K); ohne Lava Rückkehr zur Biom-Temperatur | ok |
+| GUI Heat Generator öffnet: Titel, Brennstoff-Slot, Lava-Gauge, Temperatur (285 K), FE/t, Energiebalken | ok (Screenshot) |
+| Lava-Eimer im Slot bei nicht leerem Tank bleibt liegen (passt nicht ganz) | ok |
+| GUI Solar Generator, Tooltips, Nacht/Regen, Nether, Neustart | ausstehend |

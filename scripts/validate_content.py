@@ -43,7 +43,23 @@ def main():
     # Cube needs any pickaxe (no tool tier), like Mekanism machines.
     rel = 'data/minecraft/tags/block/mineable/pickaxe.json'
     assert 'mekanism:basic_energy_cube' in json.loads((CONTENT/rel).read_text(encoding='utf-8'))['values']
-    print(f'OK: {len(json_files)} JSON-Dateien + Manifest geprueft (nur Strukturtest).')
+
+    # Generators (M04): upstream's own mod, so its own content mod with upstream ids.
+    gen = ROOT / 'content' / 'mekanismgenerators'
+    manifest = tomllib.loads((gen / 'horizon-mod.toml').read_text(encoding='utf-8'))
+    assert manifest['id'] == 'mekanismgenerators' and manifest['api'] == '0.2'
+    assert 'registries' in manifest['capabilities']
+    gen_files = sorted(gen.rglob('*.json'))
+    for path in gen_files:
+        json.loads(path.read_text(encoding='utf-8'))
+    for name in ['heat_generator', 'solar_generator']:
+        decl = json.loads((gen/f'data/mekanismgenerators/horizon/block/{name}.json').read_text(encoding='utf-8'))
+        assert decl['template'] == 'minecraft:barrel', 'Generators need a menu-opening template'
+        assert (gen/f'data/mekanismgenerators/horizon/menu/{name}.json').is_file()
+        assert (gen/f'assets/mekanismgenerators/blockstates/{name}.json').is_file()
+        assert (gen/f'data/mekanismgenerators/loot_table/blocks/{name}.json').is_file()
+    json_files += gen_files
+    print(f'OK: {len(json_files)} JSON-Dateien + Manifeste geprueft (nur Strukturtest).')
     print(r'Fuer offizielle Pruefung: .\scripts\Build-Content.ps1')
 
 
