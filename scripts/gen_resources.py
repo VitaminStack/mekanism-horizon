@@ -104,6 +104,14 @@ for tier, tex in CUBE_TEXTURE.items():
     put(f'assets/{NS}/blockstates/{cid}.json', {'variants': {'': {'model': f'{NS}:block/{cid}'}}})
     put(f'assets/{NS}/items/{cid}.json', {'model': {'type': 'minecraft:model', 'model': f'{NS}:block/{cid}'}})
 
+# Debug blocks for testing the cubes (TODO N08), ticked by native/mekanism_native.
+for did, tex in (('debug_energy_source', 'redstone_block'), ('debug_energy_sink', 'coal_block')):
+    block(did, 'minecraft:iron_block', 1.0, 1.0, requires_tool=False)
+    put(f'assets/{NS}/models/block/{did}.json',
+        {'parent': 'minecraft:block/cube_all', 'textures': {'all': f'minecraft:block/{tex}'}})
+    put(f'assets/{NS}/blockstates/{did}.json', {'variants': {'': {'model': f'{NS}:block/{did}'}}})
+    put(f'assets/{NS}/items/{did}.json', {'model': {'type': 'minecraft:model', 'model': f'{NS}:block/{did}'}})
+
 # --- ore generation: OreType defaults, translated to vanilla features ---
 # (name, per chunk, discard on air, max vein size, shape, min anchor, max anchor, plateau)
 ORE_GEN = {

@@ -78,6 +78,8 @@
     "block_tin",
     "block_uranium",
     "creative_energy_cube",
+    "debug_energy_sink",
+    "debug_energy_source",
     "deepslate_fluorite_ore",
     "deepslate_lead_ore",
     "deepslate_osmium_ore",

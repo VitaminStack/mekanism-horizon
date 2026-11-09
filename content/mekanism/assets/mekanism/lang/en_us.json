@@ -17,6 +17,8 @@
   "block.mekanism.block_tin": "Block of Tin",
   "block.mekanism.block_uranium": "Block of Uranium",
   "block.mekanism.creative_energy_cube": "Creative Energy Cube",
+  "block.mekanism.debug_energy_sink": "Debug Energy Sink",
+  "block.mekanism.debug_energy_source": "Debug Energy Source",
   "block.mekanism.deepslate_fluorite_ore": "Deepslate Fluorite Ore",
   "block.mekanism.deepslate_lead_ore": "Deepslate Lead Ore",
   "block.mekanism.deepslate_osmium_ore": "Deepslate Osmium Ore",

@@ -18,12 +18,12 @@
 - [x] **N02** Nach dem Patch `Test-Content.ps1` und `cargo test --manifest-path .\logic\energy\Cargo.toml` erneut erfolgreich ausführen.
 - [x] **N03** `Strg+B`: `.hmod` bauen, automatisch kopieren; `/give @s mekanism:basic_energy_cube` im Spiel testen und Block platzieren. *(09.11.2026: give, platzieren und Drop bestätigt; Loot-Tabellen brauchen Horizon-Format `condition`.)*
 - [x] **N04** Native-Horizon-API-Version/Nightly-Commit bestimmen und `native/mekanism_native/` darauf abstimmen. *(09.11.2026: gepinnt auf Horizon `fdc87ae` (installierter Nightly); Hook-Signaturen nur gegen 99bd9655 (API 413) statisch geprüft. Kompilieren erst in N05.)*
-- [ ] **N05** Native-Mod mit dem Horizon Launcher bauen und mit bewusst erteilter Vertrauensfreigabe installieren; Logs prüfen.
+- [x] **N05** Native-Mod mit dem Horizon Launcher bauen und mit bewusst erteilter Vertrauensfreigabe installieren; Logs prüfen. *(09.11.2026: `scripts/Build-Native.ps1 -TrustNativeCode`, Build `native-fdc87ae-8abc9345573f`, Ingame bestätigt.)*
 - [x] **N06** Beim Platzieren wird eine native Block-Entity mit Energie-Capability angelegt. *(09.11.2026 per Agent Control: alle 5 Cubes haben Block-Entity.)*
 - [x] **N07** Basic Energy Cube: 4.000.000 Kapazität, 4.000 Ein-/Ausgabe-Limit pro Aufruf (Standard aus Original-`EnergyCubeTier`; später konfigurierbar).
-- [ ] **N08** Energie mit Test-Hook/-Generator einfuegen und entnehmen; Seiten, Limits, Leer/Voll testen.
+- [x] **N08** Energie mit Test-Hook/-Generator einfuegen und entnehmen; Seiten, Limits, Leer/Voll testen. *(09.11.2026: `debug_energy_source`/`debug_energy_sink` per Agent Control: 4.000/Tick, Deckel bei 4.000.000, Entleeren bis 0. Schreiben die Cube-NBT direkt; Horizons eigener Seiten-Pfad (`insert_faces`) ungetestet.)*
 - [x] **N09** Welt speichern, Horizon beenden und wieder starten: gespeicherte Energie muss erhalten bleiben. *(09.11.2026: `energy: 123456` überlebt Speichern + Neustart.)*
-- [ ] **N10** Erfolgreichen Ingame-Test, Build-Log und Screenshots dokumentieren, committen, PR erstellen.
+- [ ] **N10** Erfolgreichen Ingame-Test, Build-Log und Screenshots dokumentieren, committen, PR erstellen. *(Protokoll in `docs/TESTLOG.md`; offen: N08-Ergebnis, PR.)*
 
 ## M00 - Funktionierende Projektbasis und Qualitaet [P0]
 
@@ -36,7 +36,7 @@
 - [x] Horizon-Nightly, Native-Hook-API und Mekanism-Upstream-Commit pinnen.
 - [ ] Test- und Buildanleitung für Windows dokumentieren.
 - [ ] CI: Content-Validierung, Rust-Tests, JSON-Checks; Native-Build wenn reproduzierbar.
-- [ ] Lizenz und Copyright der Original-Assets/Codeuebernahmen prüfen und beilegen.
+- [x] Lizenz und Copyright der Original-Assets/Codeuebernahmen prüfen und beilegen. *(MIT, `content/mekanism/LICENSE-MEKANISM`.)*
 
 ## M01 - Basic Energy Cube: erster wirklich funktionierender Block [P0]
 

@@ -29,7 +29,8 @@ VANILLA_RECIPES = {'minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 
                    'minecraft:blasting', 'minecraft:smoking', 'minecraft:campfire_cooking',
                    'minecraft:stonecutting'}
 # Hand-made placeholder assets kept until their custom model loaders are ported.
-ASSET_SKIP = {f'{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')}
+ASSET_SKIP = {f'{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')} | {
+    'debug_energy_source', 'debug_energy_sink'}
 REF = re.compile(r'"#?mekanism:([a-z0-9_/.]+)"')
 
 

@@ -27,6 +27,11 @@ const CUBES: [(&str, i32, i32); 5] = [
     ("mekanism:creative_energy_cube", i32::MAX, i32::MAX),
 ];
 const CREATIVE_CUBE: &str = "mekanism:creative_energy_cube";
+/// Debug blocks for testing the cubes (TODO N08): the source pushes energy into
+/// neighbouring cubes, the sink pulls it out, each by the cube's own per-call limit.
+const DEBUG_SOURCE: &str = "mekanism:debug_energy_source";
+const DEBUG_SINK: &str = "mekanism:debug_energy_sink";
+const NEIGHBOURS: [[i32; 3]; 6] = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 /// Mekanism `GearConfig`: tablet max energy 1,000,000, charge rate 5,000.
 const TABLET: &str = "mekanism:energy_tablet";
 const TABLET_CAPACITY: i32 = 1_000_000;
@@ -34,6 +39,10 @@ const TABLET_RATE: i32 = 5_000;
 
 pub fn hooks() -> Box<dyn Hooks> {
     Box::new(MekanismNative)
+}
+
+fn is_debug(block: &str) -> bool {
+    block == DEBUG_SOURCE || block == DEBUG_SINK
 }
 
 fn cube(block: &str) -> Option<(i32, i32)> {
@@ -52,7 +61,8 @@ struct MekanismNative;
 
 impl Hooks for MekanismNative {
     fn block_entity(&self, _host: &mut dyn Host, event: &mut BlockEntityEvent) -> Option<(String, Compound)> {
-        cube(event.block).map(|_| (event.block.to_owned(), Compound::new()))
+        (cube(event.block).is_some() || is_debug(event.block))
+            .then(|| (event.block.to_owned(), Compound::new()))
     }
 
     fn block_entity_energy(&self, _host: &dyn Host, event: &mut BlockEntityEnergyEvent) -> Option<ModEnergyBuffer> {
@@ -66,13 +76,37 @@ impl Hooks for MekanismNative {
     }
 
     fn block_entity_ticks(&self, _host: &dyn Host, event: &mut BlockEntityTicksEvent) {
-        if event.block == CREATIVE_CUBE {
+        if event.block == CREATIVE_CUBE || is_debug(event.block) {
             event.ticks = true;
         }
     }
 
     /// The creative cube never runs dry: refill it every tick.
-    fn block_entity_tick(&self, _host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+    fn block_entity_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+        if is_debug(&event.entity.id) {
+            let source = event.entity.id == DEBUG_SOURCE;
+            let pos = event.pos;
+            for d in NEIGHBOURS {
+                let at = [pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]];
+                host.change_mod_block_entity(at, &mut |m| {
+                    let Some((capacity, rate)) = cube(&m.id) else { return };
+                    let key = energy_key(&m.nbt);
+                    let stored = match m.nbt.get(&key) {
+                        Some(Tag::Int(v)) => *v,
+                        _ => 0,
+                    };
+                    let next = if source {
+                        stored.saturating_add(rate.min(capacity - stored))
+                    } else {
+                        stored - rate.min(stored)
+                    };
+                    if next != stored {
+                        m.nbt.insert(key, Tag::Int(next));
+                    }
+                });
+            }
+            return;
+        }
         if event.entity.id != CREATIVE_CUBE {
             return;
         }
