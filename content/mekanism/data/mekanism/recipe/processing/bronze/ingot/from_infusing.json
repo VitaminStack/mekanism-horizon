@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "chemical_input": {
+    "amount": 10,
+    "ingredient": "mekanism:tin"
+  },
+  "experience": 0.7,
+  "group": "mekanism:ingot_bronze",
+  "item_input": {
+    "count": 3,
+    "ingredient": "#c:ingots/copper"
+  },
+  "output": {
+    "count": 4,
+    "id": "mekanism:ingot_bronze"
+  },
+  "per_tick_usage": false
+}

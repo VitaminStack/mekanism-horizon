@@ -3,7 +3,8 @@
   "properties": {
     "hardness": 5.0,
     "explosion_resistance": 6.0,
-    "requires_tool": true
+    "requires_tool": true,
+    "sounds": "minecraft:stone"
   },
   "item": true
 }

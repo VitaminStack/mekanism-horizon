@@ -53,11 +53,15 @@ def loot(id_, drop, count=None, explosion_proof=False):
 
 
 def block(id_, template, hardness, resistance, drop=None, count=None, requires_tool=True, extra=None,
-          explosion_proof=False):
+          explosion_proof=False, sounds=None):
     blocks.append(id_)
+    props = {'hardness': hardness, 'explosion_resistance': resistance, 'requires_tool': requires_tool}
+    if sounds:
+        # Sound type as a vanilla block id; overrides the template's (Horizon `properties.sounds`).
+        props['sounds'] = sounds
     put(f'data/{NS}/horizon/block/{id_}.json', {
         'template': template,
-        'properties': {'hardness': hardness, 'explosion_resistance': resistance, 'requires_tool': requires_tool},
+        'properties': props,
         **(extra or {}),
         'item': True,
     })
@@ -78,21 +82,25 @@ for i in MISC_ITEMS:
     item(i, 'minecraft:quartz' if i in ('fluorite_gem',) else 'minecraft:iron_ingot')
 
 # --- blocks (hardness/resistance from MekanismBlocks / BlockResource) ---
+# Sound types: Mekanism sets none on resource blocks and steel casing (vanilla default STONE), only
+# SAND on salt and DEEPSLATE on deepslate ores. Templates iron_block (METAL) and clay (GRAVEL) differ.
+STONE = 'minecraft:stone'
 for m in PRIMARY:
-    block(f'block_{m}', 'minecraft:iron_block', 5.0, 6.0)
+    block(f'block_{m}', 'minecraft:iron_block', 5.0, 6.0, sounds=STONE)
     block(f'block_raw_{m}', 'minecraft:raw_iron_block', 5.0, 6.0)
     block(f'{m}_ore', 'minecraft:iron_ore', 3.0, 3.0, f'raw_{m}')
     block(f'deepslate_{m}_ore', 'minecraft:deepslate_iron_ore', 4.5, 3.0, f'raw_{m}')
 for a in ALLOYS:
     # Refined obsidian is blast-proof in Mekanism (resistance 1200).
     block(f'block_{a}', 'minecraft:iron_block', 50.0 if a == 'refined_obsidian' else 5.0,
-          1200.0 if a == 'refined_obsidian' else 6.0)
+          1200.0 if a == 'refined_obsidian' else 6.0, sounds=STONE)
 block('block_fluorite', 'minecraft:quartz_block', 5.0, 6.0)
 block('fluorite_ore', 'minecraft:diamond_ore', 3.0, 3.0, 'fluorite_gem', (1, 4))
 block('deepslate_fluorite_ore', 'minecraft:deepslate_diamond_ore', 4.5, 3.0, 'fluorite_gem', (1, 4))
 block('block_charcoal', 'minecraft:coal_block', 5.0, 6.0)
-block('block_salt', 'minecraft:clay', 0.5, 0.5, 'salt', (4, 4), requires_tool=False)
-block('steel_casing', 'minecraft:iron_block', 3.5, 9.0)
+block('block_salt', 'minecraft:clay', 0.5, 0.5, 'salt', (4, 4), requires_tool=False,
+      sounds='minecraft:sand')
+block('steel_casing', 'minecraft:iron_block', 3.5, 9.0, sounds=STONE)
 
 # --- energy (M03): cubes are ticked/buffered by native/mekanism_native ---
 item('energy_tablet', stack=1)
@@ -110,6 +118,20 @@ CUBE_STATE = {
 for tier in CUBE_TIERS:
     # Mekanism drops the cube even when it is blown up (no survives_explosion), with its energy.
     block(f'{tier}_energy_cube', 'minecraft:barrel', 2.0, 2.4, extra=CUBE_STATE, explosion_proof=True)
+
+# --- machines (M05): ticked, powered and drawn by native/mekanism_native ---
+# Metallurgic Infuser: BlockTile.defaultProperties (strength 3.5, 16). The barrel template gives
+# `facing` and a block that opens its menu; the native mod turns the front (north in Mekanism's
+# model) toward the placer, horizontally only. Slots: 0 infusion item, 1 input, 2 output (results).
+# Mekanism's energy slot is not ported (see native/mekanism_native/api/src/infuser.rs).
+block('metallurgic_infuser', 'minecraft:barrel', 3.5, 16.0,
+      extra={'default_state': {'facing': 'north'}})
+put(f'data/{NS}/horizon/menu/metallurgic_infuser.json', {'slots': 3, 'data_slots': 6, 'results': [2]})
+# Upstream has no blockstate file for machines (its client code builds it); same model per facing.
+FACING_Y = {'north': 0, 'east': 90, 'south': 180, 'west': 270, 'up': 0, 'down': 0}
+put(f'assets/{NS}/blockstates/metallurgic_infuser.json', {'variants': {
+    f'facing={f}': {'model': f'{NS}:block/metallurgic_infuser', **({'y': y} if y else {})}
+    for f, y in FACING_Y.items()}})
 
 # Debug blocks for testing the cubes (TODO N08), ticked by native/mekanism_native.
 for did, tex in (('debug_energy_source', 'redstone_block'), ('debug_energy_sink', 'coal_block')):
@@ -187,9 +209,28 @@ put(f'data/{NS}/neoforge/biome_modifier/salt.json', {
 put(f'data/{NS}/tags/worldgen/biome/spawn_ores.json',
     {'replace': False, 'values': ['#minecraft:is_overworld', {'id': '#c:is_overworld', 'required': False}]})
 
+# NeoForge's conventional item tags for vanilla items that imported recipes name. Horizon has no
+# NeoForge, so nothing else defines them (members as NeoForge's `Tags.Items`).
+COLORS = ['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 'gray', 'light_gray',
+          'cyan', 'purple', 'blue', 'brown', 'green', 'red', 'black']
+CONVENTION_TAGS = {
+    'cobblestones/normal': ['minecraft:cobblestone'],
+    'glass_blocks/cheap': ['minecraft:glass'] + [f'minecraft:{c}_stained_glass' for c in COLORS],
+    'ingots/copper': ['minecraft:copper_ingot'],
+    'mushrooms': ['minecraft:brown_mushroom', 'minecraft:red_mushroom'],
+    'netherracks': ['minecraft:netherrack'],
+    'player_workstations/furnaces': ['minecraft:furnace'],
+    'rods/wooden': ['minecraft:stick'],
+    'sands': ['minecraft:sand', 'minecraft:red_sand'],
+    'storage_blocks/coal': ['minecraft:coal_block'],
+    'storage_blocks/redstone': ['minecraft:redstone_block'],
+}
+for tag, values in CONVENTION_TAGS.items():
+    put(f'data/c/tags/item/{tag}.json', {'replace': False, 'values': values})
+
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
-    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]})
+    {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS] + [f'{NS}:metallurgic_infuser']})
 
 # Hand-written content stays declared too, so the importer covers it.
 for f in (C / f'data/{NS}/horizon/item').glob('*.json'):

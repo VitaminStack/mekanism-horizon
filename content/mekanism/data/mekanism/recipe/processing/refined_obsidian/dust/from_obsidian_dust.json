@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "chemical_input": {
+    "amount": 10,
+    "ingredient": "mekanism:diamond"
+  },
+  "experience": 0.5,
+  "group": "mekanism:dust_refined_obsidian",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:dusts/obsidian"
+  },
+  "output": {
+    "id": "mekanism:dust_refined_obsidian"
+  },
+  "per_tick_usage": false
+}

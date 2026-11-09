@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:chemical_conversion",
+  "group": "mekanism:carbon",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/coal"
+  },
+  "output": {
+    "amount": 90,
+    "id": "mekanism:carbon"
+  }
+}

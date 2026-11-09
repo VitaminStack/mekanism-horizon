@@ -6,6 +6,10 @@
 #[path = "../../../native/mekanism_native/api/src/cube.rs"]
 pub mod cube;
 
+/// The Metallurgic Infuser's Horizon-free part (buffer, operation, menu data).
+#[path = "../../../native/mekanism_native/api/src/infuser.rs"]
+pub mod infuser;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {
     stored: u64,

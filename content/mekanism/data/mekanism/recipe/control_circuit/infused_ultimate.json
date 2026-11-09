@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "chemical_input": {
+    "amount": 240,
+    "ingredient": "mekanism:refined_obsidian"
+  },
+  "experience": 0.4,
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:circuits/elite"
+  },
+  "output": {
+    "id": "mekanism:ultimate_control_circuit"
+  },
+  "per_tick_usage": false
+}

@@ -7,8 +7,9 @@ ids in `scripts/registry.json` (written by `gen_resources.py`):
   the textures they use (+ `.mcmeta`), from `src/main/resources` and
   `src/datagen/generated`;
 - recipes of vanilla types (`minecraft:crafting_*`, `smelting`, `blasting`)
-  whose every `mekanism:` id is registered here; Mekanism machine recipe types
-  are skipped until their machines exist;
+  whose every `mekanism:` id is registered here, and of the Mekanism machine
+  types in MACHINE_RECIPES (chemical tags resolved, `neoforge:or` flattened);
+  other machine recipe types are skipped until their machines exist;
 - block/item tags (any namespace), filtered to registered ids, merged into ours;
 - en_us and de_de names for registered ids.
 
@@ -33,6 +34,26 @@ VANILLA_RECIPES = {'minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 
 ASSET_SKIP = {f'{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')} | {
     'debug_energy_source', 'debug_energy_sink'}
 REF = re.compile(r'"#?mekanism:([a-z0-9_/.]+)"')
+# Mekanism machine recipe types whose machine exists here.
+MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversion'}
+# Chemicals with Mekanism's infuse-type attribute: what the Metallurgic Infuser takes.
+INFUSE_TYPES = {f'{NS}:{t}' for t in ('carbon', 'redstone', 'diamond', 'refined_obsidian', 'tin', 'gold',
+                                      'bio', 'fungi')}
+
+
+def flat_or(ingredient):
+    """NeoForge's `neoforge:or` (any child matches) as a plain list, which Horizon reads."""
+    if isinstance(ingredient, dict) and ingredient.get('type') == 'neoforge:or':
+        children = ingredient['values']
+    elif isinstance(ingredient, list):
+        children = ingredient
+    else:
+        return ingredient
+    out = []
+    for v in children:
+        v = flat_or(v)
+        out.extend(v if isinstance(v, list) else [v])
+    return out
 
 
 def main(up):
@@ -104,19 +125,42 @@ def main(up):
     stats['models'], stats['textures'] = len(seen_models), len(textures)
 
     # --- recipes ---
+    chem_tags = {}
+    for f in (gen / 'data/mekanism/tags/mekanism/chemical').glob('*.json'):
+        values = json.loads(f.read_text(encoding='utf-8')).get('values', [])
+        if len(values) == 1 and isinstance(values[0], str):
+            chem_tags[f'#{NS}:{f.stem}'] = values[0]
     n = 0
     for src in (gen / 'data/mekanism/recipe').rglob('*.json'):
         text = src.read_text(encoding='utf-8')
         recipe = json.loads(text)
-        if recipe.get('type') == 'mekanism:mek_data':
+        kind = recipe.get('type')
+        if kind == 'mekanism:mek_data':
             # Shaped crafting that also carries the inputs' stored contents over. Horizon has no such
             # type yet, so it is plain shaped crafting: a crafted cube starts empty.
             recipe['type'] = 'minecraft:crafting_shaped'
             text = json.dumps(recipe, indent=2)
-        elif recipe.get('type') not in VANILLA_RECIPES:
+        elif kind in MACHINE_RECIPES:
+            # Read by native/mekanism_native (Horizon keeps mod recipe types as their JSON).
+            # Infusion conversions only for infuse types; the others feed later machines.
+            if kind == 'mekanism:chemical_conversion' and recipe['output']['id'] not in INFUSE_TYPES:
+                continue
+            if 'chemical_input' in recipe:
+                tag = recipe['chemical_input']['ingredient']
+                if tag not in chem_tags:
+                    print(f'  unresolved chemical {tag} in {src.name}')
+                    continue
+                recipe['chemical_input']['ingredient'] = chem_tags[tag]
+            for slot in ('input', 'item_input'):
+                if slot in recipe:
+                    recipe[slot]['ingredient'] = flat_or(recipe[slot]['ingredient'])
+            text = json.dumps(recipe, indent=2)
+        elif kind not in VANILLA_RECIPES:
             continue
-        # `type` and `group` name no item; every other plain `mekanism:` id must be registered.
-        scan = json.dumps({k: v for k, v in recipe.items() if k not in ('type', 'group')})
+        # `type` and `group` name no item, chemicals are no items; every other plain `mekanism:` id
+        # must be registered.
+        skip = ('type', 'group', 'chemical_input') + (('output',) if kind == 'mekanism:chemical_conversion' else ())
+        scan = json.dumps({k: v for k, v in recipe.items() if k not in skip})
         refs = {m.group(1) for m in REF.finditer(scan) if not m.group(0).startswith('"#')}
         if refs <= known:
             dst = C / 'data/mekanism/recipe' / src.relative_to(gen / 'data/mekanism/recipe')

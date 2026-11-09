@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "chemical_input": {
+    "amount": 10,
+    "ingredient": "mekanism:carbon"
+  },
+  "experience": 0.7,
+  "group": "mekanism:dust_steel",
+  "item_input": {
+    "count": 1,
+    "ingredient": "mekanism:enriched_iron"
+  },
+  "output": {
+    "id": "mekanism:dust_steel"
+  },
+  "per_tick_usage": false
+}

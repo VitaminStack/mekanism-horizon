@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "category": "building",
+  "chemical_input": {
+    "amount": 100,
+    "ingredient": "mekanism:gold"
+  },
+  "experience": 0.35,
+  "item_input": {
+    "count": 1,
+    "ingredient": "minecraft:blackstone"
+  },
+  "output": {
+    "id": "minecraft:gilded_blackstone"
+  },
+  "per_tick_usage": false
+}

@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "#mekanism:factories/infusing"
+    "#mekanism:factories/infusing",
+    "mekanism:metallurgic_infuser"
   ]
 }

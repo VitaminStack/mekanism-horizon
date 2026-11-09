@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "chemical_input": {
+    "amount": 20,
+    "ingredient": "mekanism:diamond"
+  },
+  "experience": 0.3,
+  "item_input": {
+    "count": 1,
+    "ingredient": "#mekanism:alloys/infused"
+  },
+  "output": {
+    "id": "mekanism:alloy_reinforced"
+  },
+  "per_tick_usage": false
+}

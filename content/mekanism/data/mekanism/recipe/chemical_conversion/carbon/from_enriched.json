@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:chemical_conversion",
+  "group": "mekanism:carbon",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:enriched/carbon"
+  },
+  "output": {
+    "amount": 80,
+    "id": "mekanism:carbon"
+  }
+}

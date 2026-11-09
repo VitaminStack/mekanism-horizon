@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "category": "building",
+  "chemical_input": {
+    "amount": 10,
+    "ingredient": "mekanism:fungi"
+  },
+  "experience": 0.1,
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:netherracks"
+  },
+  "output": {
+    "id": "minecraft:crimson_nylium"
+  },
+  "per_tick_usage": false
+}
