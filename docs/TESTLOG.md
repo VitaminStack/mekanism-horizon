@@ -64,3 +64,15 @@ Build: Native `native-fdc87ae-c77934992415`; Content-Mods `mekanism` und `mekani
 | Wind Generator Item-Icon | behoben, ok |
 | Advanced Solar Generator: Fuß | behoben, ok |
 | Advanced Solar, Wind Generator (Multiblock, Rotor), Enrichment Chamber, Crusher | ok |
+
+## P0-Refactor: Maschinen-Framework, Rezepte, Energie (09.11.2026)
+
+Build: `scripts/Build-Content.ps1`, `scripts/Build-Native.ps1 -TrustNativeCode`.
+
+| Test | Ergebnis |
+|---|---|
+| Metallurgic Infuser, Enrichment Chamber, Crusher nach dem Refactor (ein Tick, ein Rezept-Cache) | ok |
+| Energie Cube zu Maschinen, Generatoren zu Cube und Maschine | ok |
+| Wind/Advanced Solar abbauen: Bounding-Blöcke verschwinden sofort (`set_block` statt `edit_blocks`) | ok |
+| Abbau eines Bounding-Blocks im Kreativmodus droppt nichts | ok |
+| GUI über jeden Bounding-Block (gespiegeltes Menü `mekanism:bounding_block`) | ok |

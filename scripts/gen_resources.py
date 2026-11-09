@@ -163,12 +163,17 @@ item('solar_panel', ns=GEN)
 for gid in ('advanced_solar_generator', 'wind_generator'):
     block(gid, 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
     put(f'data/{GEN}/horizon/menu/{gid}.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
+# The barrel template lets a bounding block open a menu, as upstream's BlockBounding opens the main
+# block's screen: Horizon's menus are per block type, so the native mod mirrors the main block's
+# data into it (the multiblocks' 5 solar data slots, then which generator it is).
 registry[NS]['blocks'].append('bounding_block')
 put(f'data/{NS}/horizon/block/bounding_block.json', {
-    'template': 'minecraft:stone',
+    'template': 'minecraft:barrel',
     'properties': {'hardness': 3.5, 'explosion_resistance': 4.8, 'requires_tool': False, 'occludes': False},
+    'default_state': {'facing': 'north'},
     'item': False,
 })
+put(f'data/{NS}/horizon/menu/bounding_block.json', {'slots': 1, 'data_slots': 6, 'results': [0]})
 put(f'data/{NS}/loot_table/blocks/bounding_block.json', {'type': 'minecraft:block', 'pools': [],
                                                         'random_sequence': f'{NS}:blocks/bounding_block'})
 # Bio Generator: slot 0 bio fuel (`#c:fuels/bio`), its bioethanol tank kept by the native mod.

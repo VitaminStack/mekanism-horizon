@@ -27,8 +27,9 @@
 //! Not ported: the energy (charging) slot, redstone control, heat transfer to
 //! adjacent heat blocks (there are none yet), filling the Bio Generator from
 //! fluid containers, the `c:no_wind` dimension blacklist (no dimension here
-//! without a sky has wind anyway), and using a bounding block to open the
-//! main block's screen.
+//! without a sky has wind anyway). A bounding block opens a screen of its
+//! own that mirrors its main block's (`generators.rs`), as Horizon cannot
+//! open another block's menu.
 
 pub const HEAT: &str = "mekanismgenerators:heat_generator";
 pub const SOLAR: &str = "mekanismgenerators:solar_generator";

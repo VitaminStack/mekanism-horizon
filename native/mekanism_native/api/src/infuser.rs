@@ -1,6 +1,6 @@
-//! Metallurgic Infuser: the parts that need no Horizon types, so their tests
-//! run in `logic/energy` without building Horizon. Item matching and slots are
-//! in `lib.rs`.
+//! Metallurgic Infuser: what it has beyond the other electric machines (its
+//! `machine::MACHINES` entry): the infuse buffer, its gauge and dump button.
+//! No Horizon types, so the tests run in `logic/energy` without building Horizon.
 //!
 //! Values from Mekanism 26.3: `TileEntityMetallurgicInfuser` (`MAX_INFUSE` one
 //! bucket, `BASE_TICKS_REQUIRED` 10 s), `UsageConfig.metallurgicInfuser` (5 per
@@ -19,10 +19,9 @@ pub const CONVERSION: &str = "mekanism:chemical_conversion";
 pub const SOUND: &str = "mekanism:tile.machine.metallurgic_infuser";
 pub const SOUND_TICKS: i32 = 29;
 
-pub const USAGE: i32 = 5;
-pub const CAPACITY: i32 = 4 * USAGE;
-pub const TICKS: i32 = 200;
 pub const MAX_INFUSE: i32 = 1_000;
+
+use super::machine::inside;
 
 pub const SLOT_INFUSION: usize = 0;
 pub const SLOT_INPUT: usize = 1;
@@ -79,41 +78,8 @@ impl Tank {
     }
 }
 
-/// One tick of an operation that can run: spend `USAGE` and advance, or stall
-/// without energy. Returns true when the operation completes this tick, and
-/// then progress starts over.
-pub fn step(energy: &mut i32, progress: &mut i32) -> bool {
-    if *energy < USAGE {
-        return false;
-    }
-    *energy -= USAGE;
-    *progress += 1;
-    if *progress >= TICKS {
-        *progress = 0;
-        return true;
-    }
-    false
-}
-
-/// Menu data slots (each a 16-bit wire entry; every value fits one).
-pub const DATA_ENERGY: usize = 0;
-pub const DATA_PROGRESS: usize = 1;
-pub const DATA_INFUSE: usize = 2;
-pub const DATA_TYPE: usize = 3;
-pub const DATA_FACING: usize = 4;
-pub const DATA_ACTIVE: usize = 5;
-pub const DATA_LEN: usize = 6;
-
-pub fn menu_data(energy: i32, progress: i32, tank: Tank, facing: usize, active: bool) -> [i32; DATA_LEN] {
-    let kind = if tank.amount > 0 { tank.kind as i32 + 1 } else { 0 };
-    [energy, progress, tank.amount, kind, facing as i32, active as i32]
-}
-
 /// Slot positions in Mekanism's `GuiMetallurgicInfuser` (176 x 166).
 pub const SLOT_POS: [[f32; 2]; SLOTS] = [[17.0, 35.0], [51.0, 43.0], [109.0, 43.0]];
-pub const WIDTH: f32 = 176.0;
-pub const HEIGHT: f32 = 166.0;
-pub const INVENTORY_Y: f32 = 84.0;
 
 /// Screen rects (x, y, w, h) from the screen's top left.
 pub const INFUSE_GAUGE: [f32; 4] = [7.0, 17.0, 6.0, 54.0];
@@ -124,23 +90,12 @@ pub const DUMP_BUTTON: [f32; 4] = [16.0, 56.0, 18.0, 12.0];
 /// Menu button id of the dump button (the cube's side buttons use 0 to 11).
 pub const BUTTON_DUMP: i32 = 100;
 
-pub fn inside(rect: [f32; 4], at: [f32; 2]) -> bool {
-    let [x, y, w, h] = rect;
-    at[0] >= x && at[0] < x + w && at[1] >= y && at[1] < y + h
-}
-
-/// Tooltip lines for the gauges and the dump button under `at`, from the menu data.
-pub fn tooltip(data: &[i32], at: [f32; 2]) -> Vec<String> {
-    let d = |i: usize| data.get(i).copied().unwrap_or(0);
+/// Tooltip lines for the infuse gauge and the dump button under `at`, from
+/// the buffer's menu data (`machine::DATA_INFUSE`, `machine::DATA_TYPE`).
+pub fn tooltip(infuse: i32, kind: i32, at: [f32; 2]) -> Vec<String> {
     if inside(INFUSE_GAUGE, at) {
-        let name = d(DATA_TYPE).checked_sub(1).and_then(|k| TYPES.get(k as usize)).map_or("Empty", |t| t.1);
-        return vec![format!("{name}: {} / {MAX_INFUSE} mB", d(DATA_INFUSE))];
-    }
-    if inside(ENERGY_GAUGE, at) {
-        return vec![format!("Energy: {} / {CAPACITY} FE", d(DATA_ENERGY)), format!("Usage: {USAGE} FE/t")];
-    }
-    if inside(PROGRESS_BAR, at) {
-        return vec![format!("Progress: {}%", d(DATA_PROGRESS) * 100 / TICKS)];
+        let name = kind.checked_sub(1).and_then(|k| TYPES.get(k as usize)).map_or("Empty", |t| t.1);
+        return vec![format!("{name}: {infuse} / {MAX_INFUSE} mB")];
     }
     if inside(DUMP_BUTTON, at) {
         return vec!["Dump infuse buffer".to_owned()];
@@ -174,42 +129,6 @@ mod tests {
         assert!(t.has(2, 20));
         assert!(!t.has(2, 21));
         assert!(!t.has(0, 10));
-    }
-
-    #[test]
-    fn operation_takes_200_ticks_and_5_per_tick() {
-        let (mut energy, mut progress) = (i32::MAX, 0);
-        let start = energy;
-        let done = (1..=TICKS).filter(|_| step(&mut energy, &mut progress)).count();
-        assert_eq!(done, 1);
-        assert_eq!(progress, 0);
-        assert_eq!(start - energy, TICKS * USAGE);
-    }
-
-    #[test]
-    fn no_energy_stalls_without_losing_progress() {
-        let (mut energy, mut progress) = (USAGE - 1, 7);
-        assert!(!step(&mut energy, &mut progress));
-        assert_eq!((energy, progress), (USAGE - 1, 7));
-    }
-
-    #[test]
-    fn menu_data_fits_16_bits() {
-        let d = menu_data(CAPACITY, TICKS - 1, Tank { kind: 7, amount: MAX_INFUSE }, 5, true);
-        assert!(d.iter().all(|v| (0..=0xFFFF).contains(v)));
-        assert_eq!(d[DATA_TYPE], 8);
-        assert_eq!(menu_data(0, 0, Tank { kind: 3, amount: 0 }, 2, false)[DATA_TYPE], 0);
-    }
-
-    #[test]
-    fn tooltips_name_what_is_hovered() {
-        let data = menu_data(15, 100, Tank { kind: 0, amount: 260 }, 2, true);
-        assert_eq!(tooltip(&data, [8.0, 40.0]), vec!["Carbon: 260 / 1000 mB"]);
-        assert_eq!(tooltip(&data, [165.0, 40.0])[0], "Energy: 15 / 20 FE");
-        assert_eq!(tooltip(&data, [80.0, 48.0]), vec!["Progress: 50%"]);
-        assert_eq!(tooltip(&data, [20.0, 60.0]).len(), 1);
-        assert!(tooltip(&data, [90.0, 10.0]).is_empty());
-        assert_eq!(tooltip(&[], [8.0, 40.0]), vec!["Empty: 0 / 1000 mB"]);
     }
 
     #[test]
