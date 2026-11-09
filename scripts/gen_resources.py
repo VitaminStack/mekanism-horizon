@@ -56,12 +56,14 @@ def loot(id_, drop, count=None, explosion_proof=False, ns=NS):
 
 
 def block(id_, template, hardness, resistance, drop=None, count=None, requires_tool=True, extra=None,
-          explosion_proof=False, sounds=None, ns=NS):
+          explosion_proof=False, sounds=None, ns=NS, occludes=True):
     registry[ns]['blocks'].append(id_)
     props = {'hardness': hardness, 'explosion_resistance': resistance, 'requires_tool': requires_tool}
     if sounds:
         # Sound type as a vanilla block id; overrides the template's (Horizon `properties.sounds`).
         props['sounds'] = sounds
+    if not occludes:
+        props['occludes'] = False
     put(f'data/{ns}/horizon/block/{id_}.json', {
         'template': template,
         'properties': props,
@@ -150,10 +152,11 @@ facing_blockstate('metallurgic_infuser')
 # Wind and Advanced Solar Generator are multiblocks (bounding blocks): not yet.
 MACHINE_STATE = {'default_state': {'facing': 'north'}}
 # Upstream's blockstate picks the model by `active` (the drum glows while burning), set by the native mod.
-block('heat_generator', 'minecraft:barrel', 3.5, 16.0, ns=GEN, extra={
+# The models are not full cubes: `occludes: false` keeps the faces of the blocks beside them drawn.
+block('heat_generator', 'minecraft:barrel', 3.5, 16.0, ns=GEN, occludes=False, extra={
     'state_properties': {'active': {'type': 'boolean'}},
     'default_state': {'facing': 'north', 'active': 'false'}})
-block('solar_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, ns=GEN)
+block('solar_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
 item('solar_panel', ns=GEN)
 put(f'data/{GEN}/horizon/menu/heat_generator.json', {'slots': 1, 'data_slots': 7, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/solar_generator.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
