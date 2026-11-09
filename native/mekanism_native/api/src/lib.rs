@@ -896,6 +896,17 @@ fn draw_wind(host: &dyn Host, pos: [i32; 3], active: bool, draw: &mut BlockEntit
     draw.keep();
 }
 
+/// The Advanced Solar Generator's upper pole and panels, one block above its
+/// main block and turned to its facing (its block model holds only the foot).
+fn draw_advanced_solar_top(host: &dyn Host, pos: [i32; 3], draw: &mut BlockEntityDraw) {
+    draw.push();
+    draw.rotate_about([0.0, 1.0, 0.0], facing_degrees(facing(host, pos)), [0.5, 0.0, 0.5]);
+    draw.translate([0.0, 1.0, 0.0]);
+    host.draw_model(draw, generator::ADVANCED_SOLAR_TOP, 0xFFFFFF);
+    draw.pop();
+    draw.keep();
+}
+
 fn draw_bio(host: &dyn Host, event: &mut ScreenDrawEvent) {
     let [x, y] = event.origin;
     let d = |i: usize| event.data.get(i).copied().unwrap_or(0);
@@ -1331,9 +1342,11 @@ impl Hooks for MekanismNative {
 
     /// Button presses update the actual block entity on the server, then
     /// normal ContainerData sync refreshes the screen for every player.
-    /// The Wind Generator's tower and blades, drawn by its block entity (Mekanism's `RenderWindGenerator`).
+    /// The Wind Generator's tower and blades (Mekanism's `RenderWindGenerator`) and the
+    /// Advanced Solar Generator's top, drawn by their block entities.
     fn standalone_models(&self, event: &mut StandaloneModelsEvent) {
         event.models.extend(generator::WIND_PARTS.iter().map(|(model, _, _)| (*model).to_owned()));
+        event.models.push(generator::ADVANCED_SOLAR_TOP.to_owned());
     }
 
     fn block_entity_update_tag(&self, event: &mut BlockEntityUpdateTagEvent) -> Option<Compound> {
@@ -1349,6 +1362,8 @@ impl Hooks for MekanismNative {
         if event.block == generator::WIND {
             let active = read_energy(&event.entity.nbt, WIND_ACTIVE) != 0;
             draw_wind(host, event.pos, active, event.draw);
+        } else if event.block == generator::ADVANCED_SOLAR {
+            draw_advanced_solar_top(host, event.pos, event.draw);
         }
     }
 
@@ -1356,6 +1371,9 @@ impl Hooks for MekanismNative {
         if event.block == generator::WIND {
             // The blades reach about four blocks round the hub, four and a half up.
             *event.bounds = [-4.5, 0.0, -4.5, 5.5, 9.0, 5.5];
+        } else if event.block == generator::ADVANCED_SOLAR {
+            // The panels reach a block past each side, three blocks up.
+            *event.bounds = [-1.0, 0.0, -1.0, 2.0, 3.0, 2.0];
         }
     }
 

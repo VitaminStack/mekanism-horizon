@@ -300,7 +300,11 @@ pub fn wind_multiplier(top_y: i32, sees_sky: bool, dimension: &str) -> f64 {
     (WIND_GENERATION_MIN + slope * (clamped - min_y) as f64) / WIND_GENERATION_MIN
 }
 
-/// The tower and blade models (`scripts/import_wind_generator.py`, mirrors
+/// The Advanced Solar Generator above its main block (`scripts/import_generator_models.py`):
+/// the upper pole and the panels, drawn one block up.
+pub const ADVANCED_SOLAR_TOP: &str = "mekanismgenerators:block/advanced_solar_generator/top";
+
+/// The tower and blade models (`scripts/import_generator_models.py`, mirrors
 /// `scripts/wind_parts.json`): each with how many blocks it was moved per axis
 /// to fit a model's -16 to 32, and whether it is a blade (turns about the hub).
 pub const WIND_PARTS: [(&str, [f32; 3], bool); 7] = [

@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "mekanismgenerators:block/advanced_solar_generator"
+    "model": "mekanismgenerators:item/advanced_solar_generator"
   }
 }
