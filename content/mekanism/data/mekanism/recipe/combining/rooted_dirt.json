@@ -1,0 +1,15 @@
+{
+  "type": "mekanism:combining",
+  "category": "building",
+  "extra_input": {
+    "count": 1,
+    "ingredient": "minecraft:dirt"
+  },
+  "main_input": {
+    "count": 3,
+    "ingredient": "minecraft:hanging_roots"
+  },
+  "output": {
+    "id": "minecraft:rooted_dirt"
+  }
+}

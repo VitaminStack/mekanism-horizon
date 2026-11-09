@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:combining",
+  "category": "building",
+  "experience": 2.0,
+  "extra_input": {
+    "count": 1,
+    "ingredient": "#c:cobblestones/normal"
+  },
+  "group": "gold_ore",
+  "main_input": {
+    "count": 8,
+    "ingredient": "#c:raw_materials/gold"
+  },
+  "output": {
+    "id": "minecraft:gold_ore"
+  }
+}

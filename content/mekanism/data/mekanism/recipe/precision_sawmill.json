@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:sawing",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "C": "#c:circuits/basic",
+    "I": "#c:ingots/iron",
+    "X": "mekanism:steel_casing"
+  },
+  "pattern": [
+    "ICI",
+    "AXA",
+    "ICI"
+  ],
+  "result": {
+    "id": "mekanism:precision_sawmill"
+  }
+}

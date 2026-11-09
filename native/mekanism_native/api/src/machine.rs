@@ -1,20 +1,85 @@
 //! Electric machines: the table every processing machine is one entry of
-//! (Enrichment Chamber, Crusher, Metallurgic Infuser), and the operation they
-//! share. The parts that need no Horizon types, so their tests run in
-//! `logic/energy`; recipes are in `recipe.rs`, the tick and screen in `process.rs`.
+//! (Enrichment Chamber, Crusher, Metallurgic Infuser, Osmium Compressor,
+//! Combiner, Precision Sawmill), and the operation they share. The parts that
+//! need no Horizon types, so their tests run in `logic/energy`; recipes are in
+//! `recipe.rs`, the tick and screen in `process.rs`.
 //!
 //! A new machine of this kind is one more entry in `MACHINES` plus its content
 //! files (block, menu, recipes): the hooks in `lib.rs` find it through `find`.
 //!
-//! Values from Mekanism 26.3: `TileEntityElectricMachine`
-//! (`BASE_TICKS_REQUIRED` 10 s, slots input 64,17 and output 116,35),
-//! `UsageConfig` (enrichmentChamber 5, crusher 8, metallurgicInfuser 5 per
-//! tick) and `AttributeEnergy.STORAGE_MULTIPLIER` (storage 4 x usage).
+//! Values from Mekanism 26.3: `TileEntityElectricMachine`,
+//! `TileEntityAdvancedElectricMachine` (`MAX_GAS` 210), `TileEntityCombiner`,
+//! `TileEntityPrecisionSawmill` (`BASE_TICKS_REQUIRED` 10 s each, slot
+//! positions), `UsageConfig` (enrichmentChamber 5, crusher 8,
+//! metallurgicInfuser 5, osmiumCompressor 15, combiner 5, precisionSawmill 5
+//! per tick) and `AttributeEnergy.STORAGE_MULTIPLIER` (storage 4 x usage).
 //!
 //! Not ported: the energy slot (charging from items), upgrades, side config
 //! and redstone control.
 
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use super::infuser;
+
+/// A chemical a buffer takes: Mekanism id, English name, bar colour.
+pub type Chemical = (&'static str, &'static str, u32);
+
+/// A chemical buffer filled from an item slot (Mekanism's
+/// `ChemicalInventorySlot.fillOrConvert` by `chemical_conversion` recipes):
+/// the Metallurgic Infuser's infuse buffer, the Osmium Compressor's tank.
+pub struct Buffer {
+    /// The slot whose items are converted into the buffer.
+    pub slot: usize,
+    /// What it takes; the index + 1 is what the NBT and menu data store.
+    pub types: &'static [Chemical],
+    pub max: i32,
+    /// Screen rect of its gauge, and of its dump button if it has one.
+    pub gauge: [f32; 4],
+    pub dump: Option<[f32; 4]>,
+}
+
+impl Buffer {
+    pub fn type_index(&self, id: &str) -> Option<usize> {
+        self.types.iter().position(|(t, ..)| *t == id)
+    }
+}
+
+/// A buffer's contents: one type at a time, as Mekanism's chemical tank.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Tank {
+    /// `Buffer::types` index; meaningless while `amount` is 0.
+    pub kind: usize,
+    pub amount: i32,
+}
+
+impl Tank {
+    /// Whether `amount` of `kind` fits whole under `max` (Mekanism converts
+    /// one item only when all its output fits).
+    pub fn fits(&self, kind: usize, amount: i32, max: i32) -> bool {
+        (self.amount == 0 || self.kind == kind) && amount > 0 && self.amount + amount <= max
+    }
+
+    pub fn add(&mut self, kind: usize, amount: i32, max: i32) {
+        debug_assert!(self.fits(kind, amount, max));
+        if self.amount == 0 {
+            self.kind = kind;
+        }
+        self.amount += amount;
+    }
+
+    pub fn has(&self, kind: usize, amount: i32) -> bool {
+        self.amount > 0 && self.kind == kind && self.amount >= amount
+    }
+
+    /// Whether `kind` may go in: the buffer is empty or holds it already.
+    pub fn takes(&self, kind: usize) -> bool {
+        self.amount == 0 || self.kind == kind
+    }
+
+    pub fn take(&mut self, amount: i32) {
+        self.amount = (self.amount - amount).max(0);
+    }
+}
 
 pub struct Machine {
     pub block: &'static str,
@@ -31,9 +96,11 @@ pub struct Machine {
     /// Slots, by their index in the block entity's saved items.
     pub input: usize,
     pub output: usize,
-    /// The slot whose items fill the infuse buffer (`infuser::Tank`); a machine
-    /// without that buffer has none.
-    pub infusion: Option<usize>,
+    /// The Combiner's second item input (`extra_input`).
+    pub extra: Option<usize>,
+    /// The Precision Sawmill's output for its chance-based `secondary_output`.
+    pub secondary: Option<usize>,
+    pub buffer: Option<&'static Buffer>,
     /// Slot positions by slot index, and screen rects (x, y, w, h) from the
     /// screen's top left, as in Mekanism's GUI for the machine (176 x 166).
     pub slot_pos: &'static [[f32; 2]],
@@ -48,6 +115,11 @@ impl Machine {
 
     pub const fn slots(&self) -> usize {
         self.slot_pos.len()
+    }
+
+    /// Every output slot: the output, then the secondary one.
+    pub fn outputs(&self) -> Vec<usize> {
+        std::iter::once(self.output).chain(self.secondary).collect()
     }
 }
 
@@ -75,14 +147,33 @@ const fn electric(
         sound_ticks,
         input: 0,
         output: 1,
-        infusion: None,
+        extra: None,
+        secondary: None,
+        buffer: None,
         slot_pos: &ELECTRIC_SLOT_POS,
         energy_gauge: ELECTRIC_ENERGY_GAUGE,
         progress_bar: ELECTRIC_PROGRESS_BAR,
     }
 }
 
-pub const MACHINES: [Machine; 3] = [
+/// `TileEntityAdvancedElectricMachine` and `TileEntityCombiner`: input 0 above,
+/// the second input 1 below it (64, 53), output 2.
+const TWO_INPUT_SLOT_POS: [[f32; 2]; 3] = [[64.0, 17.0], [64.0, 53.0], [116.0, 35.0]];
+
+/// The Osmium Compressor's tank (`MAX_GAS`), filled with osmium from ingots
+/// and blocks in slot 1; its `GuiChemicalBar` sits between the two slots.
+pub const OSMIUM_TANK: Buffer = Buffer {
+    slot: 1,
+    types: &[("mekanism:osmium", "Osmium", 0xFF52BDCA)],
+    max: 210,
+    gauge: [68.0, 36.0, 6.0, 12.0],
+    dump: None,
+};
+
+/// `TileEntityPrecisionSawmill`: input 0, output 1, secondary output 2.
+const SAWMILL_SLOT_POS: [[f32; 2]; 3] = [[56.0, 17.0], [116.0, 35.0], [132.0, 35.0]];
+
+pub const MACHINES: [Machine; 6] = [
     electric(
         "mekanism:enrichment_chamber",
         "mekanism:enriching",
@@ -102,12 +193,62 @@ pub const MACHINES: [Machine; 3] = [
         sound_ticks: infuser::SOUND_TICKS,
         input: infuser::SLOT_INPUT,
         output: infuser::SLOT_OUTPUT,
-        infusion: Some(infuser::SLOT_INFUSION),
+        extra: None,
+        secondary: None,
+        buffer: Some(&infuser::BUFFER),
         slot_pos: &infuser::SLOT_POS,
         energy_gauge: infuser::ENERGY_GAUGE,
         progress_bar: infuser::PROGRESS_BAR,
     },
+    Machine {
+        input: 0,
+        output: 2,
+        buffer: Some(&OSMIUM_TANK),
+        slot_pos: &TWO_INPUT_SLOT_POS,
+        ..electric(
+            "mekanism:osmium_compressor",
+            "mekanism:compressing",
+            "Osmium Compressor",
+            15,
+            "mekanism:tile.machine.compressor",
+            COMPRESSOR_SOUND_TICKS,
+        )
+    },
+    Machine {
+        input: 0,
+        output: 2,
+        extra: Some(1),
+        slot_pos: &TWO_INPUT_SLOT_POS,
+        ..electric(
+            "mekanism:combiner",
+            "mekanism:combining",
+            "Combiner",
+            5,
+            "mekanism:tile.machine.combiner",
+            COMBINER_SOUND_TICKS,
+        )
+    },
+    Machine {
+        secondary: Some(2),
+        slot_pos: &SAWMILL_SLOT_POS,
+        energy_gauge: [164.0, 15.0, 6.0, 54.0],
+        progress_bar: [78.0, 38.0, 28.0, 8.0],
+        ..electric(
+            "mekanism:precision_sawmill",
+            "mekanism:sawing",
+            "Precision Sawmill",
+            5,
+            "mekanism:tile.machine.precision_sawmill",
+            SAWMILL_SOUND_TICKS,
+        )
+    },
 ];
+
+/// Clip lengths of `tile/compressor.ogg`, `tile/combiner.ogg` and
+/// `tile/precision_sawmill.ogg` in ticks, rounded up.
+const COMPRESSOR_SOUND_TICKS: i32 = 57;
+const COMBINER_SOUND_TICKS: i32 = 57;
+const SAWMILL_SOUND_TICKS: i32 = 34;
 
 pub fn find(block: &str) -> Option<&'static Machine> {
     MACHINES.iter().find(|m| m.block == block)
@@ -131,17 +272,28 @@ pub fn step(usage: i32, energy: &mut i32, progress: &mut i32) -> bool {
     false
 }
 
+/// A number in [0, 1), as Mekanism's `RandomSource.nextDouble` for the
+/// sawmill's secondary output (splitmix64 over a shared counter).
+pub fn random() -> f64 {
+    static STATE: AtomicU64 = AtomicU64::new(0x853C_49E6_748F_EA9B);
+    let mut z = STATE.fetch_add(0x9E37_79B9_7F4A_7C15, Ordering::Relaxed).wrapping_add(0x9E37_79B9_7F4A_7C15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^= z >> 31;
+    (z >> 11) as f64 / (1u64 << 53) as f64
+}
+
 /// Menu data slots (each a 16-bit wire entry; every value fits one). The last
-/// two are sent only by a machine with an infuse buffer.
+/// two are sent only by a machine with a chemical buffer.
 pub const DATA_ENERGY: usize = 0;
 pub const DATA_PROGRESS: usize = 1;
 pub const DATA_FACING: usize = 2;
 pub const DATA_ACTIVE: usize = 3;
-pub const DATA_INFUSE: usize = 4;
-/// `infuser::TYPES` index + 1; 0 while the buffer is empty.
-pub const DATA_TYPE: usize = 5;
+pub const DATA_BUFFER: usize = 4;
+/// `Buffer::types` index + 1; 0 while the buffer is empty.
+pub const DATA_BUFFER_TYPE: usize = 5;
 
-pub fn menu_data(energy: i32, progress: i32, facing: usize, active: bool, tank: Option<infuser::Tank>) -> Vec<i32> {
+pub fn menu_data(energy: i32, progress: i32, facing: usize, active: bool, tank: Option<Tank>) -> Vec<i32> {
     let mut data = vec![energy, progress, facing as i32, active as i32];
     if let Some(tank) = tank {
         data.extend([tank.amount, if tank.amount > 0 { tank.kind as i32 + 1 } else { 0 }]);
@@ -170,8 +322,14 @@ pub fn tooltip(machine: &Machine, data: &[i32], at: [f32; 2]) -> Vec<String> {
     if inside(machine.progress_bar, at) {
         return vec![format!("Progress: {}%", d(DATA_PROGRESS) * 100 / TICKS)];
     }
-    if machine.infusion.is_some() {
-        return infuser::tooltip(d(DATA_INFUSE), d(DATA_TYPE), at);
+    let Some(b) = machine.buffer else { return Vec::new() };
+    if inside(b.gauge, at) {
+        let kind = d(DATA_BUFFER_TYPE);
+        let name = kind.checked_sub(1).and_then(|k| b.types.get(k as usize)).map_or("Empty", |t| t.1);
+        return vec![format!("{name}: {} / {} mB", d(DATA_BUFFER), b.max)];
+    }
+    if b.dump.is_some_and(|r| inside(r, at)) {
+        return vec![infuser::DUMP_TOOLTIP.to_owned()];
     }
     Vec::new()
 }
@@ -186,30 +344,45 @@ mod tests {
 
     #[test]
     fn values_match_mekanism() {
-        let e = machine("mekanism:enrichment_chamber");
-        let c = machine("mekanism:crusher");
-        let i = machine("mekanism:metallurgic_infuser");
-        assert_eq!((e.usage, e.capacity()), (5, 20));
-        assert_eq!((c.usage, c.capacity()), (8, 32));
-        assert_eq!((i.usage, i.capacity()), (5, 20));
+        let usage = |b: &str| {
+            let m = machine(b);
+            (m.usage, m.capacity())
+        };
+        assert_eq!(usage("mekanism:enrichment_chamber"), (5, 20));
+        assert_eq!(usage("mekanism:crusher"), (8, 32));
+        assert_eq!(usage("mekanism:metallurgic_infuser"), (5, 20));
+        assert_eq!(usage("mekanism:osmium_compressor"), (15, 60));
+        assert_eq!(usage("mekanism:combiner"), (5, 20));
+        assert_eq!(usage("mekanism:precision_sawmill"), (5, 20));
+        assert_eq!(machine("mekanism:osmium_compressor").buffer.unwrap().max, 210);
         assert!(find("mekanism:basic_energy_cube").is_none());
     }
 
     /// Slot indices are saved with the block entity: they must not move.
     #[test]
     fn slots_keep_their_saved_order() {
-        let c = machine("mekanism:crusher");
-        assert_eq!((c.input, c.output, c.infusion, c.slots()), (0, 1, None, 2));
-        let i = machine("mekanism:metallurgic_infuser");
-        assert_eq!((i.input, i.output, i.infusion, i.slots()), (1, 2, Some(0), 3));
+        let slots = |b: &str| {
+            let m = machine(b);
+            (m.input, m.output, m.extra, m.secondary, m.buffer.map(|b| b.slot), m.slots())
+        };
+        assert_eq!(slots("mekanism:crusher"), (0, 1, None, None, None, 2));
+        assert_eq!(slots("mekanism:metallurgic_infuser"), (1, 2, None, None, Some(0), 3));
+        assert_eq!(slots("mekanism:osmium_compressor"), (0, 2, None, None, Some(1), 3));
+        assert_eq!(slots("mekanism:combiner"), (0, 2, Some(1), None, None, 3));
+        assert_eq!(slots("mekanism:precision_sawmill"), (0, 1, None, Some(2), None, 3));
     }
 
     #[test]
     fn every_machine_is_well_formed() {
         for m in &MACHINES {
             assert!(m.usage > 0 && m.sound_ticks > 0, "{}", m.block);
-            assert!(m.input < m.slots() && m.output < m.slots() && m.input != m.output, "{}", m.block);
-            assert!(m.infusion.is_none_or(|s| s < m.slots() && s != m.input && s != m.output), "{}", m.block);
+            let mut used: Vec<usize> = [m.input, m.output].into_iter().chain(m.extra).chain(m.secondary).collect();
+            used.extend(m.buffer.map(|b| b.slot));
+            let n = used.len();
+            used.sort();
+            used.dedup();
+            assert_eq!(used.len(), n, "{}: a slot used twice", m.block);
+            assert!(used.iter().all(|&s| s < m.slots()), "{}", m.block);
             assert_eq!(MACHINES.iter().filter(|o| o.block == m.block).count(), 1, "{}", m.block);
         }
     }
@@ -232,16 +405,63 @@ mod tests {
     }
 
     #[test]
+    fn tank_takes_one_type_up_to_its_max() {
+        let mut t = Tank::default();
+        assert!(t.fits(0, 1_000, 1_000));
+        assert!(!t.fits(0, 1_001, 1_000));
+        t.add(0, 990, 1_000);
+        assert!(t.fits(0, 10, 1_000));
+        assert!(!t.fits(0, 20, 1_000));
+        assert!(!t.fits(1, 10, 1_000), "other type while not empty");
+        assert!(!t.takes(1) && t.takes(0));
+        t.take(990);
+        assert!(t.fits(1, 10, 1_000), "empty tank takes any type");
+        assert!(!t.fits(1, 0, 1_000));
+    }
+
+    #[test]
+    fn tank_has_needs_type_and_amount() {
+        let mut t = Tank::default();
+        assert!(!t.has(0, 0), "empty tank has nothing");
+        t.add(2, 20, 1_000);
+        assert!(t.has(2, 20));
+        assert!(!t.has(2, 21));
+        assert!(!t.has(0, 10));
+    }
+
+    /// One osmium ingot (200 mB) fits the compressor's 210 mB tank, a second
+    /// only once it ran low; a block (1800 mB) never.
+    #[test]
+    fn compressor_tank_takes_an_ingot_at_a_time() {
+        let mut t = Tank::default();
+        assert!(!t.fits(0, 1_800, OSMIUM_TANK.max));
+        t.add(0, 200, OSMIUM_TANK.max);
+        assert!(!t.fits(0, 200, OSMIUM_TANK.max));
+        t.take(195);
+        assert!(t.fits(0, 200, OSMIUM_TANK.max));
+        assert_eq!(OSMIUM_TANK.type_index("mekanism:osmium"), Some(0));
+        assert_eq!(OSMIUM_TANK.type_index("mekanism:carbon"), None);
+    }
+
+    #[test]
+    fn random_stays_in_unit_range() {
+        let rolls: Vec<f64> = (0..1_000).map(|_| random()).collect();
+        assert!(rolls.iter().all(|r| (0.0..1.0).contains(r)));
+        let low = rolls.iter().filter(|&&r| r < 0.5).count();
+        assert!((350..650).contains(&low), "{low} of 1000 below 0.5");
+    }
+
+    #[test]
     fn menu_data_fits_16_bits() {
         let d = menu_data(32, TICKS - 1, 5, true, None);
         assert_eq!(d.len(), 4);
         assert!(d.iter().all(|v| (0..=0xFFFF).contains(v)));
-        let full = infuser::Tank { kind: 7, amount: infuser::MAX_INFUSE };
+        let full = Tank { kind: 7, amount: infuser::BUFFER.max };
         let d = menu_data(20, TICKS - 1, 5, true, Some(full));
         assert!(d.iter().all(|v| (0..=0xFFFF).contains(v)));
-        assert_eq!((d[DATA_INFUSE], d[DATA_TYPE]), (1_000, 8));
-        let empty = infuser::Tank { kind: 3, amount: 0 };
-        assert_eq!(menu_data(0, 0, 2, false, Some(empty))[DATA_TYPE], 0);
+        assert_eq!((d[DATA_BUFFER], d[DATA_BUFFER_TYPE]), (1_000, 8));
+        let empty = Tank { kind: 3, amount: 0 };
+        assert_eq!(menu_data(0, 0, 2, false, Some(empty))[DATA_BUFFER_TYPE], 0);
     }
 
     #[test]
@@ -256,12 +476,20 @@ mod tests {
     #[test]
     fn infuser_tooltips_name_what_is_hovered() {
         let m = machine("mekanism:metallurgic_infuser");
-        let data = menu_data(15, 100, 2, true, Some(infuser::Tank { kind: 0, amount: 260 }));
+        let data = menu_data(15, 100, 2, true, Some(Tank { kind: 0, amount: 260 }));
         assert_eq!(tooltip(m, &data, [8.0, 40.0]), vec!["Carbon: 260 / 1000 mB"]);
         assert_eq!(tooltip(m, &data, [165.0, 40.0])[0], "Energy: 15 / 20 FE");
         assert_eq!(tooltip(m, &data, [80.0, 48.0]), vec!["Progress: 50%"]);
-        assert_eq!(tooltip(m, &data, [20.0, 60.0]).len(), 1);
+        assert_eq!(tooltip(m, &data, [20.0, 60.0]), vec!["Dump infuse buffer"]);
         assert!(tooltip(m, &data, [90.0, 10.0]).is_empty());
         assert_eq!(tooltip(m, &[], [8.0, 40.0]), vec!["Empty: 0 / 1000 mB"]);
+    }
+
+    #[test]
+    fn compressor_tooltip_shows_osmium() {
+        let m = machine("mekanism:osmium_compressor");
+        let data = menu_data(60, 0, 2, false, Some(Tank { kind: 0, amount: 200 }));
+        assert_eq!(tooltip(m, &data, [70.0, 40.0]), vec!["Osmium: 200 / 210 mB"]);
+        assert_eq!(tooltip(m, &data, [165.0, 40.0])[0], "Energy: 60 / 60 FE");
     }
 }

@@ -1,4 +1,16 @@
 {
+  "tile.machine.combiner": {
+    "sounds": [
+      "mekanism:tile/combiner"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.combiner"
+  },
+  "tile.machine.compressor": {
+    "sounds": [
+      "mekanism:tile/compressor"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.compressor"
+  },
   "tile.machine.crusher": {
     "sounds": [
       "mekanism:tile/crusher"
@@ -16,5 +28,11 @@
       "mekanism:tile/metallurgic_infuser"
     ],
     "subtitle": "sound_event.mekanism.tile.machine.metallurgic_infuser"
+  },
+  "tile.machine.precision_sawmill": {
+    "sounds": [
+      "mekanism:tile/precision_sawmill"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.precision_sawmill"
   }
 }

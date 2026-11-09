@@ -139,11 +139,21 @@ put(f'data/{NS}/horizon/menu/metallurgic_infuser.json', {'slots': 3, 'data_slots
 
 # Enrichment Chamber and Crusher: BlockTile.defaultProperties (3.5, 16). Slots: 0 input, 1 output
 # (results). Upstream's blockstate picks the model by `active`, set by the native mod.
-for m in ('enrichment_chamber', 'crusher'):
+# Osmium Compressor (0 input, 1 osmium item, 2 output; its osmium tank in 2 more data slots),
+# Combiner (0 main input, 1 extra input, 2 output) and Precision Sawmill (0 input, 1 output,
+# 2 secondary output) the same way; slot order as in native/mekanism_native/api/src/machine.rs.
+MACHINE_MENUS = {
+    'enrichment_chamber': {'slots': 2, 'data_slots': 4, 'results': [1]},
+    'crusher': {'slots': 2, 'data_slots': 4, 'results': [1]},
+    'osmium_compressor': {'slots': 3, 'data_slots': 6, 'results': [2]},
+    'combiner': {'slots': 3, 'data_slots': 4, 'results': [2]},
+    'precision_sawmill': {'slots': 3, 'data_slots': 4, 'results': [1, 2]},
+}
+for m, menu in MACHINE_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={
         'state_properties': {'active': {'type': 'boolean'}},
         'default_state': {'facing': 'north', 'active': 'false'}})
-    put(f'data/{NS}/horizon/menu/{m}.json', {'slots': 2, 'data_slots': 4, 'results': [1]})
+    put(f'data/{NS}/horizon/menu/{m}.json', menu)
 
 # --- generators (M04), content mod `mekanismgenerators`: ticked, powered and drawn by
 # native/mekanism_native. BlockTile.defaultProperties (3.5, 16) as the infuser; the barrel template
@@ -313,7 +323,7 @@ for tag, values in CONVENTION_TAGS.items():
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
-     + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'enrichment_chamber', 'crusher')]})
+     + [f'{NS}:{m}' for m in ('metallurgic_infuser', *MACHINE_MENUS)]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in ('heat_generator', 'solar_generator', 'bio_generator',
                                                          'advanced_solar_generator', 'wind_generator')]}, GEN)

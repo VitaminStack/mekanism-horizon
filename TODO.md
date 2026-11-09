@@ -87,14 +87,14 @@
 
 ## M05 - Maschinen und erste Processing-Ketten [P1]
 
-- [ ] Allgemeines Rezept-System: Inputs, Outputs, Energie je Tick, Fortschritt, Nebenprodukte. *(Teilweise: `recipe::Recipe` liest Item-Input mit Menge, optionalen Chemie-Input und Output für alle Maschinen-Rezepttypen; Energie je Tick und Fortschritt über `machine::step`, ingame getestet 09.11.2026. Fehlt: Nebenprodukte (z.B. Precision Sawmill), Fluid-/Chemie-Outputs.)*
+- [ ] Allgemeines Rezept-System: Inputs, Outputs, Energie je Tick, Fortschritt, Nebenprodukte. *(Teilweise: `recipe::Recipe` liest Item-Input mit Menge, optionalen Chemie-Input und Output für alle Maschinen-Rezepttypen; Energie je Tick und Fortschritt über `machine::step`, ingame getestet 09.11.2026. Seit M05-Teil 2 auch zweiter Item-Input (`extra_input`), Zweitausgabe mit Chance (`secondary_output`) und Chemie pro Tick (`per_tick_usage`); ingame ungetestet. Fehlt: Fluid-/Chemie-Outputs.)*
 - [ ] Maschinen-Inventare, Menüs, GUI, Upgrades, Auto-Eject, Sided I/O, Redstone-Modi.
 - [x] Metallurgic Infuser und Infusions-Ressourcen. *(Ingame getestet 09.11.2026. Werte aus Original; 8 Infuse-Typen, alle `metallurgic_infusing`-Rezepte. Fehlt: Energie-Slot, Upgrades, Side-Config, Redstone; Infuse/Energie bleiben beim Abbau nicht am Item; Balkenfarben genähert.)*
 - [x] Enrichment Chamber. *(Ingame getestet 09.11.2026: `native/mekanism_native/api/src/machine.rs`, 5 FE/t, 200 Ticks, Speicher 20 FE, alle `mekanism:enriching`-Rezepte, Upstream-Modell mit `active`, Sound. Fehlt wie beim Infuser: Energie-Slot, Upgrades, Side-Config, Redstone.)*
-- [ ] Energized Smelter.
+- [ ] Energized Smelter. *(Blockiert: Horizon gibt Native-Mods keine `minecraft:smelting`-Rezepte; `recipes_of_type` liefert nur Typen außerhalb von `minecraft`, `native_recipes` ist intern.)*
 - [x] Crusher. *(Ingame getestet 09.11.2026: wie Enrichment Chamber, 8 FE/t, Speicher 32 FE, alle `mekanism:crushing`-Rezepte.)*
-- [ ] Precision Sawmill.
-- [ ] Osmium Compressor und Combiner.
+- [ ] Precision Sawmill. *(Implementiert, ingame ungetestet: 5 FE/t, Speicher 20 FE, alle `mekanism:sawing`-Rezepte, Zweitausgabe nach `secondary_chance`, Sound. Fehlt wie beim Infuser: Energie-Slot, Upgrades, Side-Config, Redstone.)*
+- [ ] Osmium Compressor und Combiner. *(Implementiert, ingame ungetestet. Compressor: 15 FE/t, Speicher 60 FE, Osmium-Tank 210 mB aus Osmiumbarren (200 mB), 1 mB je Tick, alle `mekanism:compressing`-Rezepte. Combiner: 5 FE/t, zweiter Input unten, alle `mekanism:combining`-Rezepte. Voller Output pausiert jetzt wie im Original, statt den Fortschritt zurückzusetzen (alle Maschinen).)*
 - [ ] Formulation/Assembly: Formulaic Assemblicator und Oredictionificator.
 - [ ] Leere Energie, voller Output, Rezeptwechsel, Save/Load und Chunk-Unload prüfen.
 

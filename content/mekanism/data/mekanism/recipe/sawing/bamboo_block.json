@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:sawing",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:bamboo_block"
+  },
+  "main_output": {
+    "count": 9,
+    "id": "minecraft:bamboo"
+  }
+}

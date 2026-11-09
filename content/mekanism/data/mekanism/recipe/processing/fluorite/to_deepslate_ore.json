@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:combining",
+  "category": "building",
+  "experience": 1.4,
+  "extra_input": {
+    "count": 1,
+    "ingredient": "#c:cobblestones/deepslate"
+  },
+  "group": "mekanism:fluorite_ore",
+  "main_input": {
+    "count": 14,
+    "ingredient": "#c:dusts/fluorite"
+  },
+  "output": {
+    "id": "mekanism:deepslate_fluorite_ore"
+  }
+}

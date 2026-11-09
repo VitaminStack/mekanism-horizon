@@ -3,6 +3,9 @@
   "values": [
     "#mekanism:factory_supported/infusing",
     "#mekanism:factory_supported/enriching",
-    "#mekanism:factory_supported/crushing"
+    "#mekanism:factory_supported/crushing",
+    "#mekanism:factory_supported/compressing",
+    "#mekanism:factory_supported/combining",
+    "#mekanism:factory_supported/sawing"
   ]
 }

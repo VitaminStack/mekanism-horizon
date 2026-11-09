@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:sawing",
+  "category": "wood_type",
+  "experience": 0.1,
+  "group": "mekanism:shelf",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:oak_shelf"
+  },
+  "main_output": {
+    "id": "minecraft:stripped_oak_log"
+  }
+}
