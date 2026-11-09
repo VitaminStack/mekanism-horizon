@@ -387,7 +387,7 @@ impl MekanismNative {
         };
 
         if let Some(stack) = &items[0] {
-            if stack.item == "minecraft:lava_bucket" {
+            if &*stack.item == "minecraft:lava_bucket" {
                 if state.lava + generator::LAVA_TANK <= generator::LAVA_TANK {
                     if let Some(bucket) = host.item_from_snbt("{id:\"minecraft:bucket\",count:1}") {
                         state.lava += generator::LAVA_TANK;
