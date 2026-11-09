@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": "#c:rods/wooden",
+    "O": "#c:ingots/osmium"
+  },
+  "pattern": [
+    "O O",
+    "O#O",
+    "O O"
+  ],
+  "result": {
+    "count": 24,
+    "id": "minecraft:rail"
+  }
+}

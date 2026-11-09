@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "mekanism:block_raw_uranium"
+  ],
+  "result": {
+    "count": 9,
+    "id": "mekanism:raw_uranium"
+  }
+}

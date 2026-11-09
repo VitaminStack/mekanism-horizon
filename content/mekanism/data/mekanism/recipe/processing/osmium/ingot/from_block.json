@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "mekanism:ingot_osmium",
+  "ingredients": [
+    "mekanism:block_osmium"
+  ],
+  "result": {
+    "count": 9,
+    "id": "mekanism:ingot_osmium"
+  }
+}

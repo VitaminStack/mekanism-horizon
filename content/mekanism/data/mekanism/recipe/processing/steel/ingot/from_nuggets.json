@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:ingot_steel",
+  "key": {
+    "#": "#c:nuggets/steel",
+    "P": "mekanism:nugget_steel"
+  },
+  "pattern": [
+    "###",
+    "#P#",
+    "###"
+  ],
+  "result": {
+    "id": "mekanism:ingot_steel"
+  }
+}

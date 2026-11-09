@@ -1,0 +1,30 @@
+{
+  "replace": false,
+  "values": [
+    "#mekanism:bins",
+    "#mekanism:chemical_tanks",
+    "#mekanism:fluid_tanks",
+    "#mekanism:energy_cubes",
+    "#mekanism:transmitters",
+    "#mekanism:personal_storage",
+    "#mekanism:heaters",
+    "#mekanism:factory_supported",
+    "#mekanism:structures",
+    "mekanism:block_osmium",
+    "mekanism:block_raw_osmium",
+    "mekanism:block_tin",
+    "mekanism:block_raw_tin",
+    "mekanism:block_lead",
+    "mekanism:block_raw_lead",
+    "mekanism:block_uranium",
+    "mekanism:block_raw_uranium",
+    "mekanism:block_salt",
+    "mekanism:block_charcoal",
+    "mekanism:block_bronze",
+    "mekanism:block_steel",
+    "mekanism:block_fluorite",
+    "mekanism:block_refined_obsidian",
+    "mekanism:block_refined_glowstone",
+    "mekanism:steel_casing"
+  ]
+}

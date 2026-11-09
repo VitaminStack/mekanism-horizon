@@ -2,18 +2,10 @@
   "type": "minecraft:block",
   "pools": [
     {
-      "rolls": 1,
-      "entries": [
-        {
-          "type": "minecraft:item",
-          "name": "mekanism:basic_energy_cube"
-        }
-      ],
-      "conditions": [
-        {
-          "condition": "minecraft:survives_explosion"
-        }
-      ]
+      "condition": { "type": "minecraft:survives_explosion" },
+      "entries": [{ "type": "minecraft:item", "name": "mekanism:basic_energy_cube" }],
+      "rolls": 1
     }
-  ]
+  ],
+  "random_sequence": "mekanism:blocks/basic_energy_cube"
 }

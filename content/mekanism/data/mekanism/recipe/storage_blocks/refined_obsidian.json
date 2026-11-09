@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "#": "#c:ingots/refined_obsidian",
+    "P": "mekanism:ingot_refined_obsidian"
+  },
+  "pattern": [
+    "###",
+    "#P#",
+    "###"
+  ],
+  "result": {
+    "id": "mekanism:block_refined_obsidian"
+  }
+}

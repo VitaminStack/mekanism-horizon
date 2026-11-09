@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "#mekanism:module_containers/armor/helmet",
+    "#mekanism:module_containers/armor/chestplate",
+    "#mekanism:module_containers/armor/leggings",
+    "#mekanism:module_containers/armor/boots"
+  ]
+}

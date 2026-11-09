@@ -1,22 +1,23 @@
 # Mekanism Horizon - Portierungs-TODO
 
-**Stand:** 08.11.2026  
+**Stand:** 09.11.2026  
 **Ziel:** Schrittweise Portierung des aktuellen Mekanism nach Minecraft Horizon, mit Windows/Visual Studio 2026 als Entwicklungsumgebung.
 
 ## Referenz und Arbeitsregeln
 
 - **Original:** [mekanism/Mekanism, Branch `26.3`](https://github.com/mekanism/Mekanism/tree/26.3), abgeglichen mit Commit [`31bb4906`](https://github.com/mekanism/Mekanism/commit/31bb4906bc6c2ea4a2422d93cd1214df3ea7de4e).
 - **Originalversion aus `gradle.properties`:** Mekanism **10.8.0**, Minecraft **26.3**, NeoForge **26.3.0.101**, `release_type=alpha`. Dies ist eine Entwicklungsbasis, nicht automatisch eine stabile Release-Version.
+- **Horizon-Basis:** [`horizon-rust/horizon` @ `fdc87ae`](https://github.com/horizon-rust/horizon/commit/fdc87aecdbd116bf1e08adcd062fcbaea8c2e2ca) (Nightly 2026-11-08, installiert im Launcher), Native-Hooks-API noch nicht gegen diesen Commit geprüft. Pin steht in `native/mekanism_native/horizon-mixin.toml` und `api/Cargo.toml`.
 - **Geplanter Umfang:** Mekanism Core und danach die Original-Unterprojekte **Generators, Tools, Additions**.
 - **Status:** `[x]` bedeutet **bestätigt**. `[ ]` bedeutet offen, auch wenn schon Code/Dateien existieren. Nicht nur wegen eines erfolgreichen Builds abhaken.
 - **Jede Umsetzung:** Originalverhalten und Registry-IDs prüfen; Content (`.hmod`) und native Logik (`.hnmod`) sauber trennen; speichern/neuladen testen; Tests + Ingame-Nachweis im PR dokumentieren.
 
 ## Die nächsten 10 konkreten Aufgaben - zuerst diese erledigen
 
-- [ ] **N01** Lokalen Energy-Cube-Patch-Zustand prüfen: `git status --short` und `git apply --reverse --check .\mekanism-energy-cube-v0.2.0.patch`. Vorhandene Dateien NICHT überschreiben.
-- [ ] **N02** Nach dem Patch `Test-Content.ps1` und `cargo test --manifest-path .\logic\energy\Cargo.toml` erneut erfolgreich ausführen.
-- [ ] **N03** `Strg+B`: `.hmod` bauen, automatisch kopieren; `/give @s mekanism:basic_energy_cube` im Spiel testen und Block platzieren.
-- [ ] **N04** Native-Horizon-API-Version/Nightly-Commit bestimmen und `native/mekanism_native/` darauf abstimmen.
+- [x] **N01** Lokalen Energy-Cube-Patch-Zustand prüfen: `git status --short` und `git apply --reverse --check .\mekanism-energy-cube-v0.2.0.patch`. Vorhandene Dateien NICHT überschreiben. *(09.11.2026: Working Tree sauber, Patch-Inhalt ist bereits committet, Patch-Datei existiert nicht mehr.)*
+- [x] **N02** Nach dem Patch `Test-Content.ps1` und `cargo test --manifest-path .\logic\energy\Cargo.toml` erneut erfolgreich ausführen.
+- [x] **N03** `Strg+B`: `.hmod` bauen, automatisch kopieren; `/give @s mekanism:basic_energy_cube` im Spiel testen und Block platzieren. *(09.11.2026: give, platzieren und Drop bestätigt; Loot-Tabellen brauchen Horizon-Format `condition`.)*
+- [x] **N04** Native-Horizon-API-Version/Nightly-Commit bestimmen und `native/mekanism_native/` darauf abstimmen. *(09.11.2026: gepinnt auf Horizon `fdc87ae` (installierter Nightly); Hook-Signaturen nur gegen 99bd9655 (API 413) statisch geprüft. Kompilieren erst in N05.)*
 - [ ] **N05** Native-Mod mit dem Horizon Launcher bauen und mit bewusst erteilter Vertrauensfreigabe installieren; Logs prüfen.
 - [ ] **N06** Beim Platzieren wird eine native Block-Entity mit Energie-Capability angelegt.
 - [ ] **N07** Basic Energy Cube: 4.000.000 Kapazität, 4.000 Ein-/Ausgabe-Limit pro Aufruf (Standard aus Original-`EnergyCubeTier`; später konfigurierbar).
@@ -32,7 +33,7 @@
 - [x] `.hmod` nach erfolgreichem Build automatisch in `horizon-mods/` kopieren.
 - [x] Osmiumbarren und Osmiumblock im Spiel getestet.
 - [ ] Lokale v0.2.0-Änderungen sicher versionieren; Remote und lokal abgleichen.
-- [ ] Horizon-Nightly, Native-Hook-API und Mekanism-Upstream-Commit pinnen.
+- [x] Horizon-Nightly, Native-Hook-API und Mekanism-Upstream-Commit pinnen.
 - [ ] Test- und Buildanleitung für Windows dokumentieren.
 - [ ] CI: Content-Validierung, Rust-Tests, JSON-Checks; Native-Build wenn reproduzierbar.
 - [ ] Lizenz und Copyright der Original-Assets/Codeuebernahmen prüfen und beilegen.
@@ -54,14 +55,14 @@
 
 ## M02 - Rohstoffe, Weltgenerierung und Grundrezepte [P1]
 
-- [ ] Originale Registry-IDs von Items/Blöcken/Ressourcen inventarisieren.
-- [ ] Originaltexturen, Modelle, Blockstates, Sounds und Sprachen mit Lizenzhinweisen integrieren.
-- [ ] Osmium-, Tin/Zinn-, Uranium-/Uran- und Fluorite-/Fluorit-Erze inklusive Deepslate-Varianten.
-- [ ] Weltgenerierung, Erzverteilung, Drops und Mining-Level (nur neue Chunks) testen.
-- [ ] Ingots, Nuggets, Dusts, Raw Materials, Storage Blocks (z.B. Bronze, Steel, Refined Glowstone, Refined Obsidian).
-- [ ] Steel Casing, Control Circuits (Basic/Advanced/Elite/Ultimate), Alloys und Enriched Materials.
-- [ ] Crafting-, Smelting-, Blasting- und Resource-Tags nach Original-Rezepten.
-- [ ] Survival-Test: alle Materialien für erste Maschinen ohne Cheat erhältlich.
+- [x] Originale Registry-IDs von Items/Blöcken/Ressourcen inventarisieren. *(Ressourcen-IDs nach Mekanism 26.3 in `scripts/gen_resources.py`, Liste in `scripts/registry.json`.)*
+- [ ] Originaltexturen, Modelle, Blockstates, Sounds und Sprachen mit Lizenzhinweisen integrieren. *(Für Ressourcen per `scripts/import_upstream.py`; MIT-Lizenz in `content/mekanism/LICENSE-MEKANISM`. Sounds und Energy-Cube-Modell fehlen noch.)*
+- [x] Osmium-, Tin/Zinn-, Uranium-/Uran- und Fluorite-/Fluorit-Erze inklusive Deepslate-Varianten. *(Plus Blei und Salz.)*
+- [x] Weltgenerierung, Erzverteilung, Drops und Mining-Level (nur neue Chunks) testen. *(Werte aus Original-`OreType`/`WorldConfig`. Kein Glück/Behutsamkeit: Horizon-Loot kennt `apply_bonus`/`match_tool` nicht.)*
+- [x] Ingots, Nuggets, Dusts, Raw Materials, Storage Blocks (z.B. Bronze, Steel, Refined Glowstone, Refined Obsidian).
+- [ ] Steel Casing, Control Circuits (Basic/Advanced/Elite/Ultimate), Alloys und Enriched Materials. *(Registriert; die meisten Rezepte brauchen den Metallurgic Infuser (M05).)*
+- [ ] Crafting-, Smelting-, Blasting- und Resource-Tags nach Original-Rezepten. *(97 Vanilla-Rezepte + Tags importiert; Maschinenrezepte folgen mit ihren Maschinen.)*
+- [ ] Survival-Test: alle Materialien für erste Maschinen ohne Cheat erhältlich. *(Blockiert: Stahl, Circuits und Alloys brauchen Metallurgic Infuser (M05).)*
 
 ## M03 - Energie- und Maschinen-Fundament [P0/P1]
 

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "mekanism:ingot_uranium",
+  "ingredients": [
+    "mekanism:block_uranium"
+  ],
+  "result": {
+    "count": 9,
+    "id": "mekanism:ingot_uranium"
+  }
+}

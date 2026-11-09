@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#c:fuels/bio",
+    "#c:fuels/block/bio"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "mekanism:block_fluorite",
+    "mekanism:block_salt",
+    "#c:ores/fluorite"
+  ]
+}

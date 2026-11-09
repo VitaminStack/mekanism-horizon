@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "G": "#c:glass_blocks/cheap",
+    "O": "#c:ingots/osmium",
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    "SGS",
+    "GOG",
+    "SGS"
+  ],
+  "result": {
+    "id": "mekanism:steel_casing"
+  }
+}

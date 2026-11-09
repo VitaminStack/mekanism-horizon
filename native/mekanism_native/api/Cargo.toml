@@ -6,5 +6,7 @@ license = "MIT"
 description = "Mekanism Basic Energy Cube native hooks for Horizon"
 
 [dependencies]
-# The Horizon launcher substitutes its selected source while building.
-horizon-client = { git = "https://github.com/horizon-rust/horizon" }
+# The launcher points this at the Horizon source it builds the game from. Any other
+# dependency must be a crate and version in Horizon's Cargo.lock.
+# Keep `rev` in sync with `horizon_revision` in ../horizon-mixin.toml.
+horizon-client = { git = "https://github.com/horizon-rust/horizon", rev = "fdc87aecdbd116bf1e08adcd062fcbaea8c2e2ca" }

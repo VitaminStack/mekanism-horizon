@@ -7,3 +7,6 @@
 - Do not claim machines, pipes or world generation are implemented. Prefer small testable additions.
 - Native mod development: use `cargo horizon-mod new ... --template native` and the Horizon launcher on Windows, using current hook contracts.
 - Do not copy Mekanism assets/code without preserving applicable licensing and attribution.
+- Resource content (M02) is generated, not hand-edited: `python scripts/gen_resources.py`, then `python -I scripts/import_upstream.py <Mekanism 26.3 checkout>` (sparse clone is enough: `src/datagen/generated/mekanism`, `src/main/resources/assets/mekanism/{textures,models,lang,blockstates,items}`, `LICENSE`). Then `scripts/Build-Content.ps1`.
+- Horizon content mods may add tags only in `mekanism`, `minecraft` and `c`. Loot pools use Horizon's `condition` object form; `apply_bonus`/`match_tool` are unsupported.
+- Worldgen features use the 26.3 flat format in `data/mekanism/worldgen/feature/` (no `config` wrapper; `state` is a block id string). Biome tags (`tags/worldgen/biome`) must be written by `gen_resources.py`; the importer copies only block/item tags.

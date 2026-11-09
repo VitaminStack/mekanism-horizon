@@ -9,7 +9,7 @@
   "key": {
     "I": "minecraft:iron_ingot",
     "R": "minecraft:redstone",
-    "O": "mekanism:osmium_block"
+    "O": "mekanism:block_osmium"
   },
   "result": {
     "id": "mekanism:basic_energy_cube",
