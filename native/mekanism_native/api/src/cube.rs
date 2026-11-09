@@ -6,6 +6,22 @@
 //! A cube's side config is kept by *relative* side, as Mekanism's `RelativeSide`,
 //! so it turns with the cube: 0 front, 1 back, 2 left, 3 right, 4 top, 5 bottom.
 
+/// (block id, capacity, max insert/extract per call) from Mekanism's `EnergyCubeTier`.
+/// The creative cube (`Long.MAX_VALUE` in Mekanism) is capped at Horizon's i32.
+pub const TIERS: [(&str, i32, i32); 5] = [
+    ("mekanism:basic_energy_cube", 4_000_000, 4_000),
+    ("mekanism:advanced_energy_cube", 16_000_000, 16_000),
+    ("mekanism:elite_energy_cube", 64_000_000, 64_000),
+    ("mekanism:ultimate_energy_cube", 256_000_000, 256_000),
+    (CREATIVE, i32::MAX, i32::MAX),
+];
+pub const CREATIVE: &str = "mekanism:creative_energy_cube";
+
+/// A cube's (capacity, rate).
+pub fn tier(block: &str) -> Option<(i32, i32)> {
+    TIERS.iter().find(|(id, ..)| *id == block).map(|&(_, capacity, rate)| (capacity, rate))
+}
+
 pub const DOWN: usize = 0;
 pub const UP: usize = 1;
 pub const NORTH: usize = 2;

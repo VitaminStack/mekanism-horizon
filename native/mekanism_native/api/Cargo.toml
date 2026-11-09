@@ -3,7 +3,7 @@ name = "mod-mekanism_native"
 version = "0.2.0"
 edition = "2024"
 license = "MIT"
-description = "Mekanism Basic Energy Cube native hooks for Horizon"
+description = "Mekanism native hooks for Horizon: energy cubes, machines and generators"
 
 [dependencies]
 # The launcher points this at the Horizon source it builds the game from. Any other
