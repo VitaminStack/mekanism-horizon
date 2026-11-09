@@ -32,10 +32,10 @@
 - [x] Content-Mod per `Strg+B` in Visual Studio 2026 bauen.
 - [x] `.hmod` nach erfolgreichem Build automatisch in `horizon-mods/` kopieren.
 - [x] Osmiumbarren und Osmiumblock im Spiel getestet.
-- [ ] Lokale v0.2.0-Änderungen sicher versionieren; Remote und lokal abgleichen.
+- [x] Lokale v0.2.0-Änderungen sicher versionieren; Remote und lokal abgleichen. *(09.11.2026: Arbeitsbaum sauber, alle Branches gepusht.)*
 - [x] Horizon-Nightly, Native-Hook-API und Mekanism-Upstream-Commit pinnen.
-- [ ] Test- und Buildanleitung für Windows dokumentieren.
-- [ ] CI: Content-Validierung, Rust-Tests, JSON-Checks; Native-Build wenn reproduzierbar.
+- [x] Test- und Buildanleitung für Windows dokumentieren. *(`README-WINDOWS.md`.)*
+- [x] CI: Content-Validierung, Rust-Tests, JSON-Checks; Native-Build wenn reproduzierbar. *(`.github/workflows/ci.yml`; Native-Build nicht in CI, braucht Launcher.)*
 - [x] Lizenz und Copyright der Original-Assets/Codeuebernahmen prüfen und beilegen. *(MIT, `content/mekanism/LICENSE-MEKANISM`.)*
 
 ## M01 - Basic Energy Cube: erster wirklich funktionierender Block [P0]

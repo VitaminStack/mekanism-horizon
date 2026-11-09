@@ -1,6 +1,6 @@
 # Mekanism Horizon – Windows-Entwicklungsanleitung
 
-Getesteter Stand: **Windows / Visual Studio 2026**, **Horizon Nightly `fdc87ae`**, Content-Mod **v0.2.0** und erfolgreich kompilierter nativer Rust-Begleiter. **Die tatsächliche Energiespeicherung ist noch nicht im Spiel geprüft.**
+Getesteter Stand: **Windows / Visual Studio 2026**, **Horizon Nightly `fdc87ae`**, Content-Mod **v0.2.0**, nativer Rust-Begleiter (Build `native-fdc87ae-8abc9345573f`). Energiespeicherung im Spiel geprüft, siehe [Testprotokoll](docs/TESTLOG.md).
 
 ## Voraussetzungen
 
@@ -72,9 +72,15 @@ Horizon **über den Launcher** mit der zugehörigen Instanz und der neu gebauten
 /give @s mekanism:basic_energy_cube 1
 ```
 
-**Bestätigt:** Osmium-Items und -Block sowie ein platzierter Basic Energy Cube. Der native Rust-Build wurde erfolgreich kompiliert und für die Instanz ausgewählt.
+Energie testen: `mekanism:debug_energy_source` bzw. `mekanism:debug_energy_sink` neben einen Cube setzen (4.000/Tick), Füllstand mit `/data get block <x> <y> <z>` lesen.
 
-**Noch offen:** Nachweis einer aktiven Block-Entity, Energie einfügen/entnehmen, Eingabe-/Ausgabelimits und sechs Seiten testen, Welt speichern und die Energie nach einem Neustart wieder auslesen. Der Cube hat derzeit **keine GUI** und es gibt noch **keinen Generator oder Debug-Befehl**.
+**Bestätigt:** Block-Entity je Cube, Einfügen/Entnehmen, Limits, Leer/Voll, Speichern und Neustart. Ergebnisse in [docs/TESTLOG.md](docs/TESTLOG.md).
+
+**Noch offen:** seitenweise Ein-/Ausgabe über Horizons Energie-Pfad (braucht echte Quelle). Der Cube hat **keine GUI**.
+
+## CI
+
+`.github/workflows/ci.yml` läuft bei Push auf `main` und bei Pull Requests: `scripts/validate_content.py` (JSON-Syntax, Manifest) und `cargo test` für `logic/energy`. Der native Build läuft **nicht** in CI, er braucht den Horizon Launcher.
 
 ## Häufige Fehler
 
