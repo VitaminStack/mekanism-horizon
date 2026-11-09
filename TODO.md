@@ -89,7 +89,7 @@
 
 - [ ] Allgemeines Rezept-System: Inputs, Outputs, Energie je Tick, Fortschritt, Nebenprodukte.
 - [ ] Maschinen-Inventare, Menüs, GUI, Upgrades, Auto-Eject, Sided I/O, Redstone-Modi.
-- [ ] Metallurgic Infuser und Infusions-Ressourcen.
+- [x] Metallurgic Infuser und Infusions-Ressourcen. *(Ingame getestet 09.11.2026. Werte aus Original; 8 Infuse-Typen, alle `metallurgic_infusing`-Rezepte. Fehlt: Energie-Slot, Upgrades, Side-Config, Redstone; Infuse/Energie bleiben beim Abbau nicht am Item; Balkenfarben genähert.)*
 - [ ] Enrichment Chamber.
 - [ ] Energized Smelter.
 - [ ] Crusher.
