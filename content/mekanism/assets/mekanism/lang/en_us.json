@@ -38,6 +38,7 @@
   "block.mekanism.deepslate_osmium_ore": "Deepslate Osmium Ore",
   "block.mekanism.deepslate_tin_ore": "Deepslate Tin Ore",
   "block.mekanism.deepslate_uranium_ore": "Deepslate Uranium Ore",
+  "block.mekanism.electrolytic_separator": "Electrolytic Separator",
   "block.mekanism.elite_chemical_tank": "Elite Chemical Tank",
   "block.mekanism.elite_energy_cube": "Elite Energy Cube",
   "block.mekanism.elite_fluid_tank": "Elite Fluid Tank",
@@ -49,6 +50,7 @@
   "block.mekanism.osmium_ore": "Osmium Ore",
   "block.mekanism.precision_sawmill": "Precision Sawmill",
   "block.mekanism.purification_chamber": "Purification Chamber",
+  "block.mekanism.rotary_condensentrator": "Rotary Condensentrator",
   "block.mekanism.steel_casing": "Steel Casing",
   "block.mekanism.tin_ore": "Tin Ore",
   "block.mekanism.ultimate_chemical_tank": "Ultimate Chemical Tank",
@@ -151,8 +153,10 @@
   "sound_event.mekanism.tile.machine.combiner": "Combiner hums",
   "sound_event.mekanism.tile.machine.compressor": "Compressor hums",
   "sound_event.mekanism.tile.machine.crusher": "Crusher clangs",
+  "sound_event.mekanism.tile.machine.electrolytic_separator": "Separator separates",
   "sound_event.mekanism.tile.machine.enrichment_chamber": "Enricher hums",
   "sound_event.mekanism.tile.machine.metallurgic_infuser": "Metallurgic infuser hums",
   "sound_event.mekanism.tile.machine.precision_sawmill": "Sawmill cuts",
-  "sound_event.mekanism.tile.machine.purification_chamber": "Purifier hums"
+  "sound_event.mekanism.tile.machine.purification_chamber": "Purifier hums",
+  "sound_event.mekanism.tile.machine.rotary_condensentrator": "Condensentrator rotates"
 }

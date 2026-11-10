@@ -171,6 +171,9 @@ for m, menu in MACHINE_MENUS.items():
 CHEMICAL_MENUS = {
     'chemical_oxidizer': {'slots': 1, 'data_slots': 6, 'results': []},
     'chemical_infuser': {'slots': 1, 'data_slots': 10, 'results': []},
+    # Separator: input, left, right tanks (data slots 4-9). Rotary: chemical and fluid tanks (4-7), then its mode.
+    'electrolytic_separator': {'slots': 1, 'data_slots': 10, 'results': []},
+    'rotary_condensentrator': {'slots': 1, 'data_slots': 9, 'results': []},
 }
 for m, menu in CHEMICAL_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
