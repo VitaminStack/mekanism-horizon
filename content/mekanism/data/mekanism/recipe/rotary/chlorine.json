@@ -1,0 +1,20 @@
+{
+  "type": "mekanism:rotary",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:chlorine"
+  },
+  "chemical_output": {
+    "amount": 1,
+    "id": "mekanism:chlorine"
+  },
+  "experience": 0.000100000005,
+  "fluid_input": {
+    "amount": 1,
+    "ingredient": "mekanism:chlorine"
+  },
+  "fluid_output": {
+    "amount": 1,
+    "id": "mekanism:chlorine"
+  }
+}

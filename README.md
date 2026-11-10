@@ -8,12 +8,12 @@ Inoffizieller Port von [Mekanism](https://github.com/mekanism/Mekanism) für [Mi
 
 <!-- progress:start -->
 ```text
-Gesamt                      ████████░░░░░░░░░░░░  40%  (63/157)
+Gesamt                      ████████░░░░░░░░░░░░  41%  (62/153)
 
 Projektbasis                ████████████████████ 100%  (10/10)
 Energy Cube                 ████████████████████ 100%  (10/10)
 Rohstoffe & Energie         ████████████░░░░░░░░  61%  (14/23)
-Maschinen & Chemie          ███████░░░░░░░░░░░░░  35%  (9/26)
+Maschinen & Chemie          ████████░░░░░░░░░░░░  42%  (11/26)
 Automation & Logistik       ░░░░░░░░░░░░░░░░░░░░   0%  (0/17)
 Multiblocks & Reaktoren     ░░░░░░░░░░░░░░░░░░░░   0%  (0/16)
 Tools & Additions           ████████░░░░░░░░░░░░  38%  (10/26)
@@ -39,7 +39,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content
 
 Voraussetzungen, Spielordner-Konfiguration und separater Native-Build: **[Windows-Anleitung](README-WINDOWS.md)**.
 
-> Im Spiel getestet: Rohstoffe und Erze, Energy Cubes und Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification und Chemical Injection Chamber, Chemical Oxidizer und Infuser, Heat-, Solar-, Advanced-Solar-, Bio- und Wind-Generator sowie Fluid und Chemical Tanks (`docs/TESTLOG.md`). Kabel, Pipes und die meisten Maschinen fehlen noch. Nur in Testwelten verwenden.
+> Im Spiel getestet: Rohstoffe und Erze, Energy Cubes und Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification und Chemical Injection Chamber, Chemical Oxidizer und Infuser, Electrolytic Separator und Rotary Condensentrator, Heat-, Solar-, Advanced-Solar-, Bio- und Wind-Generator sowie Fluid und Chemical Tanks (`docs/TESTLOG.md`). Kabel, Pipes und die meisten Maschinen fehlen noch. Nur in Testwelten verwenden.
 
 [Technische Details](docs/ENERGY-CUBE.md) · [Aufgabenliste](TODO.md) · [Lizenz](LICENSE)
 

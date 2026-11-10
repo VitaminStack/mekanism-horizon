@@ -45,6 +45,19 @@ Nicht portiert: Item-Slots zum Füllen/Leeren, Seitenkonfiguration, Redstone, Va
 
 **Ingame-Tests und Native-Build (Launcher) stehen noch aus.** Unit-Tests: `cargo test --manifest-path logic/energy/Cargo.toml`.
 
+## Electrolytic Separator und Rotary Condensentrator
+
+Beide laufen über dieselbe Tank-Tabelle (`machine::FluidTanks`: je Tank Gauge und Kapazität, dazu die füll- und
+entnehmbaren Tanks) und `machine::convert` (ein Eingang, alle Outputs passen ganz oder nichts läuft).
+- Separator (`mekanism:separating`): Tank 0 Fluid-Eingang (24.000 mB), Tank 1/2 linke/rechte Chemie (2.400 mB), ein
+  Durchlauf je Tick. Der Importer macht aus dem Fluid-Tag die Fluid-ID (`#c:brine` zu `mekanism:brine`,
+  `#minecraft:water` zu `minecraft:water`) und lässt das Deuterium-Rezept aus (kein Tank-ID für `mekanismgenerators`-Chemie).
+- Rotary (`mekanism:rotary`): Tank 0 Chemical, Tank 1 Fluid (je 10.000 mB), Modus in NBT `mekanism_rotary_mode`
+  (0 Chemical zu Fluid, 1 umgekehrt), Knopf im GUI (`BUTTON_MODE`), das Menü hängt den Modus nach den Tanks an.
+Blocker: `block_entity_accepts_fluid` kennt nur Block, Tank-Nummer und Fluid (keine Position, kein Modus), und
+Tank-Seiten sind statisch; der Rotary-Modus kann Ein-/Ausgabe von außen deshalb nicht sperren. Fluid-Items und
+Chemie-Items (Slots der Originale) fehlen: Horizon hat Fluid-Item-API nur für Items, nicht für Slot-Füllung.
+
 ## Chemie-Ausgabe der Maschinen (Chemical Oxidizer, Chemical Infuser)
 
 Die Tanks dieser Maschinen sind Horizons Block-Entity-Tanks (`fluids`, Reihenfolge: Eingänge, dann Output), mit
