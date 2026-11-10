@@ -8,7 +8,7 @@ Inoffizieller Port von [Mekanism](https://github.com/mekanism/Mekanism) für [Mi
 
 <!-- progress:start -->
 ```text
-Gesamt                      ████████░░░░░░░░░░░░  41%  (62/153)
+Gesamt                      ████████░░░░░░░░░░░░  42%  (66/157)
 
 Projektbasis                ████████████████████ 100%  (10/10)
 Energy Cube                 ████████████████████ 100%  (10/10)
@@ -17,7 +17,7 @@ Maschinen & Chemie          ████████░░░░░░░░░�
 Automation & Logistik       ░░░░░░░░░░░░░░░░░░░░   0%  (0/17)
 Multiblocks & Reaktoren     ░░░░░░░░░░░░░░░░░░░░   0%  (0/16)
 Tools & Additions           ████████░░░░░░░░░░░░  38%  (10/26)
-Tests & Releases            ░░░░░░░░░░░░░░░░░░░░   0%  (0/19)
+Tests & Releases            █░░░░░░░░░░░░░░░░░░░   5%  (1/19)
 Naechste Schritte           ████████████████████ 100%  (10/10)
 ```
 <!-- progress:end -->
@@ -40,6 +40,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content
 Voraussetzungen, Spielordner-Konfiguration und separater Native-Build: **[Windows-Anleitung](README-WINDOWS.md)**.
 
 > Im Spiel getestet: Rohstoffe und Erze, Energy Cubes und Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification und Chemical Injection Chamber, Chemical Oxidizer und Infuser, Electrolytic Separator und Rotary Condensentrator, Heat-, Solar-, Advanced-Solar-, Bio- und Wind-Generator sowie Fluid und Chemical Tanks (`docs/TESTLOG.md`). Kabel, Pipes und die meisten Maschinen fehlen noch. Nur in Testwelten verwenden.
+
+[Installation](docs/INSTALL.md) · [Changelog](CHANGELOG.md) · [Known Issues](docs/KNOWN_ISSUES.md) · [Mitmachen](CONTRIBUTING.md) · [Lizenzen](docs/LICENSES.md)
 
 [Technische Details](docs/ENERGY-CUBE.md) · [Aufgabenliste](TODO.md) · [Lizenz](LICENSE)
 
