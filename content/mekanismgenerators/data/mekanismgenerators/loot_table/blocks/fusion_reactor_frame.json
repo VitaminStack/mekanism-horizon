@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "mekanismgenerators:fusion_reactor_frame"
+        }
+      ],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "mekanismgenerators:blocks/fusion_reactor_frame"
+}

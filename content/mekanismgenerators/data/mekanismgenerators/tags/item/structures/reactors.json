@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#mekanismgenerators:structures/reactors/fission",
+    "#mekanismgenerators:structures/reactors/fusion"
+  ]
+}

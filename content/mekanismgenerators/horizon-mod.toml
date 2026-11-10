@@ -1,7 +1,7 @@
 id = "mekanismgenerators"
 name = "Mekanism Generators Horizon (Prototype)"
 version = "0.2.0"
-description = "Unofficial experimental port of Mekanism: Generators: Heat and Solar Generator; needs the Mekanism Horizon content mod and the native companion."
+description = "Unofficial experimental port of Mekanism: Generators: Heat, Solar, Advanced Solar, Wind and Bio Generator plus the structural parts of the turbine, fission and fusion reactors (no multiblock logic); needs the Mekanism Horizon content mod and the native companion."
 authors = ["VitaminStack"]
 api = "0.2"
 side = "both"

@@ -5,6 +5,17 @@
     "mekanismgenerators:solar_generator",
     "mekanismgenerators:bio_generator",
     "mekanismgenerators:advanced_solar_generator",
-    "mekanismgenerators:wind_generator"
+    "mekanismgenerators:wind_generator",
+    "mekanismgenerators:turbine_casing",
+    "mekanismgenerators:fission_reactor_casing",
+    "mekanismgenerators:fusion_reactor_frame",
+    "mekanismgenerators:reactor_glass",
+    "mekanismgenerators:laser_focus_matrix",
+    "mekanismgenerators:turbine_rotor",
+    "mekanismgenerators:electromagnetic_coil",
+    "mekanismgenerators:rotational_complex",
+    "mekanismgenerators:saturating_condenser",
+    "mekanismgenerators:fission_fuel_assembly",
+    "mekanismgenerators:control_rod_assembly"
   ]
 }

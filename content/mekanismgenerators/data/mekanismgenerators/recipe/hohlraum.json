@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:metallurgic_infusing",
+  "chemical_input": {
+    "amount": 10,
+    "ingredient": "mekanism:carbon"
+  },
+  "experience": 1.0,
+  "item_input": {
+    "count": 4,
+    "ingredient": "#c:dusts/gold"
+  },
+  "output": {
+    "id": "mekanismgenerators:hohlraum"
+  },
+  "per_tick_usage": false
+}
