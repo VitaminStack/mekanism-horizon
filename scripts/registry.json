@@ -109,6 +109,7 @@
       "deepslate_osmium_ore",
       "deepslate_tin_ore",
       "deepslate_uranium_ore",
+      "electrolytic_separator",
       "elite_chemical_tank",
       "elite_energy_cube",
       "elite_fluid_tank",
@@ -120,6 +121,7 @@
       "osmium_ore",
       "precision_sawmill",
       "purification_chamber",
+      "rotary_condensentrator",
       "steel_casing",
       "tin_ore",
       "ultimate_chemical_tank",
@@ -130,13 +132,26 @@
   },
   "mekanismgenerators": {
     "items": [
-      "solar_panel"
+      "hohlraum",
+      "solar_panel",
+      "turbine_blade"
     ],
     "blocks": [
       "advanced_solar_generator",
       "bio_generator",
+      "control_rod_assembly",
+      "electromagnetic_coil",
+      "fission_fuel_assembly",
+      "fission_reactor_casing",
+      "fusion_reactor_frame",
       "heat_generator",
+      "laser_focus_matrix",
+      "reactor_glass",
+      "rotational_complex",
+      "saturating_condenser",
       "solar_generator",
+      "turbine_casing",
+      "turbine_rotor",
       "wind_generator"
     ]
   }

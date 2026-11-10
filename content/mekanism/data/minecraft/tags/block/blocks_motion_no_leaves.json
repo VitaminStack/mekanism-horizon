@@ -25,6 +25,8 @@
     "#mekanism:chemical_tanks",
     "#mekanism:fluid_tanks",
     "mekanism:chemical_oxidizer",
-    "mekanism:chemical_infuser"
+    "mekanism:chemical_infuser",
+    "mekanism:rotary_condensentrator",
+    "mekanism:electrolytic_separator"
   ]
 }

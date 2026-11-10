@@ -171,6 +171,9 @@ for m, menu in MACHINE_MENUS.items():
 CHEMICAL_MENUS = {
     'chemical_oxidizer': {'slots': 1, 'data_slots': 6, 'results': []},
     'chemical_infuser': {'slots': 1, 'data_slots': 10, 'results': []},
+    # Separator: input, left, right tanks (data slots 4-9). Rotary: chemical and fluid tanks (4-7), then its mode.
+    'electrolytic_separator': {'slots': 1, 'data_slots': 10, 'results': []},
+    'rotary_condensentrator': {'slots': 1, 'data_slots': 9, 'results': []},
 }
 for m, menu in CHEMICAL_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
@@ -212,6 +215,22 @@ block('bio_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occlu
 put(f'data/{GEN}/horizon/menu/bio_generator.json', {'slots': 1, 'data_slots': 4, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/heat_generator.json', {'slots': 1, 'data_slots': 7, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/solar_generator.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
+
+# Structural parts of the turbine, fission reactor and fusion reactor, and their craftable items
+# (M12). They are plain blocks here: the multiblocks (formation, GUIs, valves, vents, ports, logic
+# adapters, controllers) need native code and are not ported, see TODO.md (M12). Strengths as upstream:
+# BlockBasicMultiblock.defaultProperties 5 / 9 (casings, frame), BlockTile 3.5 / 16 (the internal
+# multiblock blocks), the laser focus matrix 3.5 / 4.8 with glass sounds. Models are not full cubes
+# (glass, coil, rotor, assemblies): `occludes: false` keeps the faces beside them drawn.
+item('turbine_blade', ns=GEN)
+item('hohlraum', stack=1, ns=GEN)
+for gid in ('turbine_casing', 'fission_reactor_casing', 'fusion_reactor_frame'):
+    block(gid, 'minecraft:iron_block', 5.0, 9.0, sounds=STONE, ns=GEN)
+block('reactor_glass', 'minecraft:glass', 5.0, 9.0, ns=GEN, occludes=False)
+block('laser_focus_matrix', 'minecraft:glass', 3.5, 4.8, ns=GEN, occludes=False)
+for gid in ('turbine_rotor', 'electromagnetic_coil', 'rotational_complex', 'saturating_condenser',
+            'fission_fuel_assembly', 'control_rod_assembly'):
+    block(gid, 'minecraft:iron_block', 3.5, 16.0, sounds=STONE, ns=GEN, occludes=False)
 
 # --- tanks (M06): contents are Horizon block-entity fluid tanks, see native/.../tank.rs ---
 # Fluid tank: Mekanism's `active` blockstate (valve lit while ejecting down); chemical tank: `facing`
@@ -396,8 +415,11 @@ put('data/minecraft/tags/block/mineable/pickaxe.json',
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
      + [f'{NS}:{m}' for m in ('metallurgic_infuser', *MACHINE_MENUS)]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
-    {'replace': False, 'values': [f'{GEN}:{g}' for g in ('heat_generator', 'solar_generator', 'bio_generator',
-                                                         'advanced_solar_generator', 'wind_generator')]}, GEN)
+    {'replace': False, 'values': [f'{GEN}:{g}' for g in (
+        'heat_generator', 'solar_generator', 'bio_generator', 'advanced_solar_generator', 'wind_generator',
+        'turbine_casing', 'fission_reactor_casing', 'fusion_reactor_frame', 'reactor_glass', 'laser_focus_matrix',
+        'turbine_rotor', 'electromagnetic_coil', 'rotational_complex', 'saturating_condenser',
+        'fission_fuel_assembly', 'control_rod_assembly')]}, GEN)
 
 # Hand-written content stays declared too, so the importer covers it.
 for ns, reg in registry.items():

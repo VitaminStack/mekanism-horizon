@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "mekanismgenerators:reactor_glass",
+    "mekanismgenerators:fusion_reactor_frame",
+    "mekanismgenerators:laser_focus_matrix"
+  ]
+}

@@ -15,6 +15,12 @@
 //!   `chemical_output` is the tank id (an `output` with an `amount` is a chemical).
 //! - two chemicals to chemical (`chemical_infusing`): `left_input`, `right_input`
 //!   {`ingredient`, `amount`}, `output` {`id`, `amount`}, read as an `Infusion`.
+//! - fluid to two chemicals (`separating`): `input` {`ingredient`, `amount`},
+//!   `output` {`left`, `right`} {`id`, `amount`}, read as a `Separation`. The
+//!   importer turns the fluid tag into the fluid's id (`#c:brine` becomes
+//!   `mekanism:brine`).
+//! - chemical and fluid for each other (`rotary`): `chemical_input`,
+//!   `chemical_output`, `fluid_input`, `fluid_output`, read as a `Rotation`.
 //!
 //! A recipe that names an unknown item is skipped, as Mekanism skips recipes
 //! whose ingredients do not resolve. Chemicals stay ids here: each machine
@@ -135,6 +141,60 @@ impl Infusion {
     }
 }
 
+/// A fluid splits into two chemicals (`separating`).
+pub struct Separation {
+    /// The fluid's tank id and mB.
+    pub input: (String, i32),
+    pub left: (String, i32),
+    pub right: (String, i32),
+}
+
+impl Separation {
+    fn parse(_: &dyn Host, j: &Value) -> Option<Self> {
+        Some(Separation {
+            input: fluid_ingredient(&j["input"])?,
+            left: chemical_stack(&j["output"]["left"])?,
+            right: chemical_stack(&j["output"]["right"])?,
+        })
+    }
+}
+
+/// A fluid ingredient `{ingredient, amount}` as (tank id, mB); the importer has
+/// resolved a fluid tag to its fluid. A chemical is no fluid.
+fn fluid_ingredient(j: &Value) -> Option<(String, i32)> {
+    let id = j["ingredient"].as_str().filter(|id| !id.starts_with('#'))?;
+    Some((id.to_owned(), positive(&j["amount"])?))
+}
+
+/// A chemical and a fluid that turn into each other (`rotary`), with the
+/// amounts of each direction.
+pub struct Rotation {
+    /// The chemical's tank id and the fluid's.
+    pub chemical: String,
+    pub fluid: String,
+    /// Chemical to fluid: `chemical_in` mB of the chemical make `fluid_out` of the fluid.
+    pub chemical_in: i32,
+    pub fluid_out: i32,
+    /// Fluid to chemical.
+    pub fluid_in: i32,
+    pub chemical_out: i32,
+}
+
+impl Rotation {
+    fn parse(_: &dyn Host, j: &Value) -> Option<Self> {
+        let (chemical, chemical_in) = chemical_ingredient(&j["chemical_input"])?;
+        let (fluid, fluid_out) = chemical_stack_raw(&j["fluid_output"])?;
+        let fluid_in = positive(&j["fluid_input"]["amount"])?;
+        let (out, chemical_out) = chemical_stack(&j["chemical_output"])?;
+        (out == chemical).then_some(Rotation { chemical, fluid, chemical_in, fluid_out, fluid_in, chemical_out })
+    }
+}
+
+/// A result `{id, amount}` with the id as it is (a fluid's tank id).
+fn chemical_stack_raw(j: &Value) -> Option<(String, i32)> {
+    Some((j["id"].as_str()?.to_owned(), positive(&j["amount"])?))
+}
+
 /// One item of `input` gives `amount` of chemical `chemical`.
 pub struct Conversion {
     pub input: Ingredient,
@@ -187,6 +247,8 @@ pub struct Recipes {
     processing: HashMap<&'static str, Table<Recipe>>,
     conversion: Table<Conversion>,
     infusion: Table<Infusion>,
+    separation: Table<Separation>,
+    rotation: Table<Rotation>,
 }
 
 impl Recipes {
@@ -198,6 +260,16 @@ impl Recipes {
     /// The Chemical Infuser's recipes (`kind` is its recipe type).
     pub fn infusing(&mut self, host: &dyn Host, kind: &'static str) -> &[Infusion] {
         self.infusion.refresh(host, kind, Infusion::parse)
+    }
+
+    /// The Electrolytic Separator's recipes.
+    pub fn separating(&mut self, host: &dyn Host, kind: &'static str) -> &[Separation] {
+        self.separation.refresh(host, kind, Separation::parse)
+    }
+
+    /// The Rotary Condensentrator's recipes.
+    pub fn rotating(&mut self, host: &dyn Host, kind: &'static str) -> &[Rotation] {
+        self.rotation.refresh(host, kind, Rotation::parse)
     }
 
     /// The chemical conversions (item to chemical) into any buffer.

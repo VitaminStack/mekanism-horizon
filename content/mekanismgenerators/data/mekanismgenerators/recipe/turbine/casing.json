@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "O": "#c:ingots/osmium",
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    " S ",
+    "SOS",
+    " S "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanismgenerators:turbine_casing"
+  }
+}
