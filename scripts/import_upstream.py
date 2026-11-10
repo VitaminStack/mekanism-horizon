@@ -44,14 +44,18 @@ ITEM_SKIP = {f'{NS}:{t}_fluid_tank' for t in ('basic', 'advanced', 'elite', 'ult
 REF = re.compile(r'"(#?)(mekanism|mekanismgenerators):([a-z0-9_/.]+)"')
 # Mekanism machine recipe types whose machine exists here.
 MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversion', 'mekanism:enriching',
-                   'mekanism:crushing'}
+                   'mekanism:crushing', 'mekanism:compressing', 'mekanism:combining', 'mekanism:sawing'}
 # Chemicals with Mekanism's infuse-type attribute: what the Metallurgic Infuser takes.
 INFUSE_TYPES = {f'{NS}:{t}' for t in ('carbon', 'redstone', 'diamond', 'refined_obsidian', 'tin', 'gold',
                                       'bio', 'fungi')}
+# Chemicals a machine's buffer is filled with from items (`chemical_conversion`): the infuse types
+# and the Osmium Compressor's osmium.
+BUFFER_CHEMICALS = INFUSE_TYPES | {f'{NS}:osmium'}
 
 # Sound events whose block plays them (native/mekanism_native loops them while running).
 SOUNDS = {
-    NS: ['tile.machine.metallurgic_infuser', 'tile.machine.enrichment_chamber', 'tile.machine.crusher'],
+    NS: ['tile.machine.metallurgic_infuser', 'tile.machine.enrichment_chamber', 'tile.machine.crusher',
+         'tile.machine.compressor', 'tile.machine.combiner', 'tile.machine.precision_sawmill'],
     'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar', 'tile.generator.bio',
                            'tile.generator.wind'],
 }
@@ -172,16 +176,18 @@ def main(up):
                 text = json.dumps(recipe, indent=2)
             elif kind in MACHINE_RECIPES:
                 # Read by native/mekanism_native (Horizon keeps mod recipe types as their JSON).
-                # Infusion conversions only for infuse types; the others feed later machines.
-                if kind == 'mekanism:chemical_conversion' and recipe['output']['id'] not in INFUSE_TYPES:
+                # Conversions only into a machine's buffer; the others feed later machines.
+                if kind == 'mekanism:chemical_conversion' and recipe['output']['id'] not in BUFFER_CHEMICALS:
                     continue
                 if 'chemical_input' in recipe:
+                    # A chemical tag becomes its one chemical; a plain id stays.
                     tag = recipe['chemical_input']['ingredient']
-                    if tag not in chem_tags:
-                        print(f'  unresolved chemical {tag} in {src.name}')
-                        continue
-                    recipe['chemical_input']['ingredient'] = chem_tags[tag]
-                for slot in ('input', 'item_input'):
+                    if tag.startswith('#'):
+                        if tag not in chem_tags:
+                            print(f'  unresolved chemical {tag} in {src.name}')
+                            continue
+                        recipe['chemical_input']['ingredient'] = chem_tags[tag]
+                for slot in ('input', 'item_input', 'main_input', 'extra_input'):
                     if slot in recipe:
                         recipe[slot]['ingredient'] = flat_or(recipe[slot]['ingredient'])
                 text = json.dumps(recipe, indent=2)

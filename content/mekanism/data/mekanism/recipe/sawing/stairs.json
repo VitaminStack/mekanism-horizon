@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:sawing",
+  "experience": 0.1,
+  "group": "mekanism:sticks_and_dust",
+  "input": {
+    "count": 1,
+    "ingredient": "#minecraft:wooden_stairs"
+  },
+  "main_output": {
+    "count": 9,
+    "id": "minecraft:stick"
+  },
+  "secondary_chance": 0.375,
+  "secondary_output": {
+    "id": "mekanism:sawdust"
+  }
+}

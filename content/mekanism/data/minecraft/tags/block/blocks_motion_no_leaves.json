@@ -21,6 +21,8 @@
     "mekanism:block_refined_glowstone",
     "mekanism:steel_casing",
     "mekanism:block_bio_fuel",
-    "mekanism:bounding_block"
+    "mekanism:bounding_block",
+    "#mekanism:chemical_tanks",
+    "#mekanism:fluid_tanks"
   ]
 }

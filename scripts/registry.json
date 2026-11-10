@@ -59,6 +59,7 @@
       "raw_tin",
       "raw_uranium",
       "salt",
+      "sawdust",
       "ultimate_control_circuit"
     ],
     "blocks": [
@@ -85,6 +86,7 @@
       "block_tin",
       "block_uranium",
       "bounding_block",
+      "combiner",
       "creative_chemical_tank",
       "creative_energy_cube",
       "creative_fluid_tank",
@@ -104,7 +106,9 @@
       "fluorite_ore",
       "lead_ore",
       "metallurgic_infuser",
+      "osmium_compressor",
       "osmium_ore",
+      "precision_sawmill",
       "steel_casing",
       "tin_ore",
       "ultimate_chemical_tank",

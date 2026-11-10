@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:sawing",
+  "category": "wood_type",
+  "experience": 0.1,
+  "group": "mekanism:hanging_sign",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:acacia_hanging_sign"
+  },
+  "main_output": {
+    "count": 2,
+    "id": "minecraft:acacia_planks"
+  },
+  "secondary_chance": 0.5,
+  "secondary_output": {
+    "id": "mekanism:sawdust"
+  }
+}

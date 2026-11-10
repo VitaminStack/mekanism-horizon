@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:sawing",
+  "category": "food",
+  "experience": 0.3,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:pumpkins/normal"
+  },
+  "main_output": {
+    "id": "minecraft:carved_pumpkin"
+  },
+  "secondary_chance": 1.0,
+  "secondary_output": {
+    "count": 4,
+    "id": "minecraft:pumpkin_seeds"
+  }
+}

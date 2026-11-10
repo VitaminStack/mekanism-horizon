@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:sawing",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:jukebox"
+  },
+  "main_output": {
+    "count": 8,
+    "id": "minecraft:oak_planks"
+  },
+  "secondary_chance": 0.95,
+  "secondary_output": {
+    "id": "minecraft:diamond"
+  }
+}

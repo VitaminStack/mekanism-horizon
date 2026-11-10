@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:sawing",
+  "category": "wood_type",
+  "experience": 0.1,
+  "group": "mekanism:chest_boat",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:pale_oak_chest_boat"
+  },
+  "main_output": {
+    "id": "minecraft:pale_oak_boat"
+  },
+  "secondary_chance": 1.0,
+  "secondary_output": {
+    "id": "minecraft:chest"
+  }
+}

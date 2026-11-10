@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:chemical_conversion",
+  "group": "mekanism:osmium",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/osmium"
+  },
+  "output": {
+    "amount": 1800,
+    "id": "mekanism:osmium"
+  }
+}
