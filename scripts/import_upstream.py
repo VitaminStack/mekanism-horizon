@@ -45,7 +45,7 @@ REF = re.compile(r'"(#?)(mekanism|mekanismgenerators):([a-z0-9_/.]+)"')
 # Mekanism machine recipe types whose machine exists here.
 MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversion', 'mekanism:enriching',
                    'mekanism:crushing', 'mekanism:compressing', 'mekanism:combining', 'mekanism:sawing',
-                   'mekanism:purifying', 'mekanism:injecting'}
+                   'mekanism:purifying', 'mekanism:injecting', 'mekanism:oxidizing', 'mekanism:chemical_infusing'}
 # Chemicals with Mekanism's infuse-type attribute: what the Metallurgic Infuser takes.
 INFUSE_TYPES = {f'{NS}:{t}' for t in ('carbon', 'redstone', 'diamond', 'refined_obsidian', 'tin', 'gold',
                                       'bio', 'fungi')}
@@ -58,7 +58,8 @@ BUFFER_CHEMICALS = INFUSE_TYPES | {f'{NS}:{c}' for c in ('osmium', 'oxygen', 'hy
 SOUNDS = {
     NS: ['tile.machine.metallurgic_infuser', 'tile.machine.enrichment_chamber', 'tile.machine.crusher',
          'tile.machine.compressor', 'tile.machine.combiner', 'tile.machine.precision_sawmill',
-         'tile.machine.purification_chamber', 'tile.machine.chemical_injection_chamber'],
+         'tile.machine.purification_chamber', 'tile.machine.chemical_injection_chamber',
+         'tile.machine.chemical_oxidizer', 'tile.machine.chemical_infuser'],
     'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar', 'tile.generator.bio',
                            'tile.generator.wind'],
 }
@@ -200,7 +201,8 @@ def main(up):
             # `type` and `group` name no item, chemicals are no items; every other plain Mekanism id
             # must be registered.
             skip = ('type', 'group', 'chemical_input') + (
-                ('output',) if kind == 'mekanism:chemical_conversion' else ())
+                ('output',) if kind in ('mekanism:chemical_conversion', 'mekanism:oxidizing') else ()) + (
+                ('left_input', 'right_input', 'output') if kind == 'mekanism:chemical_infusing' else ())
             scan = json.dumps({k: v for k, v in recipe.items() if k not in skip})
             refs = {f'{m.group(2)}:{m.group(3)}' for m in REF.finditer(scan) if not m.group(1)}
             if refs <= known:

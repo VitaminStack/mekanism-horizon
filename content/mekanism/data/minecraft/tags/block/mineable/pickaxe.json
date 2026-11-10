@@ -36,6 +36,8 @@
     "mekanism:block_steel",
     "mekanism:block_fluorite",
     "mekanism:steel_casing",
+    "mekanism:chemical_oxidizer",
+    "mekanism:chemical_infuser",
     "mekanism:block_osmium",
     "mekanism:block_raw_osmium",
     "mekanism:block_tin",

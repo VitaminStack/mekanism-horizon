@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "group": "mekanism:redstone",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/redstone"
+  },
+  "output": {
+    "amount": 10,
+    "id": "mekanism:redstone"
+  }
+}

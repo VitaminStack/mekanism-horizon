@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "group": "mekanism:diamond",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:enriched/diamond"
+  },
+  "output": {
+    "amount": 80,
+    "id": "mekanism:diamond"
+  }
+}

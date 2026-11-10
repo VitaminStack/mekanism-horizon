@@ -44,3 +44,17 @@ Debug-Block `mekanism:debug_chemical_source` (füllt Hydrogen in Nachbartanks).
 Nicht portiert: Item-Slots zum Füllen/Leeren, Seitenkonfiguration, Redstone, Valve-Journal, Edit-Mode.
 
 **Ingame-Tests und Native-Build (Launcher) stehen noch aus.** Unit-Tests: `cargo test --manifest-path logic/energy/Cargo.toml`.
+
+## Chemie-Ausgabe der Maschinen (Chemical Oxidizer, Chemical Infuser)
+
+Die Tanks dieser Maschinen sind Horizons Block-Entity-Tanks (`fluids`, Reihenfolge: Eingänge, dann Output), mit
+`block_entity_fluids` von außen erreichbar: Eingänge füllbar, Output entnehmbar. Chemie-Rezepte: `oxidizing`
+(Item zu Chemical, `Recipe::chemical_output`) und `chemical_infusing` (`recipe::Infusion`, beide Seiten
+vertauschbar). Der Output wird jeden Tick (bis 1.024 mB) per `fluid_insert` in alle sechs Nachbarn geschoben
+(Mekanisms Ejector samt Side-Config ist nicht portiert). `block_entity_accepts_fluid` bekommt keine Position und
+keinen Tank-Inhalt, deshalb nimmt der Infuser jedes Chemical, das in einem Rezept vorkommt; passt der Partner
+nicht, wartet die Maschine.
+
+Blocker/Grenzen: kein Item-Slot-Fill der Tanks (Chemie-Items fehlen), Mengen `i32`, kein Pfeil-Overlay.
+Der Eject-Aufruf liegt außerhalb des Rezept-Locks, weil `fluid_insert` den `accepts`-Hook des Nachbarn
+synchron aufruft (derselbe Mutex: sonst Deadlock).

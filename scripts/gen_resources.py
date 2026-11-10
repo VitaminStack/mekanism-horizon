@@ -164,6 +164,18 @@ for m, menu in MACHINE_MENUS.items():
         'default_state': {'facing': 'north', 'active': 'false'}})
     put(f'data/{NS}/horizon/menu/{m}.json', menu)
 
+# Chemical Oxidizer (0 input item; output chemical tank in data slots 4-5) and Chemical Infuser (no item
+# slot; left, right, output tanks in data slots 4-9): their chemicals are Horizon fluid tanks kept by the
+# native mod. Upstream's blockstates have no `active` variant. One slot is a hidden placeholder where
+# the machine has none.
+CHEMICAL_MENUS = {
+    'chemical_oxidizer': {'slots': 1, 'data_slots': 6, 'results': []},
+    'chemical_infuser': {'slots': 1, 'data_slots': 10, 'results': []},
+}
+for m, menu in CHEMICAL_MENUS.items():
+    block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
+    put(f'data/{NS}/horizon/menu/{m}.json', menu)
+
 # --- generators (M04), content mod `mekanismgenerators`: ticked, powered and drawn by
 # native/mekanism_native. BlockTile.defaultProperties (3.5, 16) as the infuser; the barrel template
 # gives `facing` and the menu, the native mod turns the front toward the placer, horizontally.

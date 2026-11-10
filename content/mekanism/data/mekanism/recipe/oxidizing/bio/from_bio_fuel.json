@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "group": "mekanism:bio",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:fuels/bio"
+  },
+  "output": {
+    "amount": 5,
+    "id": "mekanism:bio"
+  }
+}

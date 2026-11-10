@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "group": "mekanism:refined_obsidian",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/refined_obsidian"
+  },
+  "output": {
+    "amount": 10,
+    "id": "mekanism:refined_obsidian"
+  }
+}
