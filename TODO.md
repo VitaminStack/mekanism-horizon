@@ -120,7 +120,7 @@
 - [ ] Electrolytic Separator.
 - [ ] Chemical Oxidizer und Chemical Infuser.
 - [ ] Rotary Condensentrator.
-- [ ] Purification Chamber und Chemical Injection Chamber.
+- [x] Purification Chamber und Chemical Injection Chamber. *(Ingame getestet 10.11.2026 (`docs/TESTLOG.md`): Eisen zu Klumpen mit Sauerstoff, Schießpulver zu Schwefel mit Chlorwasserstoff, Stillstand bei leerem Tank. Purification 10 FE/t, Injection 15 FE/t, Tank 210 mB, 1 mB je Tick, alle `purifying`-/`injecting`-Rezepte, Klumpen-Items. Chemie vorerst nur aus Items (Flint: Sauerstoff, Salz: Chlorwasserstoff); Wasserdampf-Rezepte laufen erst mit einer Maschine, die ihn herstellt. Fehlt: Energie-Slot, Upgrades, Side-Config, Redstone.)*
 - [ ] Chemical Dissolution Chamber, Chemical Washer, Chemical Crystallizer.
 - [ ] Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator.
 - [ ] Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine.
