@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:glow_plastic_stairs",
+  "key": {
+    "#": "mekanismadditions:aqua_plastic_glow"
+  },
+  "pattern": [
+    "#  ",
+    "## ",
+    "###"
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanismadditions:aqua_plastic_glow_stairs"
+  }
+}

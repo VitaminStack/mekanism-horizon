@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:reinforced_plastic",
+  "key": {
+    "#": "mekanismadditions:light_blue_plastic",
+    "O": "#c:dusts/osmium"
+  },
+  "pattern": [
+    " # ",
+    "#O#",
+    " # "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanismadditions:light_blue_reinforced_plastic"
+  }
+}

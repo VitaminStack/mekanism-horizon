@@ -1,0 +1,8 @@
+{
+  "parent": "mekanismadditions:block/colored/stairs",
+  "textures": {
+    "side": "mekanismadditions:block/lime/plastic_block",
+    "bottom": "mekanismadditions:block/lime/plastic_block",
+    "top": "mekanismadditions:block/lime/plastic_block"
+  }
+}

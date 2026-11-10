@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "condition": {
+            "type": "minecraft:match_block",
+            "blocks": "mekanismadditions:obsidian_tnt",
+            "state": {
+              "unstable": "false"
+            }
+          },
+          "name": "mekanismadditions:obsidian_tnt"
+        }
+      ],
+      "name": "main",
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "mekanismadditions:blocks/obsidian_tnt"
+}

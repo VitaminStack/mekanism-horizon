@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "#c:stairs/plastic",
+    "#c:stairs/plastic/glow",
+    "#c:stairs/plastic/transparent"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "mekanismadditions:block/colored/stairs_outer_transparent",
+  "textures": {
+    "side": "mekanismadditions:block/pink/transparent_plastic_block",
+    "bottom": "mekanismadditions:block/pink/transparent_plastic_block",
+    "top": "mekanismadditions:block/pink/transparent_plastic_block"
+  }
+}

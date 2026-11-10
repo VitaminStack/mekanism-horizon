@@ -1,0 +1,8 @@
+{
+  "parent": "mekanismadditions:block/colored/slab_top",
+  "textures": {
+    "bottom": "mekanismadditions:block/aqua/plastic_block",
+    "top": "mekanismadditions:block/aqua/plastic_block",
+    "side": "mekanismadditions:block/aqua/plastic_block"
+  }
+}

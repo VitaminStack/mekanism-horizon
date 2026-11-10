@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:plastic_slabs",
+  "key": {
+    "#": "mekanismadditions:pink_plastic"
+  },
+  "pattern": [
+    "###"
+  ],
+  "result": {
+    "count": 6,
+    "id": "mekanismadditions:pink_plastic_slab"
+  }
+}

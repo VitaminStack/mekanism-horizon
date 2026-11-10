@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "group": "mekanismadditions:glow_plastic",
+  "ingredients": [
+    "mekanismadditions:orange_plastic",
+    "mekanismadditions:orange_plastic",
+    "mekanismadditions:orange_plastic",
+    "#c:dusts/glowstone"
+  ],
+  "result": {
+    "count": 3,
+    "id": "mekanismadditions:orange_plastic_glow"
+  }
+}

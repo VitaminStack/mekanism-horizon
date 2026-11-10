@@ -198,10 +198,12 @@
 - [ ] Paxel als Schaufel (braucht nativen `use_on`-Hook), Schild-Textur, Haltbarkeits-Tooltip, Mob-Ausrüstung: Blocker in `docs/TOOLS.md`.
 
 ### Mekanism: Additions
-- [ ] Plastikvarianten: Slick, Glow, Reinforced, Transparent, Roads, Stairs, Slabs, Fences, Gates.
-- [ ] Glow Panels und Obsidian TNT.
-- [ ] Balloons, Walkie-Talkies, Baby-Mobs und Spawn Eggs.
-- [ ] Models, Animationen, Entity-Netzwerk und `mekanismadditions`-Namespace.
+- [x] Plastikvarianten: Slick, Glow, Reinforced, Transparent, Roads, Stairs, Slabs, Fences, Gates in allen 18 Farben (271 Blöcke, `content/mekanismadditions`, siehe `docs/ADDITIONS.md`).
+- [x] Glow Panels und Obsidian TNT (Obsidian TNT explodiert wie Vanilla-TNT, siehe unten).
+- [ ] Plastic-Grundrezept und Glow-Panel-Rezept: brauchen `mekanism:hdpe_sheet` (M06); Umfärben und Painting-Machine-Rezepte (`mekanism:painting`) fehlen.
+- [ ] Obsidian TNT mit Radius 12 und Zündzeit: Blocker, eigene Entität/Explosion braucht nativen Code. Plastic Road ohne Geschwindigkeitsschub (`stepOn`), keine CTM/Emissive-Texturen, kein Lava-Fluid-Logging.
+- [ ] Balloons, Walkie-Talkies, Baby-Mobs und Spawn Eggs: nur untersucht, nicht gebaut. Horizon-Content kennt `entity_type` (Vanilla-Vorlage + Attribute), aber keine eigene KI, Modelle, Biom-Spawns, Entity-Interaktion oder Netzwerk. Braucht nativen Code, siehe `docs/ADDITIONS.md`.
+- [x] `mekanismadditions`-Namespace, Modelle (je Farbe vorgefärbt) und Assets.
 
 ## M13 - Paritaet, Integration, Performance und Releases [fortlaufend]
 

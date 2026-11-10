@@ -1,0 +1,8 @@
+{
+  "parent": "mekanismadditions:block/colored/stairs_inner",
+  "textures": {
+    "side": "mekanismadditions:block/red/plastic_glow_block",
+    "bottom": "mekanismadditions:block/red/plastic_glow_block",
+    "top": "mekanismadditions:block/red/plastic_glow_block"
+  }
+}

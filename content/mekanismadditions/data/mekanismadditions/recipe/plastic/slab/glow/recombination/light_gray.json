@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:glow_plastic_recombination",
+  "key": {
+    "#": "mekanismadditions:light_gray_plastic_glow_slab"
+  },
+  "pattern": [
+    "#",
+    "#"
+  ],
+  "result": {
+    "id": "mekanismadditions:light_gray_plastic_glow"
+  }
+}

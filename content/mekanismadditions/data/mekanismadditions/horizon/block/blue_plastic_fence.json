@@ -1,0 +1,11 @@
+{
+  "template": "minecraft:nether_brick_fence",
+  "properties": {
+    "requires_tool": false,
+    "hardness": 5.0,
+    "explosion_resistance": 6.0,
+    "map_color": 25,
+    "sounds": "minecraft:stone"
+  },
+  "item": true
+}

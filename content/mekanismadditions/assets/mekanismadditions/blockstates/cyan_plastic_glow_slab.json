@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "mekanismadditions:block/cyan/glow_slab"
+    },
+    "type=double": {
+      "model": "mekanismadditions:block/cyan/glow"
+    },
+    "type=top": {
+      "model": "mekanismadditions:block/cyan/glow_slab_top"
+    }
+  }
+}

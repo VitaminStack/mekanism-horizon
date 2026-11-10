@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "mekanismadditions:block/brown/slab"
+    },
+    "type=double": {
+      "model": "mekanismadditions:block/brown/block"
+    },
+    "type=top": {
+      "model": "mekanismadditions:block/brown/slab_top"
+    }
+  }
+}

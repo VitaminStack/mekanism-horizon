@@ -151,3 +151,24 @@ Build: Native `native-fdc87ae-52fd95314c56`, Content aus Branch `feat/m06-purifi
 | `#mekanism:shards/*`-Rezepte (Tag nicht ausgeliefert) laden ohne Fehler im Log | ok |
 | Sauerstoff-Oxidation von Kupfer, Wasserdampf-Rezepte, Sounds, Neustart | nicht geprüft (Wasserdampf braucht eine Maschine, die ihn herstellt) |
 
+
+## M12 Additions (10.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-52fd95314c56` (nur Content nötig), Content `mekanismadditions` (`scripts/Build-Content.ps1`, `cargo horizon-mod check` ok), Kreativwelt `TankTest`, Testfläche auf Y 150.
+
+| Test | Ergebnis |
+|---|---|
+| Mod lädt, 271 Blöcke per `setblock` (Plastic, Slick, Glow, Reinforced, Road, Transparent, Stairs, Slab oben, Fence, Gate, Glow Panel, Obsidian TNT) | ok, keine Log-Warnungen (Screenshot) |
+| Vorgefärbte Texturen: Farben stimmen (Aqua, Rot, Gelb, Weiß, Grün, Blau, Lila, Orange, Lime, Rosa, Cyan) | ok |
+| Transparent-Blöcke und -Slabs durchscheinend | ok |
+| Fences verbinden mit Nachbar-Fence, Gate öffnet sich als Modell | ok (visuell) |
+| Licht: Glow-Block 10, Glow Panel 15 (`horizon-ctl light`) | ok |
+| Glow Panel `facing=north/up`, wasserfähig; fällt ohne Stützblock ab und droppt Item | ok |
+| Survival-Abbau ohne Werkzeug: Double Slab droppt 2, Glow-Block 1 (Loot-Format `modifier` von Upstream) | ok |
+| Obsidian TNT mit Redstoneblock gezündet: explodiert wie Vanilla-TNT (Krater Radius ~2 in Glattstein) | ok, aber Radius 4 statt 12 (Blocker, siehe `docs/ADDITIONS.md`) |
+| `/recipe give` Stairs-Rezept (`plastic/stairs/red`) | ok (Rezept geladen) |
+| Rezept im Crafting-Grid craften | ausstehend |
+| Slick-Rezept in der Enrichment Chamber (Plastic -> Slick, Rezept liegt im Namespace `mekanismadditions`) | ausstehend |
+| Slick-Reibung (0,98) auf dem Block | ausstehend (Bewegung nicht per Agent Control messbar) |
+| Block-Items im Inventar/Hotbar (Modell, Färbung) | ausstehend (nur `/give` geprüft) |
+| Neustart, Chunk-Unload | ausstehend |

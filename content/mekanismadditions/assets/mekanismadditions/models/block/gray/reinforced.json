@@ -1,0 +1,6 @@
+{
+  "parent": "mekanismadditions:block/colored_cube",
+  "textures": {
+    "all": "mekanismadditions:block/gray/reinforced_plastic_block"
+  }
+}
