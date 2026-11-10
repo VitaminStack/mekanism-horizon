@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:enriching",
+  "category": "building",
+  "experience": 0.1,
+  "group": "mekanismadditions:slick_plastic_enriching",
+  "input": {
+    "count": 1,
+    "ingredient": "mekanismadditions:light_gray_plastic"
+  },
+  "output": {
+    "id": "mekanismadditions:light_gray_slick_plastic"
+  }
+}

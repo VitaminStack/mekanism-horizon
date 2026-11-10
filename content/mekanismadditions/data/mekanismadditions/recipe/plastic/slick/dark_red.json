@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:slick_plastic",
+  "key": {
+    "#": "mekanismadditions:dark_red_plastic",
+    "S": "#c:slime_balls"
+  },
+  "pattern": [
+    " # ",
+    "#S#",
+    " # "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanismadditions:dark_red_slick_plastic"
+  }
+}

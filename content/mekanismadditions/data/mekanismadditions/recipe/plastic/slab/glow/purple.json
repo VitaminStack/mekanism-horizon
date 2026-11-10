@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:glow_plastic_slabs",
+  "key": {
+    "#": "mekanismadditions:purple_plastic_glow"
+  },
+  "pattern": [
+    "###"
+  ],
+  "result": {
+    "count": 6,
+    "id": "mekanismadditions:purple_plastic_glow_slab"
+  }
+}

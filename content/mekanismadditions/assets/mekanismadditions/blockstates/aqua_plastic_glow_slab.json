@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "mekanismadditions:block/aqua/glow_slab"
+    },
+    "type=double": {
+      "model": "mekanismadditions:block/aqua/glow"
+    },
+    "type=top": {
+      "model": "mekanismadditions:block/aqua/glow_slab_top"
+    }
+  }
+}

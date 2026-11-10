@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanismadditions:plastic_fences",
+  "key": {
+    "#": "mekanismadditions:orange_plastic",
+    "R": "#c:rods/plastic"
+  },
+  "pattern": [
+    "#R#",
+    "#R#"
+  ],
+  "result": {
+    "count": 3,
+    "id": "mekanismadditions:orange_plastic_fence"
+  }
+}

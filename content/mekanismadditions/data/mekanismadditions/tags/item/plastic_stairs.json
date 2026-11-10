@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "#mekanismadditions:plastic_stairs/normal",
+    "#mekanismadditions:plastic_stairs/glow",
+    "#mekanismadditions:plastic_stairs/transparent"
+  ]
+}

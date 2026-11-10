@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "mekanismadditions:block/black/transparent_slab"
+    },
+    "type=double": {
+      "model": "mekanismadditions:block/black/transparent"
+    },
+    "type=top": {
+      "model": "mekanismadditions:block/black/transparent_slab_top"
+    }
+  }
+}

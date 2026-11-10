@@ -1,0 +1,11 @@
+{
+  "template": "minecraft:tnt",
+  "properties": {
+    "requires_tool": false,
+    "hardness": 0.0,
+    "explosion_resistance": 0.0,
+    "map_color": 29,
+    "sounds": "minecraft:stone"
+  },
+  "item": true
+}
