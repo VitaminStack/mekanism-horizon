@@ -1,5 +1,5 @@
 # Run from any current directory: .\scripts\Build-Content.ps1
-# Builds and installs both content mods: mekanism and mekanismgenerators.
+# Builds and installs the content mods: mekanism, mekanismgenerators and mekanismtools.
 $ErrorActionPreference = 'Stop'
 # Horizon Launcher unter Windows
 $LauncherDir = "F:\Games\Horizon Launcher"
@@ -23,7 +23,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $GameDir 'options.txt'))) {
 $ModFolder = Join-Path $GameDir 'horizon-mods'
 New-Item -ItemType Directory -Force -Path $ModFolder | Out-Null
 
-foreach ($Mod in 'mekanism', 'mekanismgenerators') {
+foreach ($Mod in 'mekanism', 'mekanismgenerators', 'mekanismtools') {
     $Content = Join-Path $Root "content\$Mod"
     Push-Location $Content
     try {

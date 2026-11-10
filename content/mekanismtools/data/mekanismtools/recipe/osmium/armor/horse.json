@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": "#c:ingots/osmium",
+    "P": "minecraft:iron_horse_armor"
+  },
+  "pattern": [
+    "I I",
+    "III",
+    "IPI"
+  ],
+  "result": {
+    "id": "mekanismtools:osmium_horse_armor"
+  }
+}

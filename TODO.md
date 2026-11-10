@@ -191,10 +191,11 @@
 - [ ] `mekanismgenerators`-Namespace und Abhängigkeiten prüfen.
 
 ### Mekanism: Tools
-- [ ] Paxels aus Wood, Stone, Copper, Iron, Gold, Diamond, Netherite.
-- [ ] Tool-/Armor-Sets aus Bronze, Lapis, Osmium, Steel, Refined Glowstone, Refined Obsidian.
-- [ ] Haltbarkeit, Mining, Verzauberung, Reparatur und alle Rezepte.
-- [ ] `mekanismtools`-Namespace und Assets prüfen.
+- [x] Paxels aus Wood, Stone, Copper, Iron, Gold, Diamond, Netherite (Axt-Aktion; Schaufel-Aktion fehlt, siehe `docs/TOOLS.md`).
+- [x] Tool-/Armor-Sets aus Bronze, Lapis, Osmium, Steel, Refined Glowstone, Refined Obsidian (inkl. Spear, Shield, Horse und Nautilus Armor).
+- [x] Haltbarkeit, Mining, Verzauberung, Reparatur und alle Rezepte.
+- [x] `mekanismtools`-Namespace und Assets prüfen.
+- [ ] Paxel als Schaufel (braucht nativen `use_on`-Hook), Schild-Textur, Haltbarkeits-Tooltip, Mob-Ausrüstung: Blocker in `docs/TOOLS.md`.
 
 ### Mekanism: Additions
 - [ ] Plastikvarianten: Slick, Glow, Reinforced, Transparent, Roads, Stairs, Slabs, Fences, Gates.

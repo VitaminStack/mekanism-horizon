@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": "minecraft:diamond_axe",
+    "P": "minecraft:diamond_pickaxe",
+    "R": "#c:rods/wooden",
+    "S": "minecraft:diamond_shovel"
+  },
+  "pattern": [
+    "APS",
+    " R ",
+    " R "
+  ],
+  "result": {
+    "id": "mekanismtools:diamond_paxel"
+  }
+}

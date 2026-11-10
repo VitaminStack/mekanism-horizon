@@ -1,0 +1,40 @@
+{
+  "template": "minecraft:iron_horse_armor",
+  "components": {
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "amount": 25.0,
+        "id": "minecraft:armor.body",
+        "operation": "add_value",
+        "slot": "body"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "amount": 5.0,
+        "id": "minecraft:armor.body",
+        "operation": "add_value",
+        "slot": "body"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "amount": 0.2,
+        "id": "minecraft:armor.body",
+        "operation": "add_value",
+        "slot": "body"
+      }
+    ],
+    "minecraft:equippable": {
+      "allowed_entities": "#minecraft:can_wear_horse_armor",
+      "equip_sound": "minecraft:entity.horse.armor",
+      "shearing_sound": "minecraft:item.horse_armor.unequip",
+      "asset_id": "mekanismtools:refined_obsidian",
+      "can_be_sheared": true,
+      "damage_on_hurt": false,
+      "slot": "body"
+    },
+    "minecraft:damage_resistant": {
+      "types": "#minecraft:is_fire"
+    }
+  }
+}

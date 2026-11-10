@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": "mekanismtools:steel_axe",
+    "P": "mekanismtools:steel_pickaxe",
+    "R": "#c:rods/wooden",
+    "S": "mekanismtools:steel_shovel"
+  },
+  "pattern": [
+    "APS",
+    " R ",
+    " R "
+  ],
+  "result": {
+    "id": "mekanismtools:steel_paxel"
+  }
+}
