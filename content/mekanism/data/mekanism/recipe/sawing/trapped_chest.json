@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:sawing",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:trapped_chest"
+  },
+  "main_output": {
+    "count": 8,
+    "id": "minecraft:oak_planks"
+  },
+  "secondary_chance": 0.75,
+  "secondary_output": {
+    "id": "minecraft:tripwire_hook"
+  }
+}

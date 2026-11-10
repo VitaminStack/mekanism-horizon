@@ -1,0 +1,14 @@
+{
+  "type": "mekanism:sawing",
+  "category": "wood_type",
+  "experience": 0.1,
+  "group": "mekanism:boat",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:pale_oak_boat"
+  },
+  "main_output": {
+    "count": 5,
+    "id": "minecraft:pale_oak_planks"
+  }
+}

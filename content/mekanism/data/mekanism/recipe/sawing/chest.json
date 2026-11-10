@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:sawing",
+  "experience": 0.1,
+  "group": "mekanism:planks_only",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:chest"
+  },
+  "main_output": {
+    "count": 8,
+    "id": "minecraft:oak_planks"
+  }
+}

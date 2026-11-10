@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:sawing",
+  "category": "wood_type",
+  "experience": 0.1,
+  "group": "mekanism:shelf",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:pale_oak_shelf"
+  },
+  "main_output": {
+    "id": "minecraft:stripped_pale_oak_log"
+  }
+}

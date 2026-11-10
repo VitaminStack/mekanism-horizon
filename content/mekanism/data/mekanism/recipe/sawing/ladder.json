@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:sawing",
+  "experience": 0.1,
+  "group": "mekanism:sticks_only",
+  "input": {
+    "count": 3,
+    "ingredient": "minecraft:ladder"
+  },
+  "main_output": {
+    "count": 7,
+    "id": "minecraft:stick"
+  }
+}

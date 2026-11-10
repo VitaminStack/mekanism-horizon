@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:sawing",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:rods/wooden"
+  },
+  "main_output": {
+    "id": "mekanism:sawdust"
+  }
+}

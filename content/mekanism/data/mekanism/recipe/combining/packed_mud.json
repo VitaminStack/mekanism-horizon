@@ -1,0 +1,15 @@
+{
+  "type": "mekanism:combining",
+  "category": "building",
+  "extra_input": {
+    "count": 1,
+    "ingredient": "minecraft:mud"
+  },
+  "main_input": {
+    "count": 1,
+    "ingredient": "#c:crops/wheat"
+  },
+  "output": {
+    "id": "minecraft:packed_mud"
+  }
+}

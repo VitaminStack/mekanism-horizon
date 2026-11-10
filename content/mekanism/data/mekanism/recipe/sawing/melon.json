@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:sawing",
+  "category": "food",
+  "experience": 0.3,
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:melon"
+  },
+  "main_output": {
+    "count": 9,
+    "id": "minecraft:melon_slice"
+  }
+}

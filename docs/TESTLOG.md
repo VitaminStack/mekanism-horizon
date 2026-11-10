@@ -118,3 +118,21 @@ Build: Native `native-fdc87ae-352025dc49dc`, Content `mekanismtools` 0.1.0 neben
 | `recipe give` für Paxel-, Rüstungs-, Schild-, Barren-Rezepte | ok |
 | Schilde im Inventar: Vanilla-Schildmodell statt eigener Textur | bekannte Abweichung |
 | Schild blocken, Speer-Angriff, Pferde-/Nautilus-Rüstung am Tier, Reparatur am Amboss, Verzauberungstisch, Neustart, Multiplayer | ausstehend |
+
+## M05 Osmium Compressor, Combiner, Precision Sawmill (09.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-352025dc49dc`, Content aus Branch `feat/m05-sawmill-combiner-compressor`, Kreativwelt `TankTest`, Energie aus Creative Energy Cubes.
+
+| Test | Ergebnis |
+|---|---|
+| Compressor: Osmiumbarren im unteren Slot wird zu 200 mB Osmium; Refined-Obsidian-Staub zu Barren, 1 mB/Tick (Fortschritt 157, Osmium 43) | ok |
+| Compressor: zweiter Barren wird nachgeladen, wenn Platz ist; leerer Tank stoppt (`active=false`) | ok |
+| Compressor: Osmiumblock (1.800 mB) wird nicht in den 210-mB-Tank umgewandelt | ok |
+| Compressor-GUI: Titel, Slots, Osmium-Balken, Fortschritt, Energie (Screenshot) | ok |
+| Combiner: 8 Rohes Eisen + Bruchstein aus Tiefenschiefer zu Tiefenschiefer-Eisenerz, + Bruchstein zu Eisenerz | ok, nach Fix (fehlende `c:`-Tags) |
+| Combiner: anderes Item im Output-Slot pausiert, nach Leeren läuft es weiter | ok |
+| Sawmill: 6 Eichenstämme zu 36 Brettern + 1 Sägespäne (Chance 0,25) | ok, nach Fix (`mekanism:sawdust` registriert) |
+| Sawmill: Bett pausiert, solange Sägespäne den Zweitslot belegen; danach Bretter + 3 Wolle | ok |
+| Enrichment Chamber: Eisenerz zu 2 Eisenstaub (neuer Tag `c:ores/iron`); Infuser: Kohle + Eisenbarren zu Enriched Iron | ok |
+| Neustart: Inhalte, Osmium-Tank und Fortschritt (Combiner 182) bleiben | ok |
+| Sounds | nicht geprüft (Agent Control hört nicht) |

@@ -111,6 +111,8 @@ block('steel_casing', 'minecraft:iron_block', 3.5, 9.0, sounds=STONE)
 item('energy_tablet', stack=1)
 # Bio Fuel (Crusher output, Bio Generator input) and its block (MekanismBlocks: strength 0.5, grass sound).
 item('bio_fuel')
+# Sawdust: the Precision Sawmill's secondary output from logs (`#c:dusts/wood`).
+item('sawdust')
 block('block_bio_fuel', 'minecraft:hay_block', 0.5, 0.5, requires_tool=False, sounds='minecraft:grass_block')
 CUBE_TIERS = ['basic', 'advanced', 'elite', 'ultimate', 'creative']
 # Mekanism's BlockEnergyCube: FACING (all six directions), turned toward the placer by the native mod.
@@ -139,11 +141,21 @@ put(f'data/{NS}/horizon/menu/metallurgic_infuser.json', {'slots': 3, 'data_slots
 
 # Enrichment Chamber and Crusher: BlockTile.defaultProperties (3.5, 16). Slots: 0 input, 1 output
 # (results). Upstream's blockstate picks the model by `active`, set by the native mod.
-for m in ('enrichment_chamber', 'crusher'):
+# Osmium Compressor (0 input, 1 osmium item, 2 output; its osmium tank in 2 more data slots),
+# Combiner (0 main input, 1 extra input, 2 output) and Precision Sawmill (0 input, 1 output,
+# 2 secondary output) the same way; slot order as in native/mekanism_native/api/src/machine.rs.
+MACHINE_MENUS = {
+    'enrichment_chamber': {'slots': 2, 'data_slots': 4, 'results': [1]},
+    'crusher': {'slots': 2, 'data_slots': 4, 'results': [1]},
+    'osmium_compressor': {'slots': 3, 'data_slots': 6, 'results': [2]},
+    'combiner': {'slots': 3, 'data_slots': 4, 'results': [2]},
+    'precision_sawmill': {'slots': 3, 'data_slots': 4, 'results': [1, 2]},
+}
+for m, menu in MACHINE_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={
         'state_properties': {'active': {'type': 'boolean'}},
         'default_state': {'facing': 'north', 'active': 'false'}})
-    put(f'data/{NS}/horizon/menu/{m}.json', {'slots': 2, 'data_slots': 4, 'results': [1]})
+    put(f'data/{NS}/horizon/menu/{m}.json', menu)
 
 # --- generators (M04), content mod `mekanismgenerators`: ticked, powered and drawn by
 # native/mekanism_native. BlockTile.defaultProperties (3.5, 16) as the infuser; the barrel template
@@ -305,6 +317,56 @@ CONVENTION_TAGS = {
     'sands': ['minecraft:sand', 'minecraft:red_sand'],
     'storage_blocks/coal': ['minecraft:coal_block'],
     'storage_blocks/redstone': ['minecraft:redstone_block'],
+    'bookshelves': ['minecraft:bookshelf'],
+    'buckets/empty': ['minecraft:bucket'],
+    'buckets/lava': ['minecraft:lava_bucket'],
+    'cobblestones/deepslate': ['minecraft:cobbled_deepslate'],
+    'cobblestones/mossy': ['minecraft:mossy_cobblestone'],
+    'crops/beetroot': ['minecraft:beetroot'],
+    'crops/cactus': ['minecraft:cactus'],
+    'crops/carrot': ['minecraft:carrot'],
+    'crops/cocoa_bean': ['minecraft:cocoa_beans'],
+    'crops/melon': ['minecraft:melon_slice'],
+    'crops/nether_wart': ['minecraft:nether_wart'],
+    'crops/potato': ['minecraft:potato'],
+    'crops/pumpkin': ['minecraft:pumpkin'],
+    'crops/sugar_cane': ['minecraft:sugar_cane'],
+    'crops/wheat': ['minecraft:wheat'],
+    'dusts/glowstone': ['minecraft:glowstone_dust'],
+    **{f'dyes/{c}': [f'minecraft:{c}_dye'] for c in COLORS},
+    'fences/wooden': ['#minecraft:wooden_fences'],
+    'flowers/small': ['#minecraft:small_flowers'],
+    'flowers/tall': ['minecraft:sunflower', 'minecraft:lilac', 'minecraft:peony', 'minecraft:rose_bush',
+                     'minecraft:pitcher_plant'],
+    'foods/berry': ['minecraft:sweet_berries', 'minecraft:glow_berries'],
+    'gems/emerald': ['minecraft:emerald'],
+    'gems/lapis': ['minecraft:lapis_lazuli'],
+    'gems/quartz': ['minecraft:quartz'],
+    'gravels': ['minecraft:gravel'],
+    'gunpowders': ['minecraft:gunpowder'],
+    'ingots/netherite': ['minecraft:netherite_ingot'],
+    'obsidians/normal': ['minecraft:obsidian'],
+    **{f'ores/{o}': [f'minecraft:{o}_ore', f'minecraft:deepslate_{o}_ore']
+       for o in ('coal', 'copper', 'diamond', 'emerald', 'iron', 'lapis', 'redstone')},
+    'ores/gold': ['minecraft:gold_ore', 'minecraft:deepslate_gold_ore', 'minecraft:nether_gold_ore'],
+    'ores/netherite_scrap': ['minecraft:ancient_debris'],
+    'ores/quartz': ['minecraft:nether_quartz_ore'],
+    'pumpkins/carved': ['minecraft:carved_pumpkin'],
+    'pumpkins/normal': ['minecraft:pumpkin'],
+    **{f'raw_materials/{m}': [f'minecraft:raw_{m}'] for m in ('copper', 'gold', 'iron')},
+    **{f'storage_blocks/raw_{m}': [f'minecraft:raw_{m}_block'] for m in ('copper', 'gold', 'iron')},
+    'rods/blaze': ['minecraft:blaze_rod'],
+    'rods/breeze': ['minecraft:breeze_rod'],
+    'sandstone/red_blocks': ['minecraft:red_sandstone', 'minecraft:cut_red_sandstone',
+                             'minecraft:chiseled_red_sandstone', 'minecraft:smooth_red_sandstone'],
+    'sandstone/uncolored_blocks': ['minecraft:sandstone', 'minecraft:cut_sandstone',
+                                   'minecraft:chiseled_sandstone', 'minecraft:smooth_sandstone'],
+    'seeds': ['minecraft:wheat_seeds', 'minecraft:beetroot_seeds', 'minecraft:melon_seeds',
+              'minecraft:pumpkin_seeds', 'minecraft:torchflower_seeds', 'minecraft:pitcher_pod'],
+    'storage_blocks/bone_meal': ['minecraft:bone_block'],
+    'storage_blocks/dried_kelp': ['minecraft:dried_kelp_block'],
+    'storage_blocks/resin': ['minecraft:resin_block'],
+    'storage_blocks/wheat': ['minecraft:hay_block'],
 }
 for tag, values in CONVENTION_TAGS.items():
     put(f'data/c/tags/item/{tag}.json', {'replace': False, 'values': values})
@@ -313,7 +375,7 @@ for tag, values in CONVENTION_TAGS.items():
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
-     + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'enrichment_chamber', 'crusher')]})
+     + [f'{NS}:{m}' for m in ('metallurgic_infuser', *MACHINE_MENUS)]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in ('heat_generator', 'solar_generator', 'bio_generator',
                                                          'advanced_solar_generator', 'wind_generator')]}, GEN)

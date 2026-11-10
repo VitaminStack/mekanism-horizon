@@ -22,6 +22,7 @@
   "block.mekanism.block_tin": "Zinnblock",
   "block.mekanism.block_uranium": "Uranblock",
   "block.mekanism.bounding_block": "Begrenzungsblock",
+  "block.mekanism.combiner": "Kombinierer",
   "block.mekanism.creative_chemical_tank": "Unendlicher Chemikalienbehälter",
   "block.mekanism.creative_energy_cube": "Kreativer Energiewürfel",
   "block.mekanism.creative_fluid_tank": "Unendlicher Flüssigkeitstank",
@@ -41,7 +42,9 @@
   "block.mekanism.fluorite_ore": "Fluoriterz",
   "block.mekanism.lead_ore": "Bleierz",
   "block.mekanism.metallurgic_infuser": "Metallurgische Infusionsanlage",
+  "block.mekanism.osmium_compressor": "Osmium Kompressor",
   "block.mekanism.osmium_ore": "Osmiumerz",
+  "block.mekanism.precision_sawmill": "Präzisionssägewerk",
   "block.mekanism.steel_casing": "Stahlgehäuse",
   "block.mekanism.tin_ore": "Zinnerz",
   "block.mekanism.ultimate_chemical_tank": "Ultimativer Chemikalienbehälter",
@@ -129,8 +132,12 @@
   "item.mekanism.raw_tin": "Rohzinn",
   "item.mekanism.raw_uranium": "Rohuran",
   "item.mekanism.salt": "Salz",
+  "item.mekanism.sawdust": "Sägespäne",
   "item.mekanism.ultimate_control_circuit": "Ultimativer Steuerschaltkreis",
+  "sound_event.mekanism.tile.machine.combiner": "Kombinator brummt",
+  "sound_event.mekanism.tile.machine.compressor": "Presser summt",
   "sound_event.mekanism.tile.machine.crusher": "Zerquetscher klirrt",
   "sound_event.mekanism.tile.machine.enrichment_chamber": "Anreicherer summt",
-  "sound_event.mekanism.tile.machine.metallurgic_infuser": "Metallischer Mischer summt"
+  "sound_event.mekanism.tile.machine.metallurgic_infuser": "Metallischer Mischer summt",
+  "sound_event.mekanism.tile.machine.precision_sawmill": "Sägewerk schneidet"
 }
