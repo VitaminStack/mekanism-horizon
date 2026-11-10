@@ -216,8 +216,8 @@
 - [ ] AE2-Horizon- und weitere Technikmod-Interoperabilitaet mit klaren APIs testen.
 - [ ] Savegame-Migrationen, ID-Stabilitaet und Upgrade-Pfade dokumentieren.
 - [ ] GUI, Shader-Kompatibilitaet, deutsche/englische Übersetzung und Barrierefreiheit testen.
-- [ ] README, Installationsanleitung (Windows, Content+Native), CHANGELOG, Known Issues erstellen.
-- [ ] Lizenz, Copyright und Asset-Attribution der Originaldateien vor Releases prüfen.
+- [x] README, Installationsanleitung (Windows, Content+Native), CHANGELOG, Known Issues erstellen. *(10.11.2026: `docs/INSTALL.md`, `CHANGELOG.md` (PR #1 bis #16), `docs/KNOWN_ISSUES.md`, `CONTRIBUTING.md`; README verlinkt sie.)*
+- [ ] Lizenz, Copyright und Asset-Attribution der Originaldateien vor Releases prüfen. *(Prüfung 10.11.2026 in `docs/LICENSES.md`: alles MIT, `LICENSE-MEKANISM` je Mod vorhanden; offen: Attribution in README/Mod-Beschreibung, Inhaber `SozialHilfe`/`VitaminStack`, Drittbeiträge, Horizon-Lizenz, Abgleich vor Release.)*
 - [ ] CI-Builds, Release-Artefakte, Hashes und Test-Beta dokumentieren.
 - [ ] Upstream-26.3-Änderungen regelmäßig vergleichen und diese Liste aktualisieren.
 
