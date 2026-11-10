@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:purifying",
+  "chemical_input": {
+    "amount": 2,
+    "ingredient": "mekanism:oxygen"
+  },
+  "experience": 0.35,
+  "group": "mekanism:clump_copper",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/raw_copper"
+  },
+  "output": {
+    "count": 18,
+    "id": "mekanism:clump_copper"
+  },
+  "per_tick_usage": true
+}

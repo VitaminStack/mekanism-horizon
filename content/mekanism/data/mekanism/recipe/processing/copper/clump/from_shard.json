@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:purifying",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:oxygen"
+  },
+  "experience": 0.35,
+  "group": "mekanism:clump_copper",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#mekanism:shards/copper"
+  },
+  "output": {
+    "id": "mekanism:clump_copper"
+  },
+  "per_tick_usage": true
+}

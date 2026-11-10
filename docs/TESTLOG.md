@@ -136,3 +136,18 @@ Build: Native `native-fdc87ae-352025dc49dc`, Content aus Branch `feat/m05-sawmil
 | Enrichment Chamber: Eisenerz zu 2 Eisenstaub (neuer Tag `c:ores/iron`); Infuser: Kohle + Eisenbarren zu Enriched Iron | ok |
 | Neustart: Inhalte, Osmium-Tank und Fortschritt (Combiner 182) bleiben | ok |
 | Sounds | nicht geprüft (Agent Control hört nicht) |
+
+## M06 Purification Chamber, Chemical Injection Chamber (10.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-52fd95314c56`, Content aus Branch `feat/m06-purification-injection`, Kreativwelt `TankTest`, Energie aus Creative Energy Cubes (Front zur Maschine).
+
+| Test | Ergebnis |
+|---|---|
+| Purification: Flint im unteren Slot wird zu 10 mB Sauerstoff; 2 Rohes Eisen zu 4 Eisen-Klumpen (`clump_iron`), 1 mB/Tick | ok |
+| Purification: Tank leer, Fortschritt hält (100), läuft nach Flint weiter | ok |
+| Injection: Salz wird zu 2 mB Chlorwasserstoff, Schießpulver zu Schwefelstaub (`gunpowder_to_sulfur`), Stillstand bei leerem Tank, danach weiter | ok |
+| Purification-GUI: Titel, Slots, Balken, Energie (Screenshot) | ok |
+| Block-Entity-Daten, Tank-Typ (`mekanism_infuse_type`) und Menge | ok |
+| `#mekanism:shards/*`-Rezepte (Tag nicht ausgeliefert) laden ohne Fehler im Log | ok |
+| Sauerstoff-Oxidation von Kupfer, Wasserdampf-Rezepte, Sounds, Neustart | nicht geprüft (Wasserdampf braucht eine Maschine, die ihn herstellt) |
+

@@ -56,7 +56,7 @@
 ## M02 - Rohstoffe, Weltgenerierung und Grundrezepte [P1]
 
 - [x] Originale Registry-IDs von Items/Blöcken/Ressourcen inventarisieren. *(Ressourcen-IDs nach Mekanism 26.3 in `scripts/gen_resources.py`, Liste in `scripts/registry.json`.)*
-- [ ] Originaltexturen, Modelle, Blockstates, Sounds und Sprachen mit Lizenzhinweisen integrieren. *(Für Ressourcen per `scripts/import_upstream.py`; MIT-Lizenz in `content/mekanism/LICENSE-MEKANISM`. Block-Sound-Typen wie Original (Stone, Deepslate, Salz = Sand; ingame getestet 09.11.2026). Energy-Cube-Modell per `scripts/import_energy_cube.py`. Sounds: `sounds.json` + `.ogg` der vorhandenen Maschinen und Generatoren (Infuser, Enrichment Chamber, Crusher, Heat, Solar) per `import_upstream.py` (`SOUNDS`), mit Untertiteln; Horizon spielt Mod-Sound-Events seit API 61, der Native-Mod wiederholt den Clip, solange die Maschine läuft. Sounds inkl. Bio und Wind ingame getestet 09.11.2026. Die übrigen Mekanism-Sound-Events folgen mit ihren Maschinen/Items.)*
+- [ ] Originaltexturen, Modelle, Blockstates, Sounds und Sprachen mit Lizenzhinweisen integrieren. *(Für Ressourcen per `scripts/import_upstream.py`; MIT-Lizenz in `content/mekanism/LICENSE-MEKANISM`. Block-Sound-Typen wie Original (Stone, Deepslate, Salz = Sand; ingame getestet 09.11.2026). Energy-Cube-Modell per `scripts/import_energy_cube.py`. Sounds: `sounds.json` + `.ogg` der vorhandenen Maschinen und Generatoren (Infuser, Enrichment Chamber, Crusher, Compressor, Combiner, Precision Sawmill, Purification und Injection Chamber, Heat, Solar) per `import_upstream.py` (`SOUNDS`), mit Untertiteln; Horizon spielt Mod-Sound-Events seit API 61, der Native-Mod wiederholt den Clip, solange die Maschine läuft. Sounds inkl. Bio und Wind ingame getestet 09.11.2026. Die übrigen Mekanism-Sound-Events folgen mit ihren Maschinen/Items.)*
 - [x] Osmium-, Tin/Zinn-, Uranium-/Uran- und Fluorite-/Fluorit-Erze inklusive Deepslate-Varianten. *(Plus Blei und Salz.)*
 - [x] Weltgenerierung, Erzverteilung, Drops und Mining-Level (nur neue Chunks) testen. *(Werte aus Original-`OreType`/`WorldConfig`. Kein Glück/Behutsamkeit: Horizon-Loot kennt `apply_bonus`/`match_tool` nicht.)*
 - [x] Ingots, Nuggets, Dusts, Raw Materials, Storage Blocks (z.B. Bronze, Steel, Refined Glowstone, Refined Obsidian).
@@ -87,7 +87,7 @@
 
 ## M05 - Maschinen und erste Processing-Ketten [P1]
 
-- [ ] Allgemeines Rezept-System: Inputs, Outputs, Energie je Tick, Fortschritt, Nebenprodukte. *(Teilweise: `recipe::Recipe` liest Item-Input mit Menge, optionalen Chemie-Input und Output für alle Maschinen-Rezepttypen; Energie je Tick und Fortschritt über `machine::step`, ingame getestet 09.11.2026. Seit M05-Teil 2 auch zweiter Item-Input (`extra_input`), Zweitausgabe mit Chance (`secondary_output`) und Chemie pro Tick (`per_tick_usage`); ingame getestet 09.11.2026. Fehlt: Fluid-/Chemie-Outputs.)*
+- [ ] Allgemeines Rezept-System: Inputs, Outputs, Energie je Tick, Fortschritt, Nebenprodukte. *(Teilweise: `recipe::Recipe` liest Item-Input mit Menge, optionalen Chemie-Input und Output für alle Maschinen-Rezepttypen; Energie je Tick und Fortschritt über `machine::step`, ingame getestet 09.11.2026. Seit M05-Teil 2 auch zweiter Item-Input (`extra_input`), Zweitausgabe mit Chance (`secondary_output`) und Chemie pro Tick (`per_tick_usage`); ingame getestet 09.11.2026. Seit M06 auch Purification/Injection (`purifying`, `injecting`; Sauerstoff, Chlorwasserstoff, Wasserdampf je Tick; ingame getestet 10.11.2026). Fehlt: Fluid-/Chemie-Outputs.)*
 - [ ] Maschinen-Inventare, Menüs, GUI, Upgrades, Auto-Eject, Sided I/O, Redstone-Modi.
 - [x] Metallurgic Infuser und Infusions-Ressourcen. *(Ingame getestet 09.11.2026. Werte aus Original; 8 Infuse-Typen, alle `metallurgic_infusing`-Rezepte. Fehlt: Energie-Slot, Upgrades, Side-Config, Redstone; Infuse/Energie bleiben beim Abbau nicht am Item; Balkenfarben genähert.)*
 - [x] Enrichment Chamber. *(Ingame getestet 09.11.2026: `native/mekanism_native/api/src/machine.rs`, 5 FE/t, 200 Ticks, Speicher 20 FE, alle `mekanism:enriching`-Rezepte, Upstream-Modell mit `active`, Sound. Fehlt wie beim Infuser: Energie-Slot, Upgrades, Side-Config, Redstone.)*
@@ -96,7 +96,7 @@
 - [x] Precision Sawmill. *(Ingame getestet 09.11.2026: 6 Eichenstämme zu 36 Brettern + 1 Sägespäne, Bett zu Brettern + Wolle; Pause, solange die Zweitausgabe nicht passt. 5 FE/t, Speicher 20 FE, alle `mekanism:sawing`-Rezepte, Zweitausgabe nach `secondary_chance`, Sound. Fehlt wie beim Infuser: Energie-Slot, Upgrades, Side-Config, Redstone.)*
 - [x] Osmium Compressor und Combiner. *(Ingame getestet 09.11.2026: Refined-Obsidian-Staub zu Barren, Osmium 1 mB/Tick, Stillstand bei leerem Tank, Osmiumblock passt nicht in den Tank; Rohes Eisen + (Tiefenschiefer-)Bruchstein zu Erz; Pause bei belegtem Output; Inhalt nach Neustart. Compressor: 15 FE/t, Speicher 60 FE, Osmium-Tank 210 mB aus Osmiumbarren (200 mB), 1 mB je Tick, alle `mekanism:compressing`-Rezepte. Combiner: 5 FE/t, zweiter Input unten, alle `mekanism:combining`-Rezepte. Voller Output pausiert jetzt wie im Original, statt den Fortschritt zurückzusetzen (alle Maschinen).)*
 - [ ] Formulation/Assembly: Formulaic Assemblicator und Oredictionificator.
-- [ ] Leere Energie, voller Output, Rezeptwechsel, Save/Load und Chunk-Unload prüfen.
+- [ ] Leere Energie, voller Output, Rezeptwechsel, Save/Load und Chunk-Unload prüfen. *(Teilweise ingame: voller Output pausiert (Combiner, Sawmill), Neustart behält Inhalt, leerer Chemie-Tank hält den Fortschritt (Compressor, Purification, Injection). Offen: Rezeptwechsel, Chunk-Unload.)*
 
 ## M06 - Fluids, Chemicals und Rohstoffverarbeitung [P1]
 
@@ -112,7 +112,7 @@
 
 - [x] Chemie-IDs/Registry sowie Netzwerk-/Datapack-Synchronisation planen. *(Plan in `docs/CHEMISTRY.md`, Tabellen per `scripts/gen_chemicals.py` (18 Fluids, 64 Chemicals). Chemicals laufen als `mekanism:chemical/<id>`-Fluids in Horizons Block-Entity-Tanks, Inhalt per Update-Tag zum Client; ingame getestet 09.11.2026 mit Wasserstoff und Sole.)*
 - [ ] Fluids: Water, Steam, Brine, Lithium, Heavy Water, Nutritional Paste etc. *(IDs, Namen und Farben in `chemicals_table.rs`; Tanks speichern und zeigen sie. Offen: Herstellung durch Maschinen, Eimer für Mod-Fluids (Horizon hat keine).)*
-- [ ] Chemicals: Hydrogen, Oxygen, Chlorine, Sulfur-Komponenten, Ethene, Slurries, Pigments, Isotope etc. *(IDs, Namen und Farben in `chemicals_table.rs`; Chemical Tank speichert sie. Offen: Herstellung durch Maschinen.)*
+- [ ] Chemicals: Hydrogen, Oxygen, Chlorine, Sulfur-Komponenten, Ethene, Slurries, Pigments, Isotope etc. *(IDs, Namen und Farben in `chemicals_table.rs`; Chemical Tank speichert sie. Oxygen und Hydrogen Chloride füllen Purification/Injection Chamber vorerst aus Items (Flint, Salz), Osmium den Compressor. Offen: Herstellung durch Maschinen.)*
 - [x] Fluid Tank und Chemical Tank (Basic/Advanced/Elite/Ultimate/Creative). *(Ingame getestet 09.11.2026 per `horizon-ctl` (`docs/TESTLOG.md`, M06 Tanks): Füllen, Eimer (Wasser/Lava), Auto-eject nach unten, Dumping/Dumping Excess, Creative bleibt voll, Item behält Inhalt, Flüssigkeit im Glas sichtbar. Tier-Werte per Unit-Test. Nicht portiert: Item-Füll-Slots, Chemie-Side-Config, Edit-Mode, Redstone; Lava-Tank gibt kein Blocklicht; mit Shaderpack falsch dargestellt (Horizon).)*
 - [ ] Mechanical Pipes und Pressurized Tubes (vier Tiers).
 - [ ] Thermodynamic Conductors und Heat-System.
@@ -120,7 +120,7 @@
 - [ ] Electrolytic Separator.
 - [ ] Chemical Oxidizer und Chemical Infuser.
 - [ ] Rotary Condensentrator.
-- [ ] Purification Chamber und Chemical Injection Chamber.
+- [x] Purification Chamber und Chemical Injection Chamber. *(Ingame getestet 10.11.2026 (`docs/TESTLOG.md`): Eisen zu Klumpen mit Sauerstoff, Schießpulver zu Schwefel mit Chlorwasserstoff, Stillstand bei leerem Tank. Purification 10 FE/t, Injection 15 FE/t, Tank 210 mB, 1 mB je Tick, alle `purifying`-/`injecting`-Rezepte, Klumpen-Items. Chemie vorerst nur aus Items (Flint: Sauerstoff, Salz: Chlorwasserstoff); Wasserdampf-Rezepte laufen erst mit einer Maschine, die ihn herstellt. Fehlt: Energie-Slot, Upgrades, Side-Config, Redstone.)*
 - [ ] Chemical Dissolution Chamber, Chemical Washer, Chemical Crystallizer.
 - [ ] Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator.
 - [ ] Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine.

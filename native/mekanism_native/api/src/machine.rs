@@ -1,6 +1,7 @@
 //! Electric machines: the table every processing machine is one entry of
 //! (Enrichment Chamber, Crusher, Metallurgic Infuser, Osmium Compressor,
-//! Combiner, Precision Sawmill), and the operation they share. The parts that
+//! Combiner, Precision Sawmill, Purification Chamber, Chemical Injection
+//! Chamber), and the operation they share. The parts that
 //! need no Horizon types, so their tests run in `logic/energy`; recipes are in
 //! `recipe.rs`, the tick and screen in `process.rs`.
 //!
@@ -11,8 +12,8 @@
 //! `TileEntityAdvancedElectricMachine` (`MAX_GAS` 210), `TileEntityCombiner`,
 //! `TileEntityPrecisionSawmill` (`BASE_TICKS_REQUIRED` 10 s each, slot
 //! positions), `UsageConfig` (enrichmentChamber 5, crusher 8,
-//! metallurgicInfuser 5, osmiumCompressor 15, combiner 5, precisionSawmill 5
-//! per tick) and `AttributeEnergy.STORAGE_MULTIPLIER` (storage 4 x usage).
+//! metallurgicInfuser 5, osmiumCompressor 15, combiner 5, precisionSawmill 5,
+//! purificationChamber 10, chemicalInjectionChamber 15 per tick) and `AttributeEnergy.STORAGE_MULTIPLIER` (storage 4 x usage).
 //!
 //! Not ported: the energy slot (charging from items), upgrades, side config
 //! and redstone control.
@@ -170,10 +171,37 @@ pub const OSMIUM_TANK: Buffer = Buffer {
     dump: None,
 };
 
+/// The Purification Chamber's tank: `MAX_GAS` of oxygen, the one chemical its
+/// recipes use, from flint in slot 1 (`flint_to_oxygen`, 10 mB each). The gauge
+/// is `GuiAdvancedElectricMachine`'s, as the Osmium Compressor's.
+pub const OXYGEN_TANK: Buffer = Buffer {
+    slot: 1,
+    types: &[("mekanism:oxygen", "Oxygen", 0xFF6CE2FF)],
+    max: 210,
+    gauge: [68.0, 36.0, 6.0, 12.0],
+    dump: None,
+};
+
+/// The Chemical Injection Chamber's tank: what its recipes use (oxygen to
+/// oxidize copper, hydrogen chloride, water vapor), one at a time. Only oxygen
+/// (flint) and hydrogen chloride (salt) come from items; water vapor needs a
+/// machine that makes it (later work), so its recipes wait for one.
+pub const INJECTION_TANK: Buffer = Buffer {
+    slot: 1,
+    types: &[
+        ("mekanism:oxygen", "Oxygen", 0xFF6CE2FF),
+        ("mekanism:hydrogen_chloride", "Hydrogen Chloride", 0xFFA8F1E9),
+        ("mekanism:water_vapor", "Water Vapor", 0xFFC8C8C8),
+    ],
+    max: 210,
+    gauge: [68.0, 36.0, 6.0, 12.0],
+    dump: None,
+};
+
 /// `TileEntityPrecisionSawmill`: input 0, output 1, secondary output 2.
 const SAWMILL_SLOT_POS: [[f32; 2]; 3] = [[56.0, 17.0], [116.0, 35.0], [132.0, 35.0]];
 
-pub const MACHINES: [Machine; 6] = [
+pub const MACHINES: [Machine; 8] = [
     electric(
         "mekanism:enrichment_chamber",
         "mekanism:enriching",
@@ -242,13 +270,44 @@ pub const MACHINES: [Machine; 6] = [
             SAWMILL_SOUND_TICKS,
         )
     },
+    Machine {
+        input: 0,
+        output: 2,
+        buffer: Some(&OXYGEN_TANK),
+        slot_pos: &TWO_INPUT_SLOT_POS,
+        ..electric(
+            "mekanism:purification_chamber",
+            "mekanism:purifying",
+            "Purification Chamber",
+            10,
+            "mekanism:tile.machine.purification_chamber",
+            PURIFICATION_SOUND_TICKS,
+        )
+    },
+    Machine {
+        input: 0,
+        output: 2,
+        buffer: Some(&INJECTION_TANK),
+        slot_pos: &TWO_INPUT_SLOT_POS,
+        ..electric(
+            "mekanism:chemical_injection_chamber",
+            "mekanism:injecting",
+            "Chemical Injection Chamber",
+            15,
+            "mekanism:tile.machine.chemical_injection_chamber",
+            INJECTION_SOUND_TICKS,
+        )
+    },
 ];
 
 /// Clip lengths of `tile/compressor.ogg`, `tile/combiner.ogg` and
-/// `tile/precision_sawmill.ogg` in ticks, rounded up.
+/// `tile/precision_sawmill.ogg`, `tile/purification_chamber.ogg` and
+/// `tile/chemical_injection_chamber.ogg` in ticks, rounded up.
 const COMPRESSOR_SOUND_TICKS: i32 = 57;
 const COMBINER_SOUND_TICKS: i32 = 57;
 const SAWMILL_SOUND_TICKS: i32 = 34;
+const PURIFICATION_SOUND_TICKS: i32 = 72;
+const INJECTION_SOUND_TICKS: i32 = 40;
 
 pub fn find(block: &str) -> Option<&'static Machine> {
     MACHINES.iter().find(|m| m.block == block)
@@ -354,6 +413,10 @@ mod tests {
         assert_eq!(usage("mekanism:osmium_compressor"), (15, 60));
         assert_eq!(usage("mekanism:combiner"), (5, 20));
         assert_eq!(usage("mekanism:precision_sawmill"), (5, 20));
+        assert_eq!(usage("mekanism:purification_chamber"), (10, 40));
+        assert_eq!(usage("mekanism:chemical_injection_chamber"), (15, 60));
+        assert_eq!(machine("mekanism:purification_chamber").buffer.unwrap().max, 210);
+        assert_eq!(machine("mekanism:chemical_injection_chamber").buffer.unwrap().max, 210);
         assert_eq!(machine("mekanism:osmium_compressor").buffer.unwrap().max, 210);
         assert!(find("mekanism:basic_energy_cube").is_none());
     }
@@ -370,6 +433,8 @@ mod tests {
         assert_eq!(slots("mekanism:osmium_compressor"), (0, 2, None, None, Some(1), 3));
         assert_eq!(slots("mekanism:combiner"), (0, 2, Some(1), None, None, 3));
         assert_eq!(slots("mekanism:precision_sawmill"), (0, 1, None, Some(2), None, 3));
+        assert_eq!(slots("mekanism:purification_chamber"), (0, 2, None, None, Some(1), 3));
+        assert_eq!(slots("mekanism:chemical_injection_chamber"), (0, 2, None, None, Some(1), 3));
     }
 
     #[test]
@@ -443,6 +508,31 @@ mod tests {
         assert_eq!(OSMIUM_TANK.type_index("mekanism:carbon"), None);
     }
 
+    /// Buffer types are saved as index + 1: their order must not move.
+    #[test]
+    fn buffer_types_keep_their_saved_order() {
+        assert_eq!(OXYGEN_TANK.type_index("mekanism:oxygen"), Some(0));
+        assert_eq!(INJECTION_TANK.type_index("mekanism:oxygen"), Some(0));
+        assert_eq!(INJECTION_TANK.type_index("mekanism:hydrogen_chloride"), Some(1));
+        assert_eq!(INJECTION_TANK.type_index("mekanism:water_vapor"), Some(2));
+        assert_eq!(OXYGEN_TANK.type_index("mekanism:hydrogen_chloride"), None);
+    }
+
+    /// Flint (10 mB) fills the 210 mB tank 21 times; a tank holding another
+    /// chemical takes none until it is empty.
+    #[test]
+    fn injection_tank_holds_one_chemical() {
+        let mut t = Tank::default();
+        for _ in 0..21 {
+            assert!(t.fits(0, 10, INJECTION_TANK.max));
+            t.add(0, 10, INJECTION_TANK.max);
+        }
+        assert!(!t.fits(0, 10, INJECTION_TANK.max));
+        t.take(210);
+        t.add(1, 2, INJECTION_TANK.max);
+        assert!(!t.fits(0, 10, INJECTION_TANK.max));
+    }
+
     #[test]
     fn random_stays_in_unit_range() {
         let rolls: Vec<f64> = (0..1_000).map(|_| random()).collect();
@@ -483,6 +573,13 @@ mod tests {
         assert_eq!(tooltip(m, &data, [20.0, 60.0]), vec!["Dump infuse buffer"]);
         assert!(tooltip(m, &data, [90.0, 10.0]).is_empty());
         assert_eq!(tooltip(m, &[], [8.0, 40.0]), vec!["Empty: 0 / 1000 mB"]);
+    }
+
+    #[test]
+    fn injection_tooltip_names_the_chemical() {
+        let m = machine("mekanism:chemical_injection_chamber");
+        let data = menu_data(30, 0, 2, true, Some(Tank { kind: 1, amount: 8 }));
+        assert_eq!(tooltip(m, &data, [70.0, 40.0]), vec!["Hydrogen Chloride: 8 / 210 mB"]);
     }
 
     #[test]

@@ -44,18 +44,21 @@ ITEM_SKIP = {f'{NS}:{t}_fluid_tank' for t in ('basic', 'advanced', 'elite', 'ult
 REF = re.compile(r'"(#?)(mekanism|mekanismgenerators):([a-z0-9_/.]+)"')
 # Mekanism machine recipe types whose machine exists here.
 MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversion', 'mekanism:enriching',
-                   'mekanism:crushing', 'mekanism:compressing', 'mekanism:combining', 'mekanism:sawing'}
+                   'mekanism:crushing', 'mekanism:compressing', 'mekanism:combining', 'mekanism:sawing',
+                   'mekanism:purifying', 'mekanism:injecting'}
 # Chemicals with Mekanism's infuse-type attribute: what the Metallurgic Infuser takes.
 INFUSE_TYPES = {f'{NS}:{t}' for t in ('carbon', 'redstone', 'diamond', 'refined_obsidian', 'tin', 'gold',
                                       'bio', 'fungi')}
 # Chemicals a machine's buffer is filled with from items (`chemical_conversion`): the infuse types
-# and the Osmium Compressor's osmium.
-BUFFER_CHEMICALS = INFUSE_TYPES | {f'{NS}:osmium'}
+# the Osmium Compressor's osmium, the Purification and Injection Chambers' oxygen and hydrogen
+# chloride. (Water vapor, the injector's third chemical, has no item conversion upstream.)
+BUFFER_CHEMICALS = INFUSE_TYPES | {f'{NS}:{c}' for c in ('osmium', 'oxygen', 'hydrogen_chloride')}
 
 # Sound events whose block plays them (native/mekanism_native loops them while running).
 SOUNDS = {
     NS: ['tile.machine.metallurgic_infuser', 'tile.machine.enrichment_chamber', 'tile.machine.crusher',
-         'tile.machine.compressor', 'tile.machine.combiner', 'tile.machine.precision_sawmill'],
+         'tile.machine.compressor', 'tile.machine.combiner', 'tile.machine.precision_sawmill',
+         'tile.machine.purification_chamber', 'tile.machine.chemical_injection_chamber'],
     'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar', 'tile.generator.bio',
                            'tile.generator.wind'],
 }
@@ -160,7 +163,8 @@ def main(up):
     chem_tags = {}
     for f in (gen[NS] / 'data/mekanism/tags/mekanism/chemical').glob('*.json'):
         values = json.loads(f.read_text(encoding='utf-8')).get('values', [])
-        if len(values) == 1 and isinstance(values[0], str):
+        if values and isinstance(values[0], str):
+            # A tag of several chemicals (water vapor, steam) becomes its first.
             chem_tags[f'#{NS}:{f.stem}'] = values[0]
     n = 0
     for ns in SOURCES:

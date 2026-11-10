@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:purifying",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:oxygen"
+  },
+  "experience": 0.35,
+  "group": "mekanism:clump_iron",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#mekanism:shards/iron"
+  },
+  "output": {
+    "id": "mekanism:clump_iron"
+  },
+  "per_tick_usage": true
+}

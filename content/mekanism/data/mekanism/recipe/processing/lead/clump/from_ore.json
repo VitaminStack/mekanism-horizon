@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:purifying",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:oxygen"
+  },
+  "experience": 0.5,
+  "group": "mekanism:clump_lead",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:ores/lead"
+  },
+  "output": {
+    "count": 3,
+    "id": "mekanism:clump_lead"
+  },
+  "per_tick_usage": true
+}

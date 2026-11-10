@@ -22,6 +22,8 @@
     "mekanism:osmium_compressor",
     "mekanism:combiner",
     "mekanism:precision_sawmill",
+    "mekanism:purification_chamber",
+    "mekanism:chemical_injection_chamber",
     "#mekanism:chemical_tanks",
     "#mekanism:fluid_tanks",
     "#mekanism:energy_cubes",

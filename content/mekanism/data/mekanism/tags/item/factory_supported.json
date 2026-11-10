@@ -6,6 +6,8 @@
     "#mekanism:factory_supported/crushing",
     "#mekanism:factory_supported/compressing",
     "#mekanism:factory_supported/combining",
-    "#mekanism:factory_supported/sawing"
+    "#mekanism:factory_supported/sawing",
+    "#mekanism:factory_supported/purifying",
+    "#mekanism:factory_supported/injecting"
   ]
 }
