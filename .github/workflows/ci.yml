@@ -19,6 +19,11 @@ jobs:
       - name: Content validation
         run: python scripts/validate_content.py
 
+      # Re-evaluates the committed docs/parity.json against content/ (no upstream checkout needed);
+      # fails when an entry that was done is no longer done.
+      - name: Parity regression check
+        run: python scripts/parity.py --check
+
       - name: Energy core tests
         run: cargo test --manifest-path logic/energy/Cargo.toml
 

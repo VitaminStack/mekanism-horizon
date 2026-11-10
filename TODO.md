@@ -207,8 +207,8 @@
 
 ## M13 - Paritaet, Integration, Performance und Releases [fortlaufend]
 
-- [ ] Maschinenlesbare Liste `Original-ID -> Horizon-ID -> Status` pflegen.
-- [ ] Originalrezept-/Tag-/Asset-Abgleich automatisieren und Regressionen finden.
+- [x] Maschinenlesbare Liste `Original-ID -> Horizon-ID -> Status` pflegen. *(`python scripts/parity.py --upstream <Mekanism-Checkout>` schreibt `docs/parity.json` (Items, Blöcke, Rezepte, Tags, Modelle, Texturen, Lang-Keys, Loot; Status done/partial/blocked/missing) und `docs/PARITY.md` (Zähler je Mod/Kategorie, größte Lücken). Nach jedem Port-Schritt neu erzeugen und committen; `blocked` kommt aus den TODO-Blockern in `BLOCKERS` im Skript.)*
+- [x] Originalrezept-/Tag-/Asset-Abgleich automatisieren und Regressionen finden. *(`python scripts/parity.py --check` wertet die eingecheckte `docs/parity.json` gegen `content/` aus, ohne Upstream-Checkout, und endet mit Exit 1, wenn ein früher `done` markierter Eintrag verschwindet; läuft als CI-Schritt „Parity regression check“.)*
 - [ ] Testmatrix für jede Maschine: Rezepte, Energie, Fluids, Chemicals, GUI, Seiteneinstellungen.
 - [ ] Testmatrix für jede Block-Entity: Abbauen, Chunk-Unload, Neustart, neue Version, Multiplayer.
 - [ ] Performance: 1, 100, 1.000 aktive Maschinen; Energie- und Transportnetze.
