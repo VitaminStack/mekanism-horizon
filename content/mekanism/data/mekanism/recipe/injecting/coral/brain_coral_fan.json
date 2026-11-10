@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:injecting",
+  "chemical_input": {
+    "amount": 3,
+    "ingredient": "mekanism:water_vapor"
+  },
+  "experience": 0.089999996,
+  "group": "mekanism:coral_revival",
+  "item_input": {
+    "count": 1,
+    "ingredient": "minecraft:dead_brain_coral_fan"
+  },
+  "output": {
+    "id": "minecraft:brain_coral_fan"
+  },
+  "per_tick_usage": true
+}

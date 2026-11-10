@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:purifying",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:oxygen"
+  },
+  "experience": 0.35,
+  "group": "mekanism:clump_osmium",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#mekanism:shards/osmium"
+  },
+  "output": {
+    "id": "mekanism:clump_osmium"
+  },
+  "per_tick_usage": true
+}

@@ -1,4 +1,10 @@
 {
+  "tile.machine.chemical_injection_chamber": {
+    "sounds": [
+      "mekanism:tile/chemical_injection_chamber"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.chemical_injection_chamber"
+  },
   "tile.machine.combiner": {
     "sounds": [
       "mekanism:tile/combiner"
@@ -34,5 +40,11 @@
       "mekanism:tile/precision_sawmill"
     ],
     "subtitle": "sound_event.mekanism.tile.machine.precision_sawmill"
+  },
+  "tile.machine.purification_chamber": {
+    "sounds": [
+      "mekanism:tile/purification_chamber"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.purification_chamber"
   }
 }

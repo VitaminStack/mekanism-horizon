@@ -1,0 +1,27 @@
+{
+  "template": "minecraft:shield",
+  "components": {
+    "minecraft:max_damage": 672,
+    "minecraft:repairable": {
+      "items": "#c:ingots/osmium"
+    },
+    "minecraft:blocks_attacks": {
+      "block_delay_seconds": 0.5,
+      "block_sound": "minecraft:item.shield.block",
+      "bypassed_by": "#minecraft:bypasses_shield",
+      "disabled_sound": "minecraft:item.shield.break",
+      "damage_reductions": [
+        {
+          "horizontal_blocking_angle": 90.0,
+          "base": 0.0,
+          "factor": 1.0
+        }
+      ],
+      "item_damage": {
+        "base": 1.0,
+        "factor": 1.0,
+        "threshold": 4.5
+      }
+    }
+  }
+}

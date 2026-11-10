@@ -20,6 +20,8 @@ ALLOYS = ['bronze', 'steel', 'refined_obsidian', 'refined_glowstone']
 DUSTS = ['osmium', 'tin', 'lead', 'uranium', 'bronze', 'steel', 'refined_obsidian', 'iron', 'gold',
          'copper', 'diamond', 'emerald', 'netherite', 'lapis_lazuli', 'coal', 'charcoal', 'quartz',
          'obsidian', 'sulfur', 'lithium', 'fluorite']
+# Clumps: the Purification Chamber's output from ores and raw metals (crushed into dirty dust later).
+CLUMPS = ['osmium', 'tin', 'lead', 'uranium', 'iron', 'gold', 'copper']
 MISC_ITEMS = ['fluorite_gem', 'salt',
               'basic_control_circuit', 'advanced_control_circuit', 'elite_control_circuit',
               'ultimate_control_circuit', 'alloy_infused', 'alloy_reinforced', 'alloy_atomic',
@@ -83,6 +85,8 @@ for a in ALLOYS:
     item(f'nugget_{a}', 'minecraft:iron_nugget')
 for d in DUSTS:
     item(f'dust_{d}', 'minecraft:sugar')
+for c in CLUMPS:
+    item(f'clump_{c}', 'minecraft:sugar')
 for i in MISC_ITEMS:
     item(i, 'minecraft:quartz' if i in ('fluorite_gem',) else 'minecraft:iron_ingot')
 
@@ -143,13 +147,16 @@ put(f'data/{NS}/horizon/menu/metallurgic_infuser.json', {'slots': 3, 'data_slots
 # (results). Upstream's blockstate picks the model by `active`, set by the native mod.
 # Osmium Compressor (0 input, 1 osmium item, 2 output; its osmium tank in 2 more data slots),
 # Combiner (0 main input, 1 extra input, 2 output) and Precision Sawmill (0 input, 1 output,
-# 2 secondary output) the same way; slot order as in native/mekanism_native/api/src/machine.rs.
+# 2 secondary output), Purification Chamber and Chemical Injection Chamber (0 input, 1 conversion
+# item, 2 output; tank in 2 data slots like the compressor) the same way; slot order as in native/mekanism_native/api/src/machine.rs.
 MACHINE_MENUS = {
     'enrichment_chamber': {'slots': 2, 'data_slots': 4, 'results': [1]},
     'crusher': {'slots': 2, 'data_slots': 4, 'results': [1]},
     'osmium_compressor': {'slots': 3, 'data_slots': 6, 'results': [2]},
     'combiner': {'slots': 3, 'data_slots': 4, 'results': [2]},
     'precision_sawmill': {'slots': 3, 'data_slots': 4, 'results': [1, 2]},
+    'purification_chamber': {'slots': 3, 'data_slots': 6, 'results': [2]},
+    'chemical_injection_chamber': {'slots': 3, 'data_slots': 6, 'results': [2]},
 }
 for m, menu in MACHINE_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={

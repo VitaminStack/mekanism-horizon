@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:injecting",
+  "chemical_input": {
+    "amount": 5,
+    "ingredient": "mekanism:water_vapor"
+  },
+  "experience": 0.14999999,
+  "group": "mekanism:coral_revival",
+  "item_input": {
+    "count": 1,
+    "ingredient": "minecraft:dead_tube_coral_block"
+  },
+  "output": {
+    "id": "minecraft:tube_coral_block"
+  },
+  "per_tick_usage": true
+}

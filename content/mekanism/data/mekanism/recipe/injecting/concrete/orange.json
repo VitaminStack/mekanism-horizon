@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:injecting",
+  "category": "building",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:water_vapor"
+  },
+  "experience": 0.15,
+  "group": "mekanism:concrete",
+  "item_input": {
+    "count": 1,
+    "ingredient": "minecraft:orange_concrete_powder"
+  },
+  "output": {
+    "id": "minecraft:orange_concrete"
+  },
+  "per_tick_usage": true
+}

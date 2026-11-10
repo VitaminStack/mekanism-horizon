@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": "#c:ingots/osmium",
+    "R": "#c:rods/wooden"
+  },
+  "pattern": [
+    "II",
+    "IR",
+    " R"
+  ],
+  "result": {
+    "id": "mekanismtools:osmium_axe"
+  }
+}

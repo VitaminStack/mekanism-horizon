@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:purifying",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:oxygen"
+  },
+  "experience": 0.5,
+  "group": "mekanism:clump_gold",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#mekanism:shards/gold"
+  },
+  "output": {
+    "id": "mekanism:clump_gold"
+  },
+  "per_tick_usage": true
+}

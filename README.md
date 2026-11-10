@@ -8,15 +8,15 @@ Inoffizieller Port von [Mekanism](https://github.com/mekanism/Mekanism) für [Mi
 
 <!-- progress:start -->
 ```text
-Gesamt                      ███████░░░░░░░░░░░░░  36%  (54/152)
+Gesamt                      ████████░░░░░░░░░░░░  39%  (59/153)
 
 Projektbasis                ████████████████████ 100%  (10/10)
 Energy Cube                 ████████████████████ 100%  (10/10)
 Rohstoffe & Energie         ████████████░░░░░░░░  61%  (14/23)
-Maschinen & Chemie          █████░░░░░░░░░░░░░░░  27%  (7/26)
+Maschinen & Chemie          ██████░░░░░░░░░░░░░░  31%  (8/26)
 Automation & Logistik       ░░░░░░░░░░░░░░░░░░░░   0%  (0/17)
 Multiblocks & Reaktoren     ░░░░░░░░░░░░░░░░░░░░   0%  (0/16)
-Tools & Additions           ███░░░░░░░░░░░░░░░░░  14%  (3/21)
+Tools & Additions           ██████░░░░░░░░░░░░░░  32%  (7/22)
 Tests & Releases            ░░░░░░░░░░░░░░░░░░░░   0%  (0/19)
 Naechste Schritte           ████████████████████ 100%  (10/10)
 ```
@@ -39,7 +39,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content
 
 Voraussetzungen, Spielordner-Konfiguration und separater Native-Build: **[Windows-Anleitung](README-WINDOWS.md)**.
 
-> Im Spiel getestet: Rohstoffe und Erze, Energy Cubes und Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Heat-, Solar-, Advanced-Solar-, Bio- und Wind-Generator sowie Fluid und Chemical Tanks (`docs/TESTLOG.md`). Kabel, Pipes und die meisten Maschinen fehlen noch. Nur in Testwelten verwenden.
+> Im Spiel getestet: Rohstoffe und Erze, Energy Cubes und Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification und Chemical Injection Chamber, Heat-, Solar-, Advanced-Solar-, Bio- und Wind-Generator sowie Fluid und Chemical Tanks (`docs/TESTLOG.md`). Kabel, Pipes und die meisten Maschinen fehlen noch. Nur in Testwelten verwenden.
 
 [Technische Details](docs/ENERGY-CUBE.md) · [Aufgabenliste](TODO.md) · [Lizenz](LICENSE)
 

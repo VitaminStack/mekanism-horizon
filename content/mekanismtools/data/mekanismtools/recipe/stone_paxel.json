@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": "minecraft:stone_axe",
+    "P": "minecraft:stone_pickaxe",
+    "R": "#c:rods/wooden",
+    "S": "minecraft:stone_shovel"
+  },
+  "pattern": [
+    "APS",
+    " R ",
+    " R "
+  ],
+  "result": {
+    "id": "mekanismtools:stone_paxel"
+  }
+}

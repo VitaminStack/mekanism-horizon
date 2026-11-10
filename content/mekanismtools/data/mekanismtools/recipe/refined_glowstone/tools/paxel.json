@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": "mekanismtools:refined_glowstone_axe",
+    "P": "mekanismtools:refined_glowstone_pickaxe",
+    "R": "#c:rods/wooden",
+    "S": "mekanismtools:refined_glowstone_shovel"
+  },
+  "pattern": [
+    "APS",
+    " R ",
+    " R "
+  ],
+  "result": {
+    "id": "mekanismtools:refined_glowstone_paxel"
+  }
+}

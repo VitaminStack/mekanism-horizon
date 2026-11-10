@@ -1,0 +1,29 @@
+{
+  "layers": {
+    "horse_body": [
+      {
+        "texture": "mekanismtools:steel"
+      }
+    ],
+    "humanoid": [
+      {
+        "texture": "mekanismtools:steel"
+      }
+    ],
+    "humanoid_baby": [
+      {
+        "texture": "mekanismtools:steel"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "mekanismtools:steel"
+      }
+    ],
+    "nautilus_body": [
+      {
+        "texture": "mekanismtools:steel"
+      }
+    ]
+  }
+}
