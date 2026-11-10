@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "group": "mekanism:carbon",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "#c:dusts/charcoal",
+      "minecraft:charcoal"
+    ]
+  },
+  "output": {
+    "amount": 20,
+    "id": "mekanism:carbon"
+  }
+}

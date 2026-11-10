@@ -243,6 +243,8 @@ impl MekanismNative {
 
     fn machine_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine) {
         let active = process::tick(host, event, m, &mut self.recipes.lock().unwrap());
+        // After the lock is released: a neighbour's `accepts` hook takes it too.
+        process::eject_output(host, event, m);
         self.hum(host, event.pos, m.sound, m.sound_ticks, active);
     }
 
@@ -439,14 +441,17 @@ impl Hooks for MekanismNative {
     fn block_entity_fluids(&self, _host: &dyn Host, event: &mut BlockEntityFluidsEvent) -> Option<ModFluidTanks> {
         match kind(event.block)? {
             Kind::Tank(t) => Some(tanks::fluids(t)),
+            Kind::Machine(m) => m.tanks.map(process::fluids),
             _ => None,
         }
     }
 
     /// Fluid tanks take no chemicals and chemical tanks no fluids.
-    fn block_entity_accepts_fluid(&self, _host: &dyn Host, event: &mut BlockEntityAcceptsFluidEvent) -> Flow {
+    fn block_entity_accepts_fluid(&self, host: &dyn Host, event: &mut BlockEntityAcceptsFluidEvent) -> Flow {
         match kind(event.block) {
             Some(Kind::Tank(t)) if !tank::accepts(t.family, event.fluid) => Flow::Cancel,
+            Some(Kind::Machine(m)) if m.tanks.is_some()
+                && !process::accepts(host, m, &mut self.recipes.lock().unwrap(), event.fluid) => Flow::Cancel,
             _ => Flow::Continue,
         }
     }

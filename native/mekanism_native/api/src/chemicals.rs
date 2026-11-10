@@ -31,6 +31,12 @@ pub fn chemical(path: &str) -> String {
     format!("{CHEMICAL_PREFIX}{path}")
 }
 
+/// The tank id of a recipe's chemical (`mekanism:hydrogen` -> `mekanism:chemical/hydrogen`);
+/// none for an id of another namespace.
+pub fn from_recipe(id: &str) -> Option<String> {
+    id.strip_prefix("mekanism:").filter(|p| !p.is_empty() && !p.contains(':')).map(chemical)
+}
+
 /// Index of `id` in `known()` order: water, lava, `FLUIDS`, then `CHEMICALS`.
 /// Menu data carries `index + 1` (0 for empty or unknown), which fits 16 bits.
 pub fn index(id: &str) -> Option<usize> {
@@ -72,6 +78,13 @@ mod tests {
         assert_ne!(index("mekanism:hydrogen"), index(&chemical("hydrogen")));
         assert_eq!(name("mekanism:hydrogen"), "Liquid Hydrogen");
         assert_eq!(name(&chemical("hydrogen")), "Hydrogen");
+    }
+
+    #[test]
+    fn recipe_ids_become_tank_ids() {
+        assert_eq!(from_recipe("mekanism:brine").as_deref(), Some("mekanism:chemical/brine"));
+        assert_eq!(from_recipe("create:brine"), None);
+        assert_eq!(from_recipe("mekanism:"), None);
     }
 
     #[test]

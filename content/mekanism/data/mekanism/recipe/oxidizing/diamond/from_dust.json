@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "group": "mekanism:diamond",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/diamond"
+  },
+  "output": {
+    "amount": 10,
+    "id": "mekanism:diamond"
+  }
+}

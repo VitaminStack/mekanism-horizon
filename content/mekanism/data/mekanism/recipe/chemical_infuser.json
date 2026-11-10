@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "C": "#c:circuits/basic",
+    "T": "mekanism:basic_chemical_tank",
+    "X": "mekanism:steel_casing"
+  },
+  "pattern": [
+    "ACA",
+    "TXT",
+    "ACA"
+  ],
+  "result": {
+    "id": "mekanism:chemical_infuser"
+  }
+}

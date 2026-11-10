@@ -23,6 +23,8 @@
     "mekanism:block_bio_fuel",
     "mekanism:bounding_block",
     "#mekanism:chemical_tanks",
-    "#mekanism:fluid_tanks"
+    "#mekanism:fluid_tanks",
+    "mekanism:chemical_oxidizer",
+    "mekanism:chemical_infuser"
   ]
 }

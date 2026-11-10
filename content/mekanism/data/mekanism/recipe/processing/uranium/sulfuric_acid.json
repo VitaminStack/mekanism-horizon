@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:chemical_infusing",
+  "experience": 0.0009,
+  "left_input": {
+    "amount": 1,
+    "ingredient": "mekanism:hydrofluoric_acid"
+  },
+  "output": {
+    "amount": 2,
+    "id": "mekanism:uranium_hexafluoride"
+  },
+  "right_input": {
+    "amount": 1,
+    "ingredient": "mekanism:uranium_oxide"
+  }
+}

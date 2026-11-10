@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:chemical_infusing",
+  "experience": 0.000100000005,
+  "left_input": {
+    "amount": 1,
+    "ingredient": "mekanism:hydrogen"
+  },
+  "output": {
+    "amount": 1,
+    "id": "mekanism:hydrogen_chloride"
+  },
+  "right_input": {
+    "amount": 1,
+    "ingredient": "mekanism:chlorine"
+  }
+}

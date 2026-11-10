@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dusts/sulfur"
+  },
+  "output": {
+    "amount": 100,
+    "id": "mekanism:sulfur_dioxide"
+  }
+}

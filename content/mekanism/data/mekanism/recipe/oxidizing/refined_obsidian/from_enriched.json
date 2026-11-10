@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "group": "mekanism:refined_obsidian",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:enriched/obsidian"
+  },
+  "output": {
+    "amount": 80,
+    "id": "mekanism:refined_obsidian"
+  }
+}

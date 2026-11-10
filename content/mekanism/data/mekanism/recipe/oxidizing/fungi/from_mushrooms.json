@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "group": "mekanism:fungi",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "#c:mushrooms",
+      "minecraft:crimson_fungus",
+      "minecraft:warped_fungus"
+    ]
+  },
+  "output": {
+    "amount": 10,
+    "id": "mekanism:fungi"
+  }
+}

@@ -11,6 +11,10 @@
 //! - item to item and chance item (`sawing`): `input`, `main_output` and/or
 //!   `secondary_output` with `secondary_chance`.
 //! - item to chemical (`chemical_conversion`): `input`, `output` {`id`, `amount`}.
+//! - item to chemical in a tank (`oxidizing`): the same, read as a `Recipe` whose
+//!   `chemical_output` is the tank id (an `output` with an `amount` is a chemical).
+//! - two chemicals to chemical (`chemical_infusing`): `left_input`, `right_input`
+//!   {`ingredient`, `amount`}, `output` {`id`, `amount`}, read as an `Infusion`.
 //!
 //! A recipe that names an unknown item is skipped, as Mekanism skips recipes
 //! whose ingredients do not resolve. Chemicals stay ids here: each machine
@@ -21,6 +25,7 @@ use std::collections::HashMap;
 use horizon_client::mod_api::serde_json::Value;
 use horizon_client::mod_api::{Host, Ingredient, ItemStack};
 
+use super::chemicals;
 use super::infuser;
 
 /// A chemical a recipe uses from the machine's buffer.
@@ -39,8 +44,11 @@ pub struct Recipe {
     pub count: u32,
     pub extra: Option<(Ingredient, u32)>,
     pub chemical: Option<ChemicalInput>,
-    /// None only for a sawing recipe with just a secondary output.
+    /// None for a sawing recipe with just a secondary output, and for one
+    /// whose output is a chemical.
     pub output: Option<ItemStack>,
+    /// A chemical output as (tank id, mB): put in the machine's output tank.
+    pub chemical_output: Option<(String, i32)>,
     /// The output and its chance in (0, 1].
     pub secondary: Option<(ItemStack, f64)>,
 }
@@ -68,15 +76,62 @@ impl Recipe {
             })
         })?;
         let main = if j["output"].is_null() { &j["main_output"] } else { &j["output"] };
-        let output = optional(main, |o| host.recipe_result(o))?;
+        let chemical_output = if main["amount"].is_number() { Some(chemical_stack(main)?) } else { None };
+        let output = if chemical_output.is_some() { None } else { optional(main, |o| host.recipe_result(o))? };
         let secondary = optional(&j["secondary_output"], |o| {
             let chance = j["secondary_chance"].as_f64().filter(|c| *c > 0.0 && *c <= 1.0)?;
             Some((host.recipe_result(o)?, chance))
         })?;
-        if output.is_none() && secondary.is_none() {
+        if output.is_none() && secondary.is_none() && chemical_output.is_none() {
             return None;
         }
-        Some(Recipe { input, count, extra: optional(&j["extra_input"], |e| sized(host, e))?, chemical, output, secondary })
+        Some(Recipe {
+            input,
+            count,
+            extra: optional(&j["extra_input"], |e| sized(host, e))?,
+            chemical,
+            output,
+            chemical_output,
+            secondary,
+        })
+    }
+}
+
+/// A chemical result `{id, amount}` as (tank id, mB).
+fn chemical_stack(j: &Value) -> Option<(String, i32)> {
+    Some((chemicals::from_recipe(j["id"].as_str()?)?, positive(&j["amount"])?))
+}
+
+/// A chemical ingredient `{ingredient, amount}` as (tank id, mB).
+fn chemical_ingredient(j: &Value) -> Option<(String, i32)> {
+    Some((chemicals::from_recipe(j["ingredient"].as_str()?)?, positive(&j["amount"])?))
+}
+
+/// Two chemicals make a third (`chemical_infusing`). The inputs name no side:
+/// the machine takes them from its two tanks in either order.
+pub struct Infusion {
+    pub left: (String, i32),
+    pub right: (String, i32),
+    pub output: (String, i32),
+}
+
+impl Infusion {
+    fn parse(_: &dyn Host, j: &Value) -> Option<Self> {
+        Some(Infusion {
+            left: chemical_ingredient(&j["left_input"])?,
+            right: chemical_ingredient(&j["right_input"])?,
+            output: chemical_stack(&j["output"])?,
+        })
+    }
+
+    /// Whether `id` is one of the inputs, and then the other one: what a tank
+    /// may hold beside it.
+    pub fn partner(&self, id: &str) -> Option<&str> {
+        match (self.left.0 == id, self.right.0 == id) {
+            (true, _) => Some(&self.right.0),
+            (_, true) => Some(&self.left.0),
+            _ => None,
+        }
     }
 }
 
@@ -131,12 +186,18 @@ impl<T> Table<T> {
 pub struct Recipes {
     processing: HashMap<&'static str, Table<Recipe>>,
     conversion: Table<Conversion>,
+    infusion: Table<Infusion>,
 }
 
 impl Recipes {
     /// The recipes of a processing machine's type.
     pub fn processing(&mut self, host: &dyn Host, kind: &'static str) -> &[Recipe] {
         self.processing.entry(kind).or_default().refresh(host, kind, Recipe::parse)
+    }
+
+    /// The Chemical Infuser's recipes (`kind` is its recipe type).
+    pub fn infusing(&mut self, host: &dyn Host, kind: &'static str) -> &[Infusion] {
+        self.infusion.refresh(host, kind, Infusion::parse)
     }
 
     /// The chemical conversions (item to chemical) into any buffer.

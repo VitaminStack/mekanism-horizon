@@ -172,3 +172,19 @@ Build: Native `native-fdc87ae-52fd95314c56` (nur Content nötig), Content `mekan
 | Slick-Reibung (0,98) auf dem Block | ausstehend (Bewegung nicht per Agent Control messbar) |
 | Block-Items im Inventar/Hotbar (Modell, Färbung) | ausstehend (nur `/give` geprüft) |
 | Neustart, Chunk-Unload | ausstehend |
+
+## M06 Chemical Oxidizer, Chemical Infuser (10.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-51be04f8dfaa`, Content aus Branch `feat/m06-oxidizer-chem-infuser`, Kreativwelt `TankTest`, Energie aus Creative Energy Cubes. Items per `item replace block ... container.0` (das kleingeschriebene NBT `items` wird vom Tick nicht gelesen).
+
+| Test | Ergebnis |
+|---|---|
+| Oxidizer: 3 Schwefelstaub zu 300 mB Schwefeldioxid (100 mB je Staub, 100 Ticks), Fortschritt läuft, Energie bleibt 60 | ok |
+| Oxidizer wirft den Output in einen angrenzenden Chemical Tank aus (300 mB `sulfur_dioxide`) | ok |
+| Oxidizer neben Infuser: Infuser nimmt Schwefeldioxid in den linken Tank (`accepts` nach Rezepten), 500 bis 1.100 mB | ok |
+| Infuser: 100 mB Sauerstoff + Schwefeldioxid ergeben Schwefeltrioxid (1 O + 2 SO2 zu 2 SO3, 63 Durchläufe), Tank-Reihenfolge egal | ok |
+| Infuser: Output-Tank bei 9.999 mB, Eingänge unverändert, Maschine pausiert | ok |
+| GUIs: drei Gauges (Infuser) bzw. Slot, Balken, Gauge (Oxidizer), Energie (Screenshots) | ok |
+| Neustart: Tankinhalte (Schwefeldioxid, Sauerstoff, Schwefeltrioxid) bleiben | ok |
+| Erster Build: Deadlock im Server-Thread, weil der Eject (`fluid_insert`) den `accepts`-Hook des Nachbarn unter dem Rezept-Lock aufrief; Eject jetzt nach dem Lock | behoben |
+| Sounds, Tooltips, Crafting-Rezepte (`mek_data` mit Dynamic Tank) | nicht geprüft |

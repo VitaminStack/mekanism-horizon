@@ -1,9 +1,21 @@
 {
+  "tile.machine.chemical_infuser": {
+    "sounds": [
+      "mekanism:tile/chemical_infuser"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.chemical_infuser"
+  },
   "tile.machine.chemical_injection_chamber": {
     "sounds": [
       "mekanism:tile/chemical_injection_chamber"
     ],
     "subtitle": "sound_event.mekanism.tile.machine.chemical_injection_chamber"
+  },
+  "tile.machine.chemical_oxidizer": {
+    "sounds": [
+      "mekanism:tile/chemical_oxidizer"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.chemical_oxidizer"
   },
   "tile.machine.combiner": {
     "sounds": [

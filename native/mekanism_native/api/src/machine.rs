@@ -1,7 +1,7 @@
 //! Electric machines: the table every processing machine is one entry of
 //! (Enrichment Chamber, Crusher, Metallurgic Infuser, Osmium Compressor,
 //! Combiner, Precision Sawmill, Purification Chamber, Chemical Injection
-//! Chamber), and the operation they share. The parts that
+//! Chamber, Chemical Oxidizer, Chemical Infuser), and the operation they share. The parts that
 //! need no Horizon types, so their tests run in `logic/energy`; recipes are in
 //! `recipe.rs`, the tick and screen in `process.rs`.
 //!
@@ -13,13 +13,18 @@
 //! `TileEntityPrecisionSawmill` (`BASE_TICKS_REQUIRED` 10 s each, slot
 //! positions), `UsageConfig` (enrichmentChamber 5, crusher 8,
 //! metallurgicInfuser 5, osmiumCompressor 15, combiner 5, precisionSawmill 5,
-//! purificationChamber 10, chemicalInjectionChamber 15 per tick) and `AttributeEnergy.STORAGE_MULTIPLIER` (storage 4 x usage).
+//! purificationChamber 10, chemicalInjectionChamber 15, chemicalOxidizer 15,
+//! chemicalInfuser 15 per tick), `TileEntityChemicalOxidizer` (`BASE_TICKS_REQUIRED`
+//! 5 s, `MAX_GAS` 10 buckets), `TileEntityChemicalInfuser` (three tanks of
+//! `MAX_GAS`, one operation per tick) and `AttributeEnergy.STORAGE_MULTIPLIER`
+//! (storage 4 x usage).
 //!
 //! Not ported: the energy slot (charging from items), upgrades, side config
 //! and redstone control.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use super::chemicals;
 use super::infuser;
 
 /// A chemical a buffer takes: Mekanism id, English name, bar colour.
@@ -82,6 +87,85 @@ impl Tank {
     }
 }
 
+/// A Horizon fluid tank's contents (`fluids` in the block-entity NBT): a fluid
+/// or chemical id (`chemicals::chemical`) and millibuckets.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Fluid {
+    pub id: Option<String>,
+    pub amount: i32,
+}
+
+impl Fluid {
+    /// Whether `amount` of `id` fits whole under `max`.
+    pub fn fits(&self, id: &str, amount: i32, max: i32) -> bool {
+        amount > 0 && self.id.as_deref().is_none_or(|have| have == id) && self.amount + amount <= max
+    }
+
+    pub fn add(&mut self, id: &str, amount: i32) {
+        self.id.get_or_insert_with(|| id.to_owned());
+        self.amount += amount;
+    }
+
+    pub fn has(&self, id: &str, amount: i32) -> bool {
+        self.id.as_deref() == Some(id) && self.amount >= amount
+    }
+
+    pub fn take(&mut self, amount: i32) {
+        self.amount = (self.amount - amount).max(0);
+        if self.amount == 0 {
+            self.id = None;
+        }
+    }
+}
+
+/// A machine's chemical tanks as Horizon fluid tanks (`block_entity_fluids`):
+/// the input tanks, then one output tank. Other blocks fill the inputs and
+/// drain the output; the machine also ejects the output into its neighbours.
+pub struct FluidTanks {
+    /// Screen rects of the input tanks' gauges, in tank order.
+    pub inputs: &'static [[f32; 4]],
+    pub output: [f32; 4],
+    /// Capacity of each tank in mB (`MAX_GAS`).
+    pub max: i32,
+}
+
+impl FluidTanks {
+    pub const fn count(&self) -> usize {
+        self.inputs.len() + 1
+    }
+
+    /// The output tank's number: the input tanks come first.
+    pub const fn output_index(&self) -> usize {
+        self.inputs.len()
+    }
+
+    /// Every gauge: the inputs, then the output.
+    pub fn gauges(&self) -> impl Iterator<Item = [f32; 4]> + '_ {
+        self.inputs.iter().copied().chain([self.output])
+    }
+}
+
+/// One operation of a machine that mixes two chemicals (`chemical_infusing`):
+/// takes `left` and `right` from the input tanks, in either order (Mekanism's
+/// orderless recipe), and puts `out` into the output tank. Does nothing and
+/// returns false unless both are there and the output fits whole. Each
+/// chemical is a tank id and an amount.
+pub fn infuse(tanks: &mut [Fluid], max: i32, left: (&str, i32), right: (&str, i32), out: (&str, i32)) -> bool {
+    let [a, b, o] = tanks else { return false };
+    if !o.fits(out.0, out.1, max) {
+        return false;
+    }
+    let straight = a.has(left.0, left.1) && b.has(right.0, right.1);
+    if !straight && !(a.has(right.0, right.1) && b.has(left.0, left.1)) {
+        return false;
+    }
+    let (first, second) = if straight { (left.1, right.1) } else { (right.1, left.1) };
+    a.take(first);
+    b.take(second);
+    o.add(out.0, out.1);
+    true
+}
+
 pub struct Machine {
     pub block: &'static str,
     /// Registered by `data/mekanism/horizon/menu/<id>.json`.
@@ -94,14 +178,24 @@ pub struct Machine {
     /// and its clip length in ticks, after which it is played again.
     pub sound: &'static str,
     pub sound_ticks: i32,
-    /// Slots, by their index in the block entity's saved items.
-    pub input: usize,
-    pub output: usize,
+    /// Ticks one operation takes (`BASE_TICKS_REQUIRED`); the Chemical
+    /// Infuser, which mixes every tick, has 1.
+    pub ticks: i32,
+    /// Slots, by their index in the block entity's saved items. A machine
+    /// without an item input or output (the infuser, the oxidizer's output)
+    /// has none.
+    pub input: Option<usize>,
+    pub output: Option<usize>,
     /// The Combiner's second item input (`extra_input`).
     pub extra: Option<usize>,
     /// The Precision Sawmill's output for its chance-based `secondary_output`.
     pub secondary: Option<usize>,
     pub buffer: Option<&'static Buffer>,
+    /// Chemical tanks that are Horizon fluid tanks (the Oxidizer's output, the
+    /// Infuser's three).
+    pub tanks: Option<&'static FluidTanks>,
+    /// Slots after `slot_pos` that no screen shows (Horizon needs at least one).
+    pub hidden: usize,
     /// Slot positions by slot index, and screen rects (x, y, w, h) from the
     /// screen's top left, as in Mekanism's GUI for the machine (176 x 166).
     pub slot_pos: &'static [[f32; 2]],
@@ -115,12 +209,17 @@ impl Machine {
     }
 
     pub const fn slots(&self) -> usize {
-        self.slot_pos.len()
+        self.slot_pos.len() + self.hidden
     }
 
     /// Every output slot: the output, then the secondary one.
     pub fn outputs(&self) -> Vec<usize> {
-        std::iter::once(self.output).chain(self.secondary).collect()
+        self.output.into_iter().chain(self.secondary).collect()
+    }
+
+    /// Whether it mixes the two chemicals in its input tanks (`chemical_infusing`).
+    pub fn infuses(&self) -> bool {
+        self.tanks.is_some_and(|t| t.inputs.len() == 2)
     }
 }
 
@@ -146,11 +245,14 @@ const fn electric(
         usage,
         sound,
         sound_ticks,
-        input: 0,
-        output: 1,
+        ticks: TICKS,
+        input: Some(0),
+        output: Some(1),
         extra: None,
         secondary: None,
         buffer: None,
+        tanks: None,
+        hidden: 0,
         slot_pos: &ELECTRIC_SLOT_POS,
         energy_gauge: ELECTRIC_ENERGY_GAUGE,
         progress_bar: ELECTRIC_PROGRESS_BAR,
@@ -201,7 +303,22 @@ pub const INJECTION_TANK: Buffer = Buffer {
 /// `TileEntityPrecisionSawmill`: input 0, output 1, secondary output 2.
 const SAWMILL_SLOT_POS: [[f32; 2]; 3] = [[56.0, 17.0], [116.0, 35.0], [132.0, 35.0]];
 
-pub const MACHINES: [Machine; 8] = [
+/// The Chemical Oxidizer (`GuiChemicalOxidizer`): the item at (26, 36), the
+/// progress bar right of it and the output gauge (`GaugeType.STANDARD`) at
+/// (131, 13); it has an item input and no item output.
+const OXIDIZER_SLOT_POS: [[f32; 2]; 1] = [[26.0, 36.0]];
+pub const OXIDIZER_TANKS: FluidTanks = FluidTanks { inputs: &[], output: [131.0, 13.0, 18.0, 58.0], max: 10_000 };
+
+/// The Chemical Infuser (`GuiChemicalInfuser`): left and right input gauges at
+/// (25, 17) and (133, 17), the output gauge between them (the screen is
+/// 176 x 166 here; Mekanism's is taller, with the slots for chemical items).
+pub const INFUSER_TANKS: FluidTanks = FluidTanks {
+    inputs: &[[25.0, 17.0, 18.0, 54.0], [133.0, 17.0, 18.0, 54.0]],
+    output: [79.0, 16.0, 18.0, 54.0],
+    max: 10_000,
+};
+
+pub const MACHINES: [Machine; 10] = [
     electric(
         "mekanism:enrichment_chamber",
         "mekanism:enriching",
@@ -219,18 +336,20 @@ pub const MACHINES: [Machine; 8] = [
         usage: 5,
         sound: infuser::SOUND,
         sound_ticks: infuser::SOUND_TICKS,
-        input: infuser::SLOT_INPUT,
-        output: infuser::SLOT_OUTPUT,
+        ticks: TICKS,
+        input: Some(infuser::SLOT_INPUT),
+        output: Some(infuser::SLOT_OUTPUT),
         extra: None,
         secondary: None,
         buffer: Some(&infuser::BUFFER),
+        tanks: None,
+        hidden: 0,
         slot_pos: &infuser::SLOT_POS,
         energy_gauge: infuser::ENERGY_GAUGE,
         progress_bar: infuser::PROGRESS_BAR,
     },
     Machine {
-        input: 0,
-        output: 2,
+        output: Some(2),
         buffer: Some(&OSMIUM_TANK),
         slot_pos: &TWO_INPUT_SLOT_POS,
         ..electric(
@@ -243,8 +362,7 @@ pub const MACHINES: [Machine; 8] = [
         )
     },
     Machine {
-        input: 0,
-        output: 2,
+        output: Some(2),
         extra: Some(1),
         slot_pos: &TWO_INPUT_SLOT_POS,
         ..electric(
@@ -271,8 +389,7 @@ pub const MACHINES: [Machine; 8] = [
         )
     },
     Machine {
-        input: 0,
-        output: 2,
+        output: Some(2),
         buffer: Some(&OXYGEN_TANK),
         slot_pos: &TWO_INPUT_SLOT_POS,
         ..electric(
@@ -285,8 +402,7 @@ pub const MACHINES: [Machine; 8] = [
         )
     },
     Machine {
-        input: 0,
-        output: 2,
+        output: Some(2),
         buffer: Some(&INJECTION_TANK),
         slot_pos: &TWO_INPUT_SLOT_POS,
         ..electric(
@@ -298,8 +414,43 @@ pub const MACHINES: [Machine; 8] = [
             INJECTION_SOUND_TICKS,
         )
     },
+    Machine {
+        ticks: 100,
+        output: None,
+        tanks: Some(&OXIDIZER_TANKS),
+        slot_pos: &OXIDIZER_SLOT_POS,
+        progress_bar: [64.0, 40.0, 48.0, 8.0],
+        ..electric(
+            "mekanism:chemical_oxidizer",
+            "mekanism:oxidizing",
+            "Chemical Oxidizer",
+            15,
+            "mekanism:tile.machine.chemical_oxidizer",
+            OXIDIZER_SOUND_TICKS,
+        )
+    },
+    Machine {
+        ticks: 1,
+        input: None,
+        output: None,
+        tanks: Some(&INFUSER_TANKS),
+        hidden: 1,
+        slot_pos: &[],
+        // No progress bar: it mixes every tick.
+        progress_bar: [0.0; 4],
+        ..electric(
+            "mekanism:chemical_infuser",
+            "mekanism:chemical_infusing",
+            "Chemical Infuser",
+            15,
+            "mekanism:tile.machine.chemical_infuser",
+            CHEMICAL_INFUSER_SOUND_TICKS,
+        )
+    },
 ];
 
+const OXIDIZER_SOUND_TICKS: i32 = 44;
+const CHEMICAL_INFUSER_SOUND_TICKS: i32 = 41;
 /// Clip lengths of `tile/compressor.ogg`, `tile/combiner.ogg` and
 /// `tile/precision_sawmill.ogg`, `tile/purification_chamber.ogg` and
 /// `tile/chemical_injection_chamber.ogg` in ticks, rounded up.
@@ -318,13 +469,13 @@ pub const TICKS: i32 = 200;
 /// One tick of an operation that can run: spend `usage` and advance, or stall
 /// without energy. Returns true when the operation completes this tick, and
 /// then progress starts over.
-pub fn step(usage: i32, energy: &mut i32, progress: &mut i32) -> bool {
+pub fn step(usage: i32, ticks: i32, energy: &mut i32, progress: &mut i32) -> bool {
     if *energy < usage {
         return false;
     }
     *energy -= usage;
     *progress += 1;
-    if *progress >= TICKS {
+    if *progress >= ticks {
         *progress = 0;
         return true;
     }
@@ -342,8 +493,10 @@ pub fn random() -> f64 {
     (z >> 11) as f64 / (1u64 << 53) as f64
 }
 
-/// Menu data slots (each a 16-bit wire entry; every value fits one). The last
-/// two are sent only by a machine with a chemical buffer.
+/// Menu data slots (each a 16-bit wire entry; every value fits one). A machine
+/// with a chemical buffer sends two more (amount, type); a machine with fluid
+/// tanks sends two per tank (amount, `chemicals::index` + 1, 0 while empty),
+/// from `DATA_BUFFER` on, as it has no buffer.
 pub const DATA_ENERGY: usize = 0;
 pub const DATA_PROGRESS: usize = 1;
 pub const DATA_FACING: usize = 2;
@@ -352,12 +505,21 @@ pub const DATA_BUFFER: usize = 4;
 /// `Buffer::types` index + 1; 0 while the buffer is empty.
 pub const DATA_BUFFER_TYPE: usize = 5;
 
-pub fn menu_data(energy: i32, progress: i32, facing: usize, active: bool, tank: Option<Tank>) -> Vec<i32> {
+pub fn menu_data(energy: i32, progress: i32, facing: usize, active: bool, tank: Option<Tank>, fluids: &[Fluid]) -> Vec<i32> {
     let mut data = vec![energy, progress, facing as i32, active as i32];
     if let Some(tank) = tank {
         data.extend([tank.amount, if tank.amount > 0 { tank.kind as i32 + 1 } else { 0 }]);
     }
+    for f in fluids {
+        let kind = f.id.as_deref().and_then(chemicals::index).map_or(0, |i| i as i32 + 1);
+        data.extend([f.amount, kind]);
+    }
     data
+}
+
+/// The name and colour shown for a fluid tank's menu data (type 0 is empty).
+pub fn fluid_look(kind: i32) -> (&'static str, u32) {
+    (kind as usize).checked_sub(1).and_then(chemicals::entry).unwrap_or(("Empty", 0))
 }
 
 pub const WIDTH: f32 = 176.0;
@@ -379,7 +541,14 @@ pub fn tooltip(machine: &Machine, data: &[i32], at: [f32; 2]) -> Vec<String> {
         ];
     }
     if inside(machine.progress_bar, at) {
-        return vec![format!("Progress: {}%", d(DATA_PROGRESS) * 100 / TICKS)];
+        return vec![format!("Progress: {}%", d(DATA_PROGRESS) * 100 / machine.ticks)];
+    }
+    if let Some(t) = machine.tanks {
+        let hit = t.gauges().position(|g| inside(g, at));
+        return hit.map_or_else(Vec::new, |i| {
+            let (name, _) = fluid_look(d(DATA_BUFFER + 2 * i + 1));
+            vec![format!("{name}: {} / {} mB", d(DATA_BUFFER + 2 * i), t.max)]
+        });
     }
     let Some(b) = machine.buffer else { return Vec::new() };
     if inside(b.gauge, at) {
@@ -428,26 +597,29 @@ mod tests {
             let m = machine(b);
             (m.input, m.output, m.extra, m.secondary, m.buffer.map(|b| b.slot), m.slots())
         };
-        assert_eq!(slots("mekanism:crusher"), (0, 1, None, None, None, 2));
-        assert_eq!(slots("mekanism:metallurgic_infuser"), (1, 2, None, None, Some(0), 3));
-        assert_eq!(slots("mekanism:osmium_compressor"), (0, 2, None, None, Some(1), 3));
-        assert_eq!(slots("mekanism:combiner"), (0, 2, Some(1), None, None, 3));
-        assert_eq!(slots("mekanism:precision_sawmill"), (0, 1, None, Some(2), None, 3));
-        assert_eq!(slots("mekanism:purification_chamber"), (0, 2, None, None, Some(1), 3));
-        assert_eq!(slots("mekanism:chemical_injection_chamber"), (0, 2, None, None, Some(1), 3));
+        assert_eq!(slots("mekanism:crusher"), (Some(0), Some(1), None, None, None, 2));
+        assert_eq!(slots("mekanism:metallurgic_infuser"), (Some(1), Some(2), None, None, Some(0), 3));
+        assert_eq!(slots("mekanism:osmium_compressor"), (Some(0), Some(2), None, None, Some(1), 3));
+        assert_eq!(slots("mekanism:combiner"), (Some(0), Some(2), Some(1), None, None, 3));
+        assert_eq!(slots("mekanism:precision_sawmill"), (Some(0), Some(1), None, Some(2), None, 3));
+        assert_eq!(slots("mekanism:purification_chamber"), (Some(0), Some(2), None, None, Some(1), 3));
+        assert_eq!(slots("mekanism:chemical_injection_chamber"), (Some(0), Some(2), None, None, Some(1), 3));
+        assert_eq!(slots("mekanism:chemical_oxidizer"), (Some(0), None, None, None, None, 1));
+        assert_eq!(slots("mekanism:chemical_infuser"), (None, None, None, None, None, 1));
     }
 
     #[test]
     fn every_machine_is_well_formed() {
         for m in &MACHINES {
             assert!(m.usage > 0 && m.sound_ticks > 0, "{}", m.block);
-            let mut used: Vec<usize> = [m.input, m.output].into_iter().chain(m.extra).chain(m.secondary).collect();
+            let mut used: Vec<usize> = m.input.into_iter().chain(m.output).chain(m.extra).chain(m.secondary).collect();
             used.extend(m.buffer.map(|b| b.slot));
             let n = used.len();
             used.sort();
             used.dedup();
             assert_eq!(used.len(), n, "{}: a slot used twice", m.block);
             assert!(used.iter().all(|&s| s < m.slots()), "{}", m.block);
+            assert!(m.slots() >= 1 && m.slot_pos.len() <= m.slots(), "{}: Horizon needs a slot", m.block);
             assert_eq!(MACHINES.iter().filter(|o| o.block == m.block).count(), 1, "{}", m.block);
         }
     }
@@ -456,7 +628,7 @@ mod tests {
     fn operation_takes_200_ticks_at_usage() {
         let (mut energy, mut progress) = (i32::MAX, 0);
         let start = energy;
-        let done = (1..=TICKS).filter(|_| step(8, &mut energy, &mut progress)).count();
+        let done = (1..=TICKS).filter(|_| step(8, TICKS, &mut energy, &mut progress)).count();
         assert_eq!(done, 1);
         assert_eq!(progress, 0);
         assert_eq!(start - energy, TICKS * 8);
@@ -465,7 +637,7 @@ mod tests {
     #[test]
     fn no_energy_stalls_without_losing_progress() {
         let (mut energy, mut progress) = (4, 7);
-        assert!(!step(5, &mut energy, &mut progress));
+        assert!(!step(5, TICKS, &mut energy, &mut progress));
         assert_eq!((energy, progress), (4, 7));
     }
 
@@ -543,21 +715,21 @@ mod tests {
 
     #[test]
     fn menu_data_fits_16_bits() {
-        let d = menu_data(32, TICKS - 1, 5, true, None);
+        let d = menu_data(32, TICKS - 1, 5, true, None, &[]);
         assert_eq!(d.len(), 4);
         assert!(d.iter().all(|v| (0..=0xFFFF).contains(v)));
         let full = Tank { kind: 7, amount: infuser::BUFFER.max };
-        let d = menu_data(20, TICKS - 1, 5, true, Some(full));
+        let d = menu_data(20, TICKS - 1, 5, true, Some(full), &[]);
         assert!(d.iter().all(|v| (0..=0xFFFF).contains(v)));
         assert_eq!((d[DATA_BUFFER], d[DATA_BUFFER_TYPE]), (1_000, 8));
         let empty = Tank { kind: 3, amount: 0 };
-        assert_eq!(menu_data(0, 0, 2, false, Some(empty))[DATA_BUFFER_TYPE], 0);
+        assert_eq!(menu_data(0, 0, 2, false, Some(empty), &[])[DATA_BUFFER_TYPE], 0);
     }
 
     #[test]
     fn tooltips_name_what_is_hovered() {
         let m = machine("mekanism:crusher");
-        let data = menu_data(16, 100, 2, true, None);
+        let data = menu_data(16, 100, 2, true, None, &[]);
         assert_eq!(tooltip(m, &data, [165.0, 40.0]), vec!["Energy: 16 / 32 FE", "Usage: 8 FE/t"]);
         assert_eq!(tooltip(m, &data, [90.0, 40.0]), vec!["Progress: 50%"]);
         assert!(tooltip(m, &data, [10.0, 10.0]).is_empty());
@@ -566,7 +738,7 @@ mod tests {
     #[test]
     fn infuser_tooltips_name_what_is_hovered() {
         let m = machine("mekanism:metallurgic_infuser");
-        let data = menu_data(15, 100, 2, true, Some(Tank { kind: 0, amount: 260 }));
+        let data = menu_data(15, 100, 2, true, Some(Tank { kind: 0, amount: 260 }), &[]);
         assert_eq!(tooltip(m, &data, [8.0, 40.0]), vec!["Carbon: 260 / 1000 mB"]);
         assert_eq!(tooltip(m, &data, [165.0, 40.0])[0], "Energy: 15 / 20 FE");
         assert_eq!(tooltip(m, &data, [80.0, 48.0]), vec!["Progress: 50%"]);
@@ -578,15 +750,114 @@ mod tests {
     #[test]
     fn injection_tooltip_names_the_chemical() {
         let m = machine("mekanism:chemical_injection_chamber");
-        let data = menu_data(30, 0, 2, true, Some(Tank { kind: 1, amount: 8 }));
+        let data = menu_data(30, 0, 2, true, Some(Tank { kind: 1, amount: 8 }), &[]);
         assert_eq!(tooltip(m, &data, [70.0, 40.0]), vec!["Hydrogen Chloride: 8 / 210 mB"]);
     }
 
     #[test]
     fn compressor_tooltip_shows_osmium() {
         let m = machine("mekanism:osmium_compressor");
-        let data = menu_data(60, 0, 2, false, Some(Tank { kind: 0, amount: 200 }));
+        let data = menu_data(60, 0, 2, false, Some(Tank { kind: 0, amount: 200 }), &[]);
         assert_eq!(tooltip(m, &data, [70.0, 40.0]), vec!["Osmium: 200 / 210 mB"]);
         assert_eq!(tooltip(m, &data, [165.0, 40.0])[0], "Energy: 60 / 60 FE");
+    }
+
+    fn fluid(id: &str, amount: i32) -> Fluid {
+        Fluid { id: Some(chemicals::chemical(id)), amount }
+    }
+
+    #[test]
+    fn oxidizer_and_infuser_values_match_mekanism() {
+        let ox = machine("mekanism:chemical_oxidizer");
+        assert_eq!((ox.usage, ox.capacity(), ox.ticks), (15, 60, 100));
+        assert_eq!(ox.tanks.unwrap().max, 10_000);
+        assert!(!ox.infuses());
+        let inf = machine("mekanism:chemical_infuser");
+        assert_eq!((inf.usage, inf.capacity(), inf.ticks), (15, 60, 1));
+        assert_eq!(inf.tanks.unwrap().count(), 3);
+        assert_eq!(inf.tanks.unwrap().output_index(), 2);
+        assert!(inf.infuses());
+        assert!(inf.outputs().is_empty(), "no item output");
+    }
+
+    /// Hydrogen and chlorine make hydrogen chloride one to one, whichever tank holds which.
+    #[test]
+    fn infusing_works_either_way_round() {
+        let (h, cl, hcl) = (
+            chemicals::chemical("hydrogen"),
+            chemicals::chemical("chlorine"),
+            chemicals::chemical("hydrogen_chloride"),
+        );
+        for (a, b) in [(fluid("hydrogen", 5), fluid("chlorine", 5)), (fluid("chlorine", 5), fluid("hydrogen", 5))] {
+            let mut tanks = vec![a, b, Fluid::default()];
+            assert!(infuse(&mut tanks, 10_000, (&h, 1), (&cl, 1), (&hcl, 1)));
+            assert_eq!((tanks[0].amount, tanks[1].amount, tanks[2].amount), (4, 4, 1));
+            assert_eq!(tanks[2].id.as_deref(), Some(hcl.as_str()));
+        }
+    }
+
+    /// Sulfur trioxide takes 1 oxygen and 2 sulfur dioxide for 2 of its own.
+    #[test]
+    fn infusing_uses_the_recipe_amounts_and_empties_a_tank() {
+        let (o, so2, so3) = (
+            chemicals::chemical("oxygen"),
+            chemicals::chemical("sulfur_dioxide"),
+            chemicals::chemical("sulfur_trioxide"),
+        );
+        let mut tanks = vec![fluid("oxygen", 1), fluid("sulfur_dioxide", 3), Fluid::default()];
+        assert!(infuse(&mut tanks, 10_000, (&o, 1), (&so2, 2), (&so3, 2)));
+        assert_eq!(tanks[0], Fluid::default(), "an emptied tank forgets its chemical");
+        assert_eq!(tanks[1].amount, 1);
+        assert_eq!(tanks[2].amount, 2);
+        assert!(!infuse(&mut tanks, 10_000, (&o, 1), (&so2, 2), (&so3, 2)), "oxygen is out");
+    }
+
+    #[test]
+    fn infusing_waits_for_inputs_and_output_room() {
+        let (h, cl, hcl) = (
+            chemicals::chemical("hydrogen"),
+            chemicals::chemical("chlorine"),
+            chemicals::chemical("hydrogen_chloride"),
+        );
+        let run = |tanks: &mut Vec<Fluid>| infuse(tanks, 10_000, (&h, 1), (&cl, 1), (&hcl, 1));
+        let mut missing = vec![fluid("hydrogen", 5), Fluid::default(), Fluid::default()];
+        assert!(!run(&mut missing));
+        assert_eq!(missing[0].amount, 5, "nothing taken");
+        let mut full = vec![fluid("hydrogen", 5), fluid("chlorine", 5), fluid("hydrogen_chloride", 10_000)];
+        assert!(!run(&mut full));
+        assert_eq!((full[0].amount, full[1].amount), (5, 5));
+        let mut other = vec![fluid("hydrogen", 5), fluid("chlorine", 5), fluid("oxygen", 1)];
+        assert!(!run(&mut other), "output holds another chemical");
+        let mut two_same = vec![fluid("hydrogen", 5), fluid("hydrogen", 5), Fluid::default()];
+        assert!(!run(&mut two_same));
+    }
+
+    #[test]
+    fn fluid_tracks_one_chemical() {
+        let mut f = Fluid::default();
+        assert!(f.fits("a", 10, 10) && !f.fits("a", 11, 10) && !f.fits("a", 0, 10));
+        f.add("a", 6);
+        assert!(f.fits("a", 4, 10) && !f.fits("b", 1, 10));
+        assert!(f.has("a", 6) && !f.has("a", 7) && !f.has("b", 1));
+        f.take(100);
+        assert_eq!(f, Fluid::default());
+    }
+
+    #[test]
+    fn fluid_tank_menu_data_and_tooltips() {
+        let m = machine("mekanism:chemical_infuser");
+        let tanks = [fluid("hydrogen", 9_000), Fluid::default(), fluid("hydrogen_chloride", 1_234)];
+        let data = menu_data(45, 0, 2, true, None, &tanks);
+        assert_eq!(data.len(), 4 + 6);
+        assert!(data.iter().all(|v| (0..=0xFFFF).contains(v)));
+        assert_eq!(tooltip(m, &data, [30.0, 40.0]), vec!["Hydrogen: 9000 / 10000 mB"]);
+        assert_eq!(tooltip(m, &data, [140.0, 40.0]), vec!["Empty: 0 / 10000 mB"]);
+        assert_eq!(tooltip(m, &data, [85.0, 40.0]), vec!["Hydrogen Chloride: 1234 / 10000 mB"]);
+        assert_eq!(tooltip(m, &data, [165.0, 40.0])[0], "Energy: 45 / 60 FE");
+        assert!(tooltip(m, &data, [60.0, 40.0]).is_empty(), "no progress bar");
+        let ox = machine("mekanism:chemical_oxidizer");
+        let data = menu_data(60, 50, 2, true, None, &[fluid("sulfur_dioxide", 300)]);
+        assert_eq!(tooltip(ox, &data, [140.0, 40.0]), vec!["Sulfur Dioxide: 300 / 10000 mB"]);
+        assert_eq!(tooltip(ox, &data, [80.0, 44.0]), vec!["Progress: 50%"]);
     }
 }

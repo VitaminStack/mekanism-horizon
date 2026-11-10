@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:oxidizing",
+  "experience": 0.1,
+  "group": "mekanism:redstone",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/redstone"
+  },
+  "output": {
+    "amount": 90,
+    "id": "mekanism:redstone"
+  }
+}
