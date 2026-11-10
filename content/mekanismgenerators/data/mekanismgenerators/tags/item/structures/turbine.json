@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "mekanismgenerators:turbine_rotor",
+    "mekanismgenerators:rotational_complex",
+    "mekanismgenerators:electromagnetic_coil",
+    "mekanismgenerators:turbine_casing",
+    "mekanismgenerators:saturating_condenser"
+  ]
+}

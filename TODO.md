@@ -186,9 +186,14 @@
 ## M12 - Unterprojekte komplettieren [P2/P3]
 
 ### Mekanism: Generators
-- [ ] Alle Generatoren, Turbinen, Boiler und Reaktoren des Originalmoduls vollständig abgleichen.
-- [ ] Solar Panel, Turbine Blade, Hohlraum, alle Original-Modelle und Rezepte.
-- [ ] `mekanismgenerators`-Namespace und Abhängigkeiten prüfen.
+Abgleich mit Upstream 26.3 (`31bb4906`) in `docs/GENERATORS.md`.
+- [x] Heat, Solar, Advanced Solar, Wind und Bio Generator (nativ, M04).
+- [x] Solar Panel, Turbine Blade, Hohlraum (Items), Turbine Casing/Rotor, Fission Reactor Casing, Fission Fuel Assembly, Control Rod Assembly, Fusion Reactor Frame, Reactor Glass, Laser Focus Matrix, Electromagnetic Coil, Rotational Complex, Saturating Condenser (Blöcke ohne Logik): Modelle, Texturen, Loot, Lang und Rezepte.
+- [x] `mekanismgenerators`-Namespace, Mod-Manifest und Abhängigkeit zu `mekanism` geprüft (Manifest hat kein Abhängigkeitsfeld).
+- [ ] Industrial Turbine, Fission Reactor, Fusion Reactor (Multiblock-Formung, Controller, Valves, Vents, Ports, Logic Adapter, GUIs): Blocker, braucht nativen Multiblock-Code (M09/M10). Turbine Blade lässt sich noch nicht in den Rotor stecken.
+- [ ] Gas-Burning Generator: Blocker, braucht `mekanism:electrolytic_core` (M06) und Gas-Verbrennung nativ.
+- [ ] Chemikalien/Fluide Deuterium, Tritium, Fusion Fuel, Bioethanol samt Eimern und Rezepten (Rotary, Separator, Neutron Activator): Blocker, Chemie-Tisch kennt nur `mekanism`, Horizon nur Vanilla-Fluide.
+- [ ] Fusion Reactor Frame ist nicht craftbar, bis `#c:pellets/polonium` existiert (M07). Module (Geothermal, Solar Recharging Unit): Modulsystem fehlt.
 
 ### Mekanism: Tools
 - [x] Paxels aus Wood, Stone, Copper, Iron, Gold, Diamond, Netherite (Axt-Aktion; Schaufel-Aktion fehlt, siehe `docs/TOOLS.md`).

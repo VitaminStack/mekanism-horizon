@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": "#c:buckets/empty",
+    "I": "#c:ingots/tin",
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    "SIS",
+    "IBI",
+    "SIS"
+  ],
+  "result": {
+    "id": "mekanismgenerators:saturating_condenser"
+  }
+}
