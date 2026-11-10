@@ -188,3 +188,16 @@ Build: Native `native-fdc87ae-51be04f8dfaa`, Content aus Branch `feat/m06-oxidiz
 | Neustart: Tankinhalte (Schwefeldioxid, Sauerstoff, Schwefeltrioxid) bleiben | ok |
 | Erster Build: Deadlock im Server-Thread, weil der Eject (`fluid_insert`) den `accepts`-Hook des Nachbarn unter dem Rezept-Lock aufrief; Eject jetzt nach dem Lock | behoben |
 | Sounds, Tooltips, Crafting-Rezepte (`mek_data` mit Dynamic Tank) | nicht geprüft |
+
+## M12 Generators: Bauteile (10.11.2026)
+
+Build: Content `mekanismgenerators` 0.2.0 mit `scripts/Build-Content.ps1` (`cargo horizon-mod check` ok für alle vier Mods, `validate_content.py` ok). Ingame-Test noch nicht gelaufen: Horizon ist eine geteilte Instanz, die Freigabe der parallelen Session `port-separator` stand aus. Zu bündeln, sobald frei:
+
+| Test | Ergebnis |
+|---|---|
+| Content lädt (13 neue Items/Blöcke, 17 neue Rezepte), keine Fehler im Log | ausstehend |
+| Rezept `#c:pellets/polonium` (Fusion Reactor Frame) mit fehlendem Tag: Laden ohne Fehler | ausstehend |
+| `/give` + Platzieren aller neuen Blöcke, Modelle (Rotor, Spule, Glas, Fuel Assembly), Item-Icons | ausstehend |
+| Craften: Turbine Casing, Rotor, Blade, Fission Casing, Reactor Glass, Laser Focus Matrix, Electromagnetic Coil | ausstehend |
+| Hohlraum aus dem Metallurgic Infuser (4 Goldstaub + 10 mB Kohlenstoff) | ausstehend |
+| Abbau mit Spitzhacke droppt den Block | ausstehend |
