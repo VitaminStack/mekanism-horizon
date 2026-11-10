@@ -1,0 +1,31 @@
+{
+  "template": "minecraft:iron_sword",
+  "components": {
+    "minecraft:max_damage": 4096,
+    "minecraft:enchantable": {
+      "value": 18
+    },
+    "minecraft:repairable": {
+      "items": "#c:ingots/refined_obsidian"
+    },
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:attack_damage",
+        "amount": 11.0,
+        "id": "minecraft:base_attack_damage",
+        "operation": "add_value",
+        "slot": "mainhand"
+      },
+      {
+        "type": "minecraft:attack_speed",
+        "amount": -2.4,
+        "id": "minecraft:base_attack_speed",
+        "operation": "add_value",
+        "slot": "mainhand"
+      }
+    ],
+    "minecraft:damage_resistant": {
+      "types": "#minecraft:is_fire"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "template": "minecraft:iron_helmet",
+  "components": {
+    "minecraft:max_damage": 110,
+    "minecraft:enchantable": {
+      "value": 35
+    },
+    "minecraft:repairable": {
+      "items": "#c:gems/lapis"
+    },
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "amount": 1.0,
+        "id": "minecraft:armor.helmet",
+        "operation": "add_value",
+        "slot": "head"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "amount": 0.0,
+        "id": "minecraft:armor.helmet",
+        "operation": "add_value",
+        "slot": "head"
+      }
+    ],
+    "minecraft:equippable": {
+      "asset_id": "mekanismtools:lapis_lazuli",
+      "equip_sound": "minecraft:item.armor.equip_diamond",
+      "slot": "head"
+    }
+  }
+}

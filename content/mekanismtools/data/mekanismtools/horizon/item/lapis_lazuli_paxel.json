@@ -1,0 +1,41 @@
+{
+  "template": "minecraft:iron_axe",
+  "components": {
+    "minecraft:max_damage": 256,
+    "minecraft:enchantable": {
+      "value": 32
+    },
+    "minecraft:repairable": {
+      "items": "#c:gems/lapis"
+    },
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:attack_damage",
+        "amount": 6.0,
+        "id": "minecraft:base_attack_damage",
+        "operation": "add_value",
+        "slot": "mainhand"
+      },
+      {
+        "type": "minecraft:attack_speed",
+        "amount": -2.4,
+        "id": "minecraft:base_attack_speed",
+        "operation": "add_value",
+        "slot": "mainhand"
+      }
+    ],
+    "minecraft:tool": {
+      "rules": [
+        {
+          "blocks": "#mekanismtools:incorrect_for_lapis_lazuli_tool",
+          "correct_for_drops": false
+        },
+        {
+          "blocks": "#c:mineable/paxel",
+          "correct_for_drops": true,
+          "speed": 9.0
+        }
+      ]
+    }
+  }
+}
