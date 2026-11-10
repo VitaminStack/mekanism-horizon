@@ -1,0 +1,33 @@
+{
+  "template": "minecraft:iron_leggings",
+  "components": {
+    "minecraft:max_damage": 150,
+    "minecraft:enchantable": {
+      "value": 35
+    },
+    "minecraft:repairable": {
+      "items": "#c:gems/lapis"
+    },
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "amount": 3.0,
+        "id": "minecraft:armor.leggings",
+        "operation": "add_value",
+        "slot": "legs"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "amount": 0.0,
+        "id": "minecraft:armor.leggings",
+        "operation": "add_value",
+        "slot": "legs"
+      }
+    ],
+    "minecraft:equippable": {
+      "asset_id": "mekanismtools:lapis_lazuli",
+      "equip_sound": "minecraft:item.armor.equip_diamond",
+      "slot": "legs"
+    }
+  }
+}

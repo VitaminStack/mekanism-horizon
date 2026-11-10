@@ -1,0 +1,41 @@
+{
+  "template": "minecraft:iron_axe",
+  "components": {
+    "minecraft:max_damage": 750,
+    "minecraft:enchantable": {
+      "value": 10
+    },
+    "minecraft:repairable": {
+      "items": "#c:ingots/bronze"
+    },
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:attack_damage",
+        "amount": 10.0,
+        "id": "minecraft:base_attack_damage",
+        "operation": "add_value",
+        "slot": "mainhand"
+      },
+      {
+        "type": "minecraft:attack_speed",
+        "amount": -2.4,
+        "id": "minecraft:base_attack_speed",
+        "operation": "add_value",
+        "slot": "mainhand"
+      }
+    ],
+    "minecraft:tool": {
+      "rules": [
+        {
+          "blocks": "#mekanismtools:incorrect_for_bronze_tool",
+          "correct_for_drops": false
+        },
+        {
+          "blocks": "#c:mineable/paxel",
+          "correct_for_drops": true,
+          "speed": 7.0
+        }
+      ]
+    }
+  }
+}

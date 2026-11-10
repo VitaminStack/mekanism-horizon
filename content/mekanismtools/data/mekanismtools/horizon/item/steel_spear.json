@@ -1,0 +1,51 @@
+{
+  "template": "minecraft:iron_spear",
+  "components": {
+    "minecraft:max_damage": 500,
+    "minecraft:enchantable": {
+      "value": 16
+    },
+    "minecraft:repairable": {
+      "items": "#c:ingots/steel"
+    },
+    "minecraft:attack_animation": {
+      "type": "stab",
+      "duration": 21
+    },
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:attack_damage",
+        "amount": 3.0,
+        "id": "minecraft:base_attack_damage",
+        "operation": "add_value",
+        "slot": "mainhand"
+      },
+      {
+        "type": "minecraft:attack_speed",
+        "amount": -3.0476190476190474,
+        "id": "minecraft:base_attack_speed",
+        "operation": "add_value",
+        "slot": "mainhand"
+      }
+    ],
+    "minecraft:kinetic_weapon": {
+      "damage_conditions": {
+        "max_duration_ticks": 210,
+        "min_relative_speed": 4.6
+      },
+      "damage_multiplier": 1.075,
+      "delay_ticks": 11,
+      "dismount_conditions": {
+        "max_duration_ticks": 55,
+        "min_speed": 10.5
+      },
+      "forward_movement": 0.38,
+      "hit_sound": "minecraft:item.spear.hit",
+      "knockback_conditions": {
+        "max_duration_ticks": 130,
+        "min_speed": 5.1
+      },
+      "sound": "minecraft:item.spear.use"
+    }
+  }
+}

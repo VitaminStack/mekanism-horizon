@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": "#c:ingots/steel",
+    "N": "#c:nuggets/steel",
+    "P": "minecraft:iron_nautilus_armor"
+  },
+  "pattern": [
+    "III",
+    "IPI",
+    "NNI"
+  ],
+  "result": {
+    "id": "mekanismtools:steel_nautilus_armor"
+  }
+}

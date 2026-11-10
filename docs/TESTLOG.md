@@ -99,3 +99,22 @@ Build: Native `native-fdc87ae-482f2e77aeb3` (Branch `feat/m06-chemistry-foundati
 | Flüssigkeit im Fluid Tank sichtbar: Wasser und Lava je nach Füllstand, Füllstand folgt Änderungen, leerer Tank zeigt nichts (`native-fdc87ae-2f1bbd36b98c`) | ok |
 | Andere Flüssigkeiten: Sole als Wasser-Box in eigener Farbe, Füllstand stimmt (`native-fdc87ae-1ac2734b93a0`) | ok |
 | Flüssigkeit mit Shaderpack (Bliss) | Fehler: falsch dargestellt; ohne Shader korrekt. Liegt an Horizons Shader-Pfad für `draw_fluid_box`, nicht am Mod |
+
+## M12 Tools (10.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-352025dc49dc`, Content `mekanismtools` 0.1.0 neben `mekanism` und `mekanismgenerators`, Kreativwelt `TankTest` (auf Survival gestellt).
+
+| Test | Ergebnis |
+|---|---|
+| Content lädt (91 Items, 107 Rezepte, Tags), keine Fehler im Log | ok |
+| Angriffsschaden und -tempo (`attribute`): Bronze-Spitzhacke 4, Refined-Obsidian-Schwert 12, Bronze-Axt 10, Lapis-Hacke 1/2,0, Steel-Schaufel 5,5, Osmium-Speer 5, Diamant-Paxel 10 | ok (stimmt mit Mekanism-Formel) |
+| Refined-Obsidian-Set an: Rüstung 30 (Deckel), Zähigkeit 20, Rückstoßresistenz 0,8 | ok |
+| Rüstungs-Textur auf dem Spielermodell (Inventar-Screenshot), Item-Icons | ok |
+| Haltbarkeit: Bronze-Spitzhacke bricht nach 375, Refined-Obsidian-Spitzhacke nach 4096 | ok |
+| Mining-Stufe: Bronze baut Diamanterz ab, Obsidian nicht; Steel baut Obsidian ab | ok |
+| Diamant-Paxel schält Eichenstamm (Axt) | ok |
+| Diamant-Paxel formt Gras zum Pfad (Schaufel) | Fehler/Blocker: nur Axt-Aktion |
+| Rezept: 3 Bronzebarren + 2 Stöcke ergeben Bronze-Spitzhacke (Tag `#c:ingots/bronze`) | ok |
+| `recipe give` für Paxel-, Rüstungs-, Schild-, Barren-Rezepte | ok |
+| Schilde im Inventar: Vanilla-Schildmodell statt eigener Textur | bekannte Abweichung |
+| Schild blocken, Speer-Angriff, Pferde-/Nautilus-Rüstung am Tier, Reparatur am Amboss, Verzauberungstisch, Neustart, Multiplayer | ausstehend |

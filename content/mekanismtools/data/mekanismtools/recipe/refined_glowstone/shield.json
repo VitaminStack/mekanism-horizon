@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": "#c:ingots/refined_glowstone",
+    "P": "minecraft:shield"
+  },
+  "pattern": [
+    "IPI",
+    "III",
+    " I "
+  ],
+  "result": {
+    "id": "mekanismtools:refined_glowstone_shield"
+  }
+}

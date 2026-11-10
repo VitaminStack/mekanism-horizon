@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": "#c:gems/lapis",
+    "R": "#c:rods/wooden"
+  },
+  "pattern": [
+    "II",
+    "IR",
+    " R"
+  ],
+  "result": {
+    "id": "mekanismtools:lapis_lazuli_axe"
+  }
+}

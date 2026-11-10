@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": "mekanismtools:osmium_axe",
+    "P": "mekanismtools:osmium_pickaxe",
+    "R": "#c:rods/wooden",
+    "S": "mekanismtools:osmium_shovel"
+  },
+  "pattern": [
+    "APS",
+    " R ",
+    " R "
+  ],
+  "result": {
+    "id": "mekanismtools:osmium_paxel"
+  }
+}

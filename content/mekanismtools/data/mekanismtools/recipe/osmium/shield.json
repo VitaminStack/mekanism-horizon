@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": "#c:ingots/osmium",
+    "P": "minecraft:shield"
+  },
+  "pattern": [
+    "IPI",
+    "III",
+    " I "
+  ],
+  "result": {
+    "id": "mekanismtools:osmium_shield"
+  }
+}
