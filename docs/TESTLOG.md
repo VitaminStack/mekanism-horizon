@@ -189,15 +189,15 @@ Build: Native `native-fdc87ae-51be04f8dfaa`, Content aus Branch `feat/m06-oxidiz
 | Erster Build: Deadlock im Server-Thread, weil der Eject (`fluid_insert`) den `accepts`-Hook des Nachbarn unter dem Rezept-Lock aufrief; Eject jetzt nach dem Lock | behoben |
 | Sounds, Tooltips, Crafting-Rezepte (`mek_data` mit Dynamic Tank) | nicht geprüft |
 
-## M12 Generators: Bauteile (10.11.2026)
+## M12 Generators: Bauteile (10.11.2026, per Agent Control `horizon-ctl`)
 
-Build: Content `mekanismgenerators` 0.2.0 mit `scripts/Build-Content.ps1` (`cargo horizon-mod check` ok für alle vier Mods, `validate_content.py` ok). Ingame-Test noch nicht gelaufen: Horizon ist eine geteilte Instanz, die Freigabe der parallelen Session `port-separator` stand aus. Zu bündeln, sobald frei:
+Build: Content `mekanismgenerators` 0.2.0 mit `scripts/Build-Content.ps1` (`cargo horizon-mod check` und `validate_content.py` ok), Native `native-fdc87ae-6132d14d5002`, Kreativwelt `TankTest`. Erster Start lief mit einem veralteten Paket in `horizon-mods` (geteilter Ordner, von einer parallelen Session überschrieben): neue Blöcke unbekannt; nach Neubau und Neustart ok.
 
 | Test | Ergebnis |
 |---|---|
-| Content lädt (13 neue Items/Blöcke, 17 neue Rezepte), keine Fehler im Log | ausstehend |
-| Rezept `#c:pellets/polonium` (Fusion Reactor Frame) mit fehlendem Tag: Laden ohne Fehler | ausstehend |
-| `/give` + Platzieren aller neuen Blöcke, Modelle (Rotor, Spule, Glas, Fuel Assembly), Item-Icons | ausstehend |
-| Craften: Turbine Casing, Rotor, Blade, Fission Casing, Reactor Glass, Laser Focus Matrix, Electromagnetic Coil | ausstehend |
-| Hohlraum aus dem Metallurgic Infuser (4 Goldstaub + 10 mB Kohlenstoff) | ausstehend |
-| Abbau mit Spitzhacke droppt den Block | ausstehend |
+| Content lädt mit 4 Mods, keine Content-Warnungen zu `mekanismgenerators` (einzige Warnung: `mekanism:salt`, bekannt) | ok |
+| `setblock` aller 11 neuen Blöcke, Zustand wird zurückgemeldet | ok |
+| `give` Turbine Blade und Hohlraum | ok |
+| `recipe give` `turbine/blade`, `hohlraum`, `reactor/frame` (Rezept mit fehlendem Tag `#c:pellets/polonium`) | ok, Rezepte existieren, Laden ohne Fehler |
+| Modelle, Texturen, Item-Icons sichtbar | nicht geprüft (Screenshots zeigten nur Gelände, Welt unter Wasser/Nacht) |
+| Craften im Crafting-Tisch, Hohlraum im Metallurgic Infuser, Abbau-Drop | ausstehend |
