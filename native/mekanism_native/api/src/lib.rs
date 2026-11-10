@@ -451,7 +451,7 @@ impl Hooks for MekanismNative {
         match kind(event.block) {
             Some(Kind::Tank(t)) if !tank::accepts(t.family, event.fluid) => Flow::Cancel,
             Some(Kind::Machine(m)) if m.tanks.is_some()
-                && !process::accepts(host, m, &mut self.recipes.lock().unwrap(), event.fluid) => Flow::Cancel,
+                && !process::accepts(host, m, &mut self.recipes.lock().unwrap(), event.tank, event.fluid) => Flow::Cancel,
             _ => Flow::Continue,
         }
     }

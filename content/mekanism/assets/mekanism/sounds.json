@@ -35,6 +35,12 @@
     ],
     "subtitle": "sound_event.mekanism.tile.machine.crusher"
   },
+  "tile.machine.electrolytic_separator": {
+    "sounds": [
+      "mekanism:tile/electrolytic_separator"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.electrolytic_separator"
+  },
   "tile.machine.enrichment_chamber": {
     "sounds": [
       "mekanism:tile/enrichment_chamber"
@@ -58,5 +64,11 @@
       "mekanism:tile/purification_chamber"
     ],
     "subtitle": "sound_event.mekanism.tile.machine.purification_chamber"
+  },
+  "tile.machine.rotary_condensentrator": {
+    "sounds": [
+      "mekanism:tile/rotary_condensentrator"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.rotary_condensentrator"
   }
 }

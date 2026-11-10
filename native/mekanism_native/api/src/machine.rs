@@ -1,7 +1,8 @@
 //! Electric machines: the table every processing machine is one entry of
 //! (Enrichment Chamber, Crusher, Metallurgic Infuser, Osmium Compressor,
 //! Combiner, Precision Sawmill, Purification Chamber, Chemical Injection
-//! Chamber, Chemical Oxidizer, Chemical Infuser), and the operation they share. The parts that
+//! Chamber, Chemical Oxidizer, Chemical Infuser, Electrolytic Separator, Rotary
+//! Condensentrator), and the operation they share. The parts that
 //! need no Horizon types, so their tests run in `logic/energy`; recipes are in
 //! `recipe.rs`, the tick and screen in `process.rs`.
 //!
@@ -16,8 +17,12 @@
 //! purificationChamber 10, chemicalInjectionChamber 15, chemicalOxidizer 15,
 //! chemicalInfuser 15 per tick), `TileEntityChemicalOxidizer` (`BASE_TICKS_REQUIRED`
 //! 5 s, `MAX_GAS` 10 buckets), `TileEntityChemicalInfuser` (three tanks of
-//! `MAX_GAS`, one operation per tick) and `AttributeEnergy.STORAGE_MULTIPLIER`
-//! (storage 4 x usage).
+//! `MAX_GAS`, one operation per tick), `TileEntityElectrolyticSeparator`
+//! (`MAX_FLUID` 24 buckets in, `MAX_GAS` 2,400 per output, usage 2 x hydrogen's
+//! fuel energy density 2, one operation per tick), `TileEntityRotaryCondensentrator`
+//! (`CAPACITY` 10 buckets each, `UsageConfig.rotaryCondensentrator` 2, one
+//! operation per tick, `mode` false = chemical to fluid) and
+//! `AttributeEnergy.STORAGE_MULTIPLIER` (storage 4 x usage).
 //!
 //! Not ported: the energy slot (charging from items), upgrades, side config
 //! and redstone control.
@@ -118,31 +123,52 @@ impl Fluid {
     }
 }
 
-/// A machine's chemical tanks as Horizon fluid tanks (`block_entity_fluids`):
-/// the input tanks, then one output tank. Other blocks fill the inputs and
-/// drain the output; the machine also ejects the output into its neighbours.
-pub struct FluidTanks {
-    /// Screen rects of the input tanks' gauges, in tank order.
-    pub inputs: &'static [[f32; 4]],
-    pub output: [f32; 4],
-    /// Capacity of each tank in mB (`MAX_GAS`).
+/// One Horizon fluid tank of a machine: its capacity in mB and the screen rect
+/// of its gauge.
+pub struct FluidTank {
+    pub gauge: [f32; 4],
     pub max: i32,
+}
+
+/// A machine's fluid and chemical tanks as Horizon fluid tanks
+/// (`block_entity_fluids`), in tank order (also the menu data order). Other
+/// blocks fill `inputs` and drain `outputs`; the machine also ejects its output
+/// tanks into its neighbours.
+pub struct FluidTanks {
+    pub tanks: &'static [FluidTank],
+    pub inputs: &'static [usize],
+    pub outputs: &'static [usize],
 }
 
 impl FluidTanks {
     pub const fn count(&self) -> usize {
-        self.inputs.len() + 1
+        self.tanks.len()
     }
 
-    /// The output tank's number: the input tanks come first.
-    pub const fn output_index(&self) -> usize {
-        self.inputs.len()
-    }
-
-    /// Every gauge: the inputs, then the output.
+    /// Every gauge, in tank order.
     pub fn gauges(&self) -> impl Iterator<Item = [f32; 4]> + '_ {
-        self.inputs.iter().copied().chain([self.output])
+        self.tanks.iter().map(|t| t.gauge)
     }
+}
+
+/// One operation that takes `input` (tank, id, mB) from one tank and puts every
+/// output into its own: all or nothing. Does nothing and returns false unless
+/// the input is there and each output fits whole (`Fluid::fits`, by the tank's
+/// capacity). The Electrolytic Separator (one fluid, two chemicals) and the
+/// Rotary Condensentrator (one for one) are this.
+pub fn convert(tanks: &mut [Fluid], t: &FluidTanks, input: (usize, &str, i32), outputs: &[(usize, &str, i32)]) -> bool {
+    let tank = |i: usize| tanks.get(i);
+    if !tank(input.0).is_some_and(|f| f.has(input.1, input.2)) {
+        return false;
+    }
+    if !outputs.iter().all(|&(i, id, n)| tank(i).is_some_and(|f| f.fits(id, n, t.tanks[i].max))) {
+        return false;
+    }
+    tanks[input.0].take(input.2);
+    for &(i, id, n) in outputs {
+        tanks[i].add(id, n);
+    }
+    true
 }
 
 /// One operation of a machine that mixes two chemicals (`chemical_infusing`):
@@ -164,6 +190,21 @@ pub fn infuse(tanks: &mut [Fluid], max: i32, left: (&str, i32), right: (&str, i3
     b.take(second);
     o.add(out.0, out.1);
     true
+}
+
+/// What a machine does each tick; the item machines share one operation, the
+/// others work on their fluid and chemical tanks.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Op {
+    /// Items (and a chemical buffer) in, items or a chemical in a tank out.
+    Item,
+    /// Two chemicals mix into a third (`chemical_infusing`).
+    Infuse,
+    /// A fluid splits into two chemicals (`separating`): tank 0 in, tanks 1 and 2 out.
+    Separate,
+    /// Chemical (tank 0) and fluid (tank 1) turn into each other (`rotary`), by
+    /// a mode a button toggles; the rect is that button.
+    Rotate([f32; 4]),
 }
 
 pub struct Machine {
@@ -191,8 +232,9 @@ pub struct Machine {
     /// The Precision Sawmill's output for its chance-based `secondary_output`.
     pub secondary: Option<usize>,
     pub buffer: Option<&'static Buffer>,
-    /// Chemical tanks that are Horizon fluid tanks (the Oxidizer's output, the
-    /// Infuser's three).
+    pub op: Op,
+    /// Chemical and fluid tanks that are Horizon fluid tanks (the Oxidizer's
+    /// output, the Infuser's three, the Separator's three, the Rotary's two).
     pub tanks: Option<&'static FluidTanks>,
     /// Slots after `slot_pos` that no screen shows (Horizon needs at least one).
     pub hidden: usize,
@@ -217,9 +259,9 @@ impl Machine {
         self.output.into_iter().chain(self.secondary).collect()
     }
 
-    /// Whether it mixes the two chemicals in its input tanks (`chemical_infusing`).
-    pub fn infuses(&self) -> bool {
-        self.tanks.is_some_and(|t| t.inputs.len() == 2)
+    /// Whether it works on its fluid and chemical tanks alone (no item input).
+    pub fn tank_op(&self) -> bool {
+        !matches!(self.op, Op::Item)
     }
 }
 
@@ -251,6 +293,7 @@ const fn electric(
         extra: None,
         secondary: None,
         buffer: None,
+        op: Op::Item,
         tanks: None,
         hidden: 0,
         slot_pos: &ELECTRIC_SLOT_POS,
@@ -307,18 +350,61 @@ const SAWMILL_SLOT_POS: [[f32; 2]; 3] = [[56.0, 17.0], [116.0, 35.0], [132.0, 35
 /// progress bar right of it and the output gauge (`GaugeType.STANDARD`) at
 /// (131, 13); it has an item input and no item output.
 const OXIDIZER_SLOT_POS: [[f32; 2]; 1] = [[26.0, 36.0]];
-pub const OXIDIZER_TANKS: FluidTanks = FluidTanks { inputs: &[], output: [131.0, 13.0, 18.0, 58.0], max: 10_000 };
+pub const OXIDIZER_TANKS: FluidTanks = FluidTanks {
+    tanks: &[FluidTank { gauge: [131.0, 13.0, 18.0, 58.0], max: 10_000 }],
+    inputs: &[],
+    outputs: &[0],
+};
 
 /// The Chemical Infuser (`GuiChemicalInfuser`): left and right input gauges at
 /// (25, 17) and (133, 17), the output gauge between them (the screen is
 /// 176 x 166 here; Mekanism's is taller, with the slots for chemical items).
 pub const INFUSER_TANKS: FluidTanks = FluidTanks {
-    inputs: &[[25.0, 17.0, 18.0, 54.0], [133.0, 17.0, 18.0, 54.0]],
-    output: [79.0, 16.0, 18.0, 54.0],
-    max: 10_000,
+    tanks: &[
+        FluidTank { gauge: [25.0, 17.0, 18.0, 54.0], max: 10_000 },
+        FluidTank { gauge: [133.0, 17.0, 18.0, 54.0], max: 10_000 },
+        FluidTank { gauge: [79.0, 16.0, 18.0, 54.0], max: 10_000 },
+    ],
+    inputs: &[0, 1],
+    outputs: &[2],
 };
 
-pub const MACHINES: [Machine; 10] = [
+/// The Electrolytic Separator: the fluid input (`MAX_FLUID`, 24 buckets) and the
+/// left and right chemical outputs (`MAX_GAS`). Gauges as `GuiElectrolyticSeparator`
+/// has them, without its item slots (fluid, chemical items, energy).
+pub const SEPARATOR_TANKS: FluidTanks = FluidTanks {
+    tanks: &[
+        FluidTank { gauge: [22.0, 17.0, 18.0, 54.0], max: 24_000 },
+        FluidTank { gauge: [74.0, 17.0, 18.0, 54.0], max: 2_400 },
+        FluidTank { gauge: [114.0, 17.0, 18.0, 54.0], max: 2_400 },
+    ],
+    inputs: &[0],
+    outputs: &[1, 2],
+};
+pub const SEPARATOR_INPUT: usize = 0;
+pub const SEPARATOR_LEFT: usize = 1;
+pub const SEPARATOR_RIGHT: usize = 2;
+
+/// The Rotary Condensentrator: the chemical tank left, the fluid tank right
+/// (`CAPACITY`, 10 buckets each), the mode button between them. Both tanks fill
+/// and drain from outside whatever the mode (Mekanism closes the one that is
+/// the operation's output to input and the other to output; Horizon's tank
+/// sides are fixed); the machine itself ejects only its output.
+pub const ROTARY_TANKS: FluidTanks = FluidTanks {
+    tanks: &[
+        FluidTank { gauge: [26.0, 17.0, 18.0, 54.0], max: 10_000 },
+        FluidTank { gauge: [132.0, 17.0, 18.0, 54.0], max: 10_000 },
+    ],
+    inputs: &[0, 1],
+    outputs: &[0, 1],
+};
+pub const ROTARY_CHEMICAL: usize = 0;
+pub const ROTARY_FLUID: usize = 1;
+pub const ROTARY_MODE_BUTTON: [f32; 4] = [44.0, 36.0, 88.0, 16.0];
+/// Menu button id of the mode button (the dump button is 100).
+pub const BUTTON_MODE: i32 = 101;
+
+pub const MACHINES: [Machine; 12] = [
     electric(
         "mekanism:enrichment_chamber",
         "mekanism:enriching",
@@ -342,6 +428,7 @@ pub const MACHINES: [Machine; 10] = [
         extra: None,
         secondary: None,
         buffer: Some(&infuser::BUFFER),
+        op: Op::Item,
         tanks: None,
         hidden: 0,
         slot_pos: &infuser::SLOT_POS,
@@ -433,6 +520,7 @@ pub const MACHINES: [Machine; 10] = [
         ticks: 1,
         input: None,
         output: None,
+        op: Op::Infuse,
         tanks: Some(&INFUSER_TANKS),
         hidden: 1,
         slot_pos: &[],
@@ -447,10 +535,50 @@ pub const MACHINES: [Machine; 10] = [
             CHEMICAL_INFUSER_SOUND_TICKS,
         )
     },
+    // One operation per tick; no progress bar. Mekanism's usage is 2 x hydrogen's
+    // fuel energy density (2).
+    Machine {
+        ticks: 1,
+        input: None,
+        output: None,
+        op: Op::Separate,
+        tanks: Some(&SEPARATOR_TANKS),
+        hidden: 1,
+        slot_pos: &[],
+        progress_bar: [0.0; 4],
+        ..electric(
+            "mekanism:electrolytic_separator",
+            "mekanism:separating",
+            "Electrolytic Separator",
+            4,
+            "mekanism:tile.machine.electrolytic_separator",
+            SEPARATOR_SOUND_TICKS,
+        )
+    },
+    Machine {
+        ticks: 1,
+        input: None,
+        output: None,
+        op: Op::Rotate(ROTARY_MODE_BUTTON),
+        tanks: Some(&ROTARY_TANKS),
+        hidden: 1,
+        slot_pos: &[],
+        progress_bar: [0.0; 4],
+        ..electric(
+            "mekanism:rotary_condensentrator",
+            "mekanism:rotary",
+            "Rotary Condensentrator",
+            2,
+            "mekanism:tile.machine.rotary_condensentrator",
+            ROTARY_SOUND_TICKS,
+        )
+    },
 ];
 
 const OXIDIZER_SOUND_TICKS: i32 = 44;
 const CHEMICAL_INFUSER_SOUND_TICKS: i32 = 41;
+const SEPARATOR_SOUND_TICKS: i32 = 40;
+const ROTARY_SOUND_TICKS: i32 = 71;
 /// Clip lengths of `tile/compressor.ogg`, `tile/combiner.ogg` and
 /// `tile/precision_sawmill.ogg`, `tile/purification_chamber.ogg` and
 /// `tile/chemical_injection_chamber.ogg` in ticks, rounded up.
@@ -496,7 +624,8 @@ pub fn random() -> f64 {
 /// Menu data slots (each a 16-bit wire entry; every value fits one). A machine
 /// with a chemical buffer sends two more (amount, type); a machine with fluid
 /// tanks sends two per tank (amount, `chemicals::index` + 1, 0 while empty),
-/// from `DATA_BUFFER` on, as it has no buffer.
+/// from `DATA_BUFFER` on, as it has no buffer; the Rotary Condensentrator's
+/// mode (0 chemical to fluid, 1 fluid to chemical) follows the tanks.
 pub const DATA_ENERGY: usize = 0;
 pub const DATA_PROGRESS: usize = 1;
 pub const DATA_FACING: usize = 2;
@@ -504,6 +633,11 @@ pub const DATA_ACTIVE: usize = 3;
 pub const DATA_BUFFER: usize = 4;
 /// `Buffer::types` index + 1; 0 while the buffer is empty.
 pub const DATA_BUFFER_TYPE: usize = 5;
+
+/// Where the Rotary Condensentrator's mode is in the menu data.
+pub const fn data_mode(t: &FluidTanks) -> usize {
+    DATA_BUFFER + 2 * t.count()
+}
 
 pub fn menu_data(energy: i32, progress: i32, facing: usize, active: bool, tank: Option<Tank>, fluids: &[Fluid]) -> Vec<i32> {
     let mut data = vec![energy, progress, facing as i32, active as i32];
@@ -520,6 +654,11 @@ pub fn menu_data(energy: i32, progress: i32, facing: usize, active: bool, tank: 
 /// The name and colour shown for a fluid tank's menu data (type 0 is empty).
 pub fn fluid_look(kind: i32) -> (&'static str, u32) {
     (kind as usize).checked_sub(1).and_then(chemicals::entry).unwrap_or(("Empty", 0))
+}
+
+/// The Rotary Condensentrator's mode as its button says it (`true` is fluid to chemical).
+pub fn rotary_mode_name(fluid_to_chemical: bool) -> &'static str {
+    if fluid_to_chemical { "Fluid -> Chemical" } else { "Chemical -> Fluid" }
 }
 
 pub const WIDTH: f32 = 176.0;
@@ -544,10 +683,15 @@ pub fn tooltip(machine: &Machine, data: &[i32], at: [f32; 2]) -> Vec<String> {
         return vec![format!("Progress: {}%", d(DATA_PROGRESS) * 100 / machine.ticks)];
     }
     if let Some(t) = machine.tanks {
+        if let Op::Rotate(button) = machine.op {
+            if inside(button, at) {
+                return vec![rotary_mode_name(d(data_mode(t)) != 0).to_owned()];
+            }
+        }
         let hit = t.gauges().position(|g| inside(g, at));
         return hit.map_or_else(Vec::new, |i| {
             let (name, _) = fluid_look(d(DATA_BUFFER + 2 * i + 1));
-            vec![format!("{name}: {} / {} mB", d(DATA_BUFFER + 2 * i), t.max)]
+            vec![format!("{name}: {} / {} mB", d(DATA_BUFFER + 2 * i), t.tanks[i].max)]
         });
     }
     let Some(b) = machine.buffer else { return Vec::new() };
@@ -606,6 +750,8 @@ mod tests {
         assert_eq!(slots("mekanism:chemical_injection_chamber"), (Some(0), Some(2), None, None, Some(1), 3));
         assert_eq!(slots("mekanism:chemical_oxidizer"), (Some(0), None, None, None, None, 1));
         assert_eq!(slots("mekanism:chemical_infuser"), (None, None, None, None, None, 1));
+        assert_eq!(slots("mekanism:electrolytic_separator"), (None, None, None, None, None, 1));
+        assert_eq!(slots("mekanism:rotary_condensentrator"), (None, None, None, None, None, 1));
     }
 
     #[test]
@@ -770,13 +916,13 @@ mod tests {
     fn oxidizer_and_infuser_values_match_mekanism() {
         let ox = machine("mekanism:chemical_oxidizer");
         assert_eq!((ox.usage, ox.capacity(), ox.ticks), (15, 60, 100));
-        assert_eq!(ox.tanks.unwrap().max, 10_000);
-        assert!(!ox.infuses());
+        assert_eq!(ox.tanks.unwrap().tanks[0].max, 10_000);
+        assert_eq!(ox.op, Op::Item);
         let inf = machine("mekanism:chemical_infuser");
         assert_eq!((inf.usage, inf.capacity(), inf.ticks), (15, 60, 1));
         assert_eq!(inf.tanks.unwrap().count(), 3);
-        assert_eq!(inf.tanks.unwrap().output_index(), 2);
-        assert!(inf.infuses());
+        assert_eq!(inf.tanks.unwrap().outputs, &[2]);
+        assert_eq!(inf.op, Op::Infuse);
         assert!(inf.outputs().is_empty(), "no item output");
     }
 
@@ -859,5 +1005,84 @@ mod tests {
         let data = menu_data(60, 50, 2, true, None, &[fluid("sulfur_dioxide", 300)]);
         assert_eq!(tooltip(ox, &data, [140.0, 40.0]), vec!["Sulfur Dioxide: 300 / 10000 mB"]);
         assert_eq!(tooltip(ox, &data, [80.0, 44.0]), vec!["Progress: 50%"]);
+    }
+
+    #[test]
+    fn separator_and_rotary_values_match_mekanism() {
+        let sep = machine("mekanism:electrolytic_separator");
+        assert_eq!((sep.usage, sep.capacity(), sep.ticks, sep.op), (4, 16, 1, Op::Separate));
+        let caps: Vec<i32> = sep.tanks.unwrap().tanks.iter().map(|t| t.max).collect();
+        assert_eq!(caps, [24_000, 2_400, 2_400]);
+        assert_eq!((sep.tanks.unwrap().inputs, sep.tanks.unwrap().outputs), (&[0][..], &[1, 2][..]));
+        let rot = machine("mekanism:rotary_condensentrator");
+        assert_eq!((rot.usage, rot.capacity(), rot.ticks), (2, 8, 1));
+        assert!(matches!(rot.op, Op::Rotate(_)));
+        assert!(rot.tanks.unwrap().tanks.iter().all(|t| t.max == 10_000));
+        assert!(sep.tank_op() && rot.tank_op() && !machine("mekanism:crusher").tank_op());
+    }
+
+    /// Water makes 2 hydrogen and 1 oxygen for 2 of itself, into the left and right tanks.
+    #[test]
+    fn separating_splits_one_fluid_into_two_chemicals() {
+        let (h, o) = (chemicals::chemical("hydrogen"), chemicals::chemical("oxygen"));
+        let mut tanks = vec![Fluid { id: Some(chemicals::WATER.into()), amount: 3 }, Fluid::default(), Fluid::default()];
+        let run = |t: &mut Vec<Fluid>| {
+            convert(t, &SEPARATOR_TANKS, (SEPARATOR_INPUT, chemicals::WATER, 2), &[(SEPARATOR_LEFT, &h, 2), (SEPARATOR_RIGHT, &o, 1)])
+        };
+        assert!(run(&mut tanks));
+        assert_eq!((tanks[0].amount, tanks[1].amount, tanks[2].amount), (1, 2, 1));
+        assert_eq!(tanks[1].id.as_deref(), Some(h.as_str()));
+        assert!(!run(&mut tanks), "one water left, the recipe needs two");
+        assert_eq!((tanks[0].amount, tanks[1].amount), (1, 2), "nothing taken");
+    }
+
+    /// One full output tank stops the whole operation; nothing is taken.
+    #[test]
+    fn separating_waits_while_an_output_is_full() {
+        let (h, o) = (chemicals::chemical("hydrogen"), chemicals::chemical("oxygen"));
+        let mut tanks = vec![
+            Fluid { id: Some(chemicals::WATER.into()), amount: 100 },
+            Fluid { id: Some(h.clone()), amount: 2_399 },
+            Fluid::default(),
+        ];
+        let go = |t: &mut Vec<Fluid>| {
+            convert(t, &SEPARATOR_TANKS, (SEPARATOR_INPUT, chemicals::WATER, 2), &[(SEPARATOR_LEFT, &h, 2), (SEPARATOR_RIGHT, &o, 1)])
+        };
+        assert!(!go(&mut tanks), "2 more hydrogen would pass 2400");
+        assert_eq!((tanks[0].amount, tanks[1].amount, tanks[2].amount), (100, 2_399, 0));
+        tanks[1].take(2);
+        assert!(go(&mut tanks));
+    }
+
+    #[test]
+    fn rotary_runs_both_ways_by_tank() {
+        let h = chemicals::chemical("hydrogen");
+        let lh = "mekanism:hydrogen";
+        let mut tanks = vec![Fluid { id: Some(h.clone()), amount: 5 }, Fluid::default()];
+        assert!(convert(&mut tanks, &ROTARY_TANKS, (ROTARY_CHEMICAL, &h, 1), &[(ROTARY_FLUID, lh, 1)]));
+        assert_eq!((tanks[0].amount, tanks[1].amount), (4, 1));
+        assert!(convert(&mut tanks, &ROTARY_TANKS, (ROTARY_FLUID, lh, 1), &[(ROTARY_CHEMICAL, &h, 1)]));
+        assert_eq!((tanks[0].amount, tanks[1].amount, tanks[1].id.clone()), (5, 0, None));
+        assert!(!convert(&mut tanks, &ROTARY_TANKS, (ROTARY_FLUID, lh, 1), &[(ROTARY_CHEMICAL, &h, 1)]), "fluid tank is empty");
+    }
+
+    #[test]
+    fn rotary_and_separator_tooltips() {
+        let rot = machine("mekanism:rotary_condensentrator");
+        let tanks = [fluid("hydrogen", 321), Fluid { id: Some(chemicals::WATER.into()), amount: 7_000 }];
+        let mut data = menu_data(8, 0, 2, true, None, &tanks);
+        data.push(1);
+        assert_eq!(data.len(), data_mode(rot.tanks.unwrap()) + 1);
+        assert_eq!(tooltip(rot, &data, [30.0, 40.0]), vec!["Hydrogen: 321 / 10000 mB"]);
+        assert_eq!(tooltip(rot, &data, [140.0, 40.0]), vec!["Water: 7000 / 10000 mB"]);
+        assert_eq!(tooltip(rot, &data, [60.0, 40.0]), vec!["Fluid -> Chemical"]);
+        data[data_mode(rot.tanks.unwrap())] = 0;
+        assert_eq!(tooltip(rot, &data, [60.0, 40.0]), vec!["Chemical -> Fluid"]);
+        let sep = machine("mekanism:electrolytic_separator");
+        let tanks = [Fluid::default(), fluid("hydrogen", 2_400), fluid("oxygen", 10)];
+        let data = menu_data(16, 0, 2, true, None, &tanks);
+        assert_eq!(tooltip(sep, &data, [80.0, 40.0]), vec!["Hydrogen: 2400 / 2400 mB"]);
+        assert_eq!(tooltip(sep, &data, [120.0, 40.0]), vec!["Oxygen: 10 / 2400 mB"]);
+        assert_eq!(tooltip(sep, &data, [30.0, 40.0]), vec!["Empty: 0 / 24000 mB"]);
     }
 }

@@ -38,6 +38,7 @@
   "block.mekanism.deepslate_osmium_ore": "Tiefenschiefer-Osmiumerz",
   "block.mekanism.deepslate_tin_ore": "Tiefenschiefer-Zinnerz",
   "block.mekanism.deepslate_uranium_ore": "Tiefenschiefer-Uranerz",
+  "block.mekanism.electrolytic_separator": "Elektrolytischer Spalter",
   "block.mekanism.elite_chemical_tank": "Elitärer Chemikalienbehälter",
   "block.mekanism.elite_energy_cube": "Elitärer Energiewürfel",
   "block.mekanism.elite_fluid_tank": "Elitärer Flüssigkeitstank",
@@ -49,6 +50,7 @@
   "block.mekanism.osmium_ore": "Osmiumerz",
   "block.mekanism.precision_sawmill": "Präzisionssägewerk",
   "block.mekanism.purification_chamber": "Klärkammer",
+  "block.mekanism.rotary_condensentrator": "Rotationskondensator",
   "block.mekanism.steel_casing": "Stahlgehäuse",
   "block.mekanism.tin_ore": "Zinnerz",
   "block.mekanism.ultimate_chemical_tank": "Ultimativer Chemikalienbehälter",
@@ -151,8 +153,10 @@
   "sound_event.mekanism.tile.machine.combiner": "Kombinator brummt",
   "sound_event.mekanism.tile.machine.compressor": "Presser summt",
   "sound_event.mekanism.tile.machine.crusher": "Zerquetscher klirrt",
+  "sound_event.mekanism.tile.machine.electrolytic_separator": "Separierer separiert",
   "sound_event.mekanism.tile.machine.enrichment_chamber": "Anreicherer summt",
   "sound_event.mekanism.tile.machine.metallurgic_infuser": "Metallischer Mischer summt",
   "sound_event.mekanism.tile.machine.precision_sawmill": "Sägewerk schneidet",
-  "sound_event.mekanism.tile.machine.purification_chamber": "Purifizierer summt"
+  "sound_event.mekanism.tile.machine.purification_chamber": "Purifizierer summt",
+  "sound_event.mekanism.tile.machine.rotary_condensentrator": "Kondensator rotiert"
 }

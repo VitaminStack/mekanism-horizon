@@ -6,7 +6,7 @@ use horizon_client::mod_api::{
     ScreenDrawEvent, Tag,
 };
 
-use super::machine::{self, Buffer, Fluid, FluidTanks, Machine, Tank};
+use super::machine::{self, Buffer, Fluid, FluidTanks, Machine, Op, Tank};
 use super::recipe::{ChemicalInput, Recipes};
 use super::{ENERGY, PROGRESS, cube, facing, gauge, infuser, key, merged, offset, read_energy, shrink, write_int};
 use super::chemicals;
@@ -16,6 +16,8 @@ use super::chemicals;
 /// Metallurgic Infuser, the first such machine; saved worlds keep them.
 pub const BUFFER_TYPE: &str = "mekanism_infuse_type";
 pub const BUFFER: &str = "mekanism_infuse";
+/// The Rotary Condensentrator's mode: 1 turns fluid into chemical, 0 (and unset) the other way.
+const MODE: &str = "mekanism_rotary_mode";
 
 pub fn read_tank(nbt: &Compound, b: &Buffer) -> Tank {
     let kind = read_energy(nbt, BUFFER_TYPE);
@@ -85,27 +87,41 @@ fn eject(host: &mut dyn Host, pos: [i32; 3], out: &mut Fluid) {
     }
 }
 
-/// After the tick: eject the output tank. Apart from `tick` because the host
+/// The tanks the machine ejects from: its output tanks; the Rotary
+/// Condensentrator's are whichever its mode makes the operation's output.
+fn ejecting(m: &Machine, t: &FluidTanks, rotary_mode: bool) -> Vec<usize> {
+    if matches!(m.op, Op::Rotate(_)) {
+        vec![if rotary_mode { machine::ROTARY_CHEMICAL } else { machine::ROTARY_FLUID }]
+    } else {
+        t.outputs.to_vec()
+    }
+}
+
+/// After the tick: eject the output tanks. Apart from `tick` because the host
 /// asks `accepts` of the neighbour meanwhile, which takes the recipe lock `tick`
 /// is called with.
 pub fn eject_output(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine) {
     let Some(t) = m.tanks else { return };
-    let (pos, i) = (event.pos, t.output_index());
+    let pos = event.pos;
     let mut fluids = read_fluids(&event.entity.nbt, t.count());
-    let before = fluids[i].clone();
-    eject(host, pos, &mut fluids[i]);
-    if fluids[i] == before {
+    let before = fluids.clone();
+    for i in ejecting(m, t, read_energy(&event.entity.nbt, MODE) != 0) {
+        eject(host, pos, &mut fluids[i]);
+    }
+    if fluids == before {
         return;
     }
     let e = &mut *event.entity;
     write_fluids(&mut e.nbt, &fluids);
-    // The menu shows the output tank's new content at once.
-    let kind = fluids[i].id.as_deref().and_then(chemicals::index).map_or(0, |k| k as i32 + 1);
-    if let Some(slot) = e.data.get_mut(machine::DATA_BUFFER + 2 * i) {
-        *slot = fluids[i].amount;
-    }
-    if let Some(slot) = e.data.get_mut(machine::DATA_BUFFER + 2 * i + 1) {
-        *slot = kind;
+    // The menu shows the new contents at once.
+    for (i, f) in fluids.iter().enumerate().filter(|(i, f)| **f != before[*i]) {
+        let kind = f.id.as_deref().and_then(chemicals::index).map_or(0, |k| k as i32 + 1);
+        if let Some(slot) = e.data.get_mut(machine::DATA_BUFFER + 2 * i) {
+            *slot = f.amount;
+        }
+        if let Some(slot) = e.data.get_mut(machine::DATA_BUFFER + 2 * i + 1) {
+            *slot = kind;
+        }
     }
 }
 
@@ -117,7 +133,7 @@ fn mix(host: &dyn Host, m: &Machine, t: &FluidTanks, recipes: &mut Recipes, flui
         return false;
     }
     let ran = recipes.infusing(host, m.recipe).iter().any(|r| {
-        machine::infuse(fluids, t.max, (&r.left.0, r.left.1), (&r.right.0, r.right.1), (&r.output.0, r.output.1))
+        machine::infuse(fluids, t.tanks[t.outputs[0]].max, (&r.left.0, r.left.1), (&r.right.0, r.right.1), (&r.output.0, r.output.1))
     });
     if ran {
         *energy -= m.usage;
@@ -125,21 +141,92 @@ fn mix(host: &dyn Host, m: &Machine, t: &FluidTanks, recipes: &mut Recipes, flui
     ran
 }
 
-/// The machine's tanks as Horizon's fluid tanks: the inputs take chemicals
-/// from any side and the output gives them, all from every side.
+/// One tick of the Electrolytic Separator: the first recipe whose fluid is in
+/// the input tank, with room in both output tanks, runs once at `usage`;
+/// without energy it waits. Returns whether it ran.
+fn separate(host: &dyn Host, m: &Machine, t: &FluidTanks, recipes: &mut Recipes, fluids: &mut [Fluid], energy: &mut i32) -> bool {
+    if *energy < m.usage {
+        return false;
+    }
+    let ran = recipes.separating(host, m.recipe).iter().any(|r| {
+        machine::convert(
+            fluids,
+            t,
+            (machine::SEPARATOR_INPUT, &r.input.0, r.input.1),
+            &[(machine::SEPARATOR_LEFT, &r.left.0, r.left.1), (machine::SEPARATOR_RIGHT, &r.right.0, r.right.1)],
+        )
+    });
+    if ran {
+        *energy -= m.usage;
+    }
+    ran
+}
+
+/// One tick of the Rotary Condensentrator in its mode (`fluid_to_chemical`):
+/// the first recipe whose input the source tank holds, with room in the other
+/// tank, runs once at `usage`; without energy it waits. Returns whether it ran.
+fn rotate(
+    host: &dyn Host,
+    m: &Machine,
+    t: &FluidTanks,
+    recipes: &mut Recipes,
+    fluids: &mut [Fluid],
+    energy: &mut i32,
+    fluid_to_chemical: bool,
+) -> bool {
+    if *energy < m.usage {
+        return false;
+    }
+    let ran = recipes.rotating(host, m.recipe).iter().any(|r| {
+        if fluid_to_chemical {
+            machine::convert(
+                fluids,
+                t,
+                (machine::ROTARY_FLUID, &r.fluid, r.fluid_in),
+                &[(machine::ROTARY_CHEMICAL, &r.chemical, r.chemical_out)],
+            )
+        } else {
+            machine::convert(
+                fluids,
+                t,
+                (machine::ROTARY_CHEMICAL, &r.chemical, r.chemical_in),
+                &[(machine::ROTARY_FLUID, &r.fluid, r.fluid_out)],
+            )
+        }
+    });
+    if ran {
+        *energy -= m.usage;
+    }
+    ran
+}
+
+/// The machine's tanks as Horizon's fluid tanks: from every side, the inputs
+/// take and the outputs give.
 pub fn fluids(t: &FluidTanks) -> ModFluidTanks {
     ModFluidTanks {
-        tanks: vec![t.max; t.count()],
+        tanks: t.tanks.iter().map(|t| t.max).collect(),
         faces: std::array::from_fn(|_| (0..t.count()).collect()),
-        inputs: (0..t.inputs.len()).collect(),
-        outputs: vec![t.output_index()],
+        inputs: t.inputs.to_vec(),
+        outputs: t.outputs.to_vec(),
     }
 }
 
-/// Whether input tank `tank` takes `fluid`: a chemical that is one input of a
-/// recipe (the infuser's); the output tank is not filled from outside.
-pub fn accepts(host: &dyn Host, m: &Machine, recipes: &mut Recipes, fluid: &str) -> bool {
-    m.infuses() && chemicals::is_chemical(fluid) && recipes.infusing(host, m.recipe).iter().any(|r| r.partner(fluid).is_some())
+/// Whether tank `tank` takes `fluid`: what one of the machine's recipes uses
+/// as the input that tank holds. Output tanks take nothing from outside (the
+/// Rotary's two are both inputs: a chemical in the chemical tank, a fluid in
+/// the fluid tank).
+pub fn accepts(host: &dyn Host, m: &Machine, recipes: &mut Recipes, tank: usize, fluid: &str) -> bool {
+    let chemical = chemicals::is_chemical(fluid);
+    match m.op {
+        Op::Item => false,
+        Op::Infuse => chemical && recipes.infusing(host, m.recipe).iter().any(|r| r.partner(fluid).is_some()),
+        Op::Separate => {
+            tank == machine::SEPARATOR_INPUT && !chemical && recipes.separating(host, m.recipe).iter().any(|r| r.input.0 == fluid)
+        }
+        Op::Rotate(_) => recipes.rotating(host, m.recipe).iter().any(|r| {
+            if tank == machine::ROTARY_CHEMICAL { chemical && r.chemical == fluid } else { !chemical && r.fluid == fluid }
+        }),
+    }
 }
 
 /// The buffer type a recipe's chemical is, if the machine's buffer takes it.
@@ -163,6 +250,7 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
     let mut progress = read_energy(&entity.nbt, PROGRESS).clamp(0, m.ticks);
     let mut tank = m.buffer.map(|b| read_tank(&entity.nbt, b));
     let mut fluids = m.tanks.map(|t| read_fluids(&entity.nbt, t.count())).unwrap_or_default();
+    let mode = read_energy(&entity.nbt, MODE) != 0;
 
     if let (Some(b), Some(t)) = (m.buffer, tank.as_mut()) {
         if let Some(stack) = &items[b.slot] {
@@ -197,8 +285,12 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
         })
     });
     let mut active = false;
-    if let (None, Some(t)) = (m.input, m.tanks) {
-        active = mix(host, m, t, recipes, &mut fluids, &mut energy);
+    if let Some(t) = m.tanks.filter(|_| m.tank_op()) {
+        active = match m.op {
+            Op::Separate => separate(host, m, t, recipes, &mut fluids, &mut energy),
+            Op::Rotate(_) => rotate(host, m, t, recipes, &mut fluids, &mut energy, mode),
+            _ => mix(host, m, t, recipes, &mut fluids, &mut energy),
+        };
     } else {
         match recipe {
             None => progress = 0,
@@ -211,7 +303,7 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
                 });
                 let chemical_room = match (&r.chemical_output, m.tanks) {
                     (None, _) => true,
-                    (Some((id, n)), Some(t)) => fluids[t.output_index()].fits(id, *n, t.max),
+                    (Some((id, n)), Some(t)) => fluids[t.outputs[0]].fits(id, *n, t.tanks[t.outputs[0]].max),
                     (Some(_), None) => false,
                 };
                 let room = chemical_room
@@ -239,7 +331,7 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
                             items[slot] = Some(o);
                         }
                         if let (Some((id, n)), Some(t)) = (&r.chemical_output, m.tanks) {
-                            fluids[t.output_index()].add(id, *n);
+                            fluids[t.outputs[0]].add(id, *n);
                         }
                         if let (Some(slot), Some((Some(s), chance))) = (m.secondary, second) {
                             if machine::random() <= chance {
@@ -272,7 +364,10 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
     if m.tanks.is_some() {
         write_fluids(&mut e.nbt, &fluids);
     }
-    let data = machine::menu_data(energy, progress, facing, active, tank, &fluids);
+    let mut data = machine::menu_data(energy, progress, facing, active, tank, &fluids);
+    if matches!(m.op, Op::Rotate(_)) {
+        data.push(mode as i32);
+    }
     if e.data != data {
         e.data = data;
     }
@@ -330,8 +425,15 @@ pub fn draw(host: &dyn Host, event: &mut ScreenDrawEvent, m: &Machine) {
     if let Some(t) = m.tanks {
         for (i, rect) in t.gauges().enumerate() {
             let (amount, kind) = (d(machine::DATA_BUFFER + 2 * i), d(machine::DATA_BUFFER + 2 * i + 1));
-            gauge(host, event.batch, at(rect), amount as f32 / t.max as f32, machine::fluid_look(kind).1);
+            gauge(host, event.batch, at(rect), amount as f32 / t.tanks[i].max as f32, machine::fluid_look(kind).1);
         }
+    }
+    if let (Op::Rotate(button), Some(t)) = (m.op, m.tanks) {
+        let [bx, by, bw, bh] = at(button);
+        host.fill(event.batch, [bx, by, bw, bh], 0xFF262A2F);
+        host.fill(event.batch, [bx + 1.0, by + 1.0, bw - 2.0, bh - 2.0], 0xFF4A6FA5);
+        let label = machine::rotary_mode_name(d(machine::data_mode(t)) != 0);
+        host.text(event.batch, label, [bx + 4.0, by + 4.0], 0xFFFFFF, true);
     }
     if let Some(b) = m.buffer {
         let (amount, kind) = (d(machine::DATA_BUFFER), d(machine::DATA_BUFFER_TYPE));
@@ -348,8 +450,12 @@ pub fn draw(host: &dyn Host, event: &mut ScreenDrawEvent, m: &Machine) {
     host.text(event.batch, "Inventory", [x + 8.0, y + machine::INVENTORY_Y - 10.0], 0x404040, false);
 }
 
-/// The dump button empties (voids) the buffer, as Mekanism's.
+/// The dump button empties (voids) the buffer, as Mekanism's; the Rotary
+/// Condensentrator's mode button turns the operation round.
 pub fn click(m: &Machine, at: [f32; 2]) -> Option<i32> {
+    if let Op::Rotate(button) = m.op {
+        return machine::inside(button, at).then_some(machine::BUTTON_MODE);
+    }
     let dump = m.buffer.and_then(|b| b.dump)?;
     machine::inside(dump, at).then_some(infuser::BUTTON_DUMP)
 }
@@ -358,5 +464,9 @@ pub fn button(m: &Machine, nbt: &mut Compound, id: i32) {
     if m.buffer.is_some_and(|b| b.dump.is_some()) && id == infuser::BUTTON_DUMP {
         write_int(nbt, BUFFER, 0);
         write_int(nbt, BUFFER_TYPE, 0);
+    }
+    if matches!(m.op, Op::Rotate(_)) && id == machine::BUTTON_MODE {
+        let mode = read_energy(nbt, MODE) != 0;
+        write_int(nbt, MODE, !mode as i32);
     }
 }

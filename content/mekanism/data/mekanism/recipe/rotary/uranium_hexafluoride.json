@@ -1,0 +1,20 @@
+{
+  "type": "mekanism:rotary",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:uranium_hexafluoride"
+  },
+  "chemical_output": {
+    "amount": 1,
+    "id": "mekanism:uranium_hexafluoride"
+  },
+  "experience": 0.000100000005,
+  "fluid_input": {
+    "amount": 1,
+    "ingredient": "mekanism:uranium_hexafluoride"
+  },
+  "fluid_output": {
+    "amount": 1,
+    "id": "mekanism:uranium_hexafluoride"
+  }
+}

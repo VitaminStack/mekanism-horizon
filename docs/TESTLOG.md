@@ -137,6 +137,22 @@ Build: Native `native-fdc87ae-352025dc49dc`, Content aus Branch `feat/m05-sawmil
 | Neustart: Inhalte, Osmium-Tank und Fortschritt (Combiner 182) bleiben | ok |
 | Sounds | nicht geprüft (Agent Control hört nicht) |
 
+## M06 Electrolytic Separator, Rotary Condensentrator (10.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-6132d14d5002`, Content aus Branch `feat/m06-separator-condensentrator`, Kreativwelt `TankTest`, Energie aus Creative Energy Cubes (Front zur Maschine), Tankinhalte per `/data merge`.
+
+| Test | Ergebnis |
+|---|---|
+| Separator: 5.000 mB Wasser zu Wasserstoff (links) und Sauerstoff (rechts) in zwei Chemical Tanks, Verhältnis 2 : 1, 2 mB Wasser je Tick | ok |
+| Separator: Sole 100 mB zu 10 Natrium + 10 Chlor (10 Durchläufe) | ok |
+| Separator: linker Tank bei 2.399 mB Wasserstoff, Wasser unverändert, Maschine pausiert | ok |
+| Separator-GUI: Titel, Eingangs-Gauge mit Wasser, zwei Output-Gauges, Energie (Screenshot) | ok |
+| Rotary Chemical -> Fluid: 500 mB Wasserdampf zu Wasser, ausgeworfen in angrenzenden Fluid Tank (1 mB/Tick) | ok |
+| Rotary Modus-Knopf im GUI schaltet (`mekanism_rotary_mode` 0 zu 1), Beschriftung wechselt, Fluid -> Chemical: 300 mB Wasser zu Wasserdampf im angrenzenden Chemical Tank | ok |
+| Modus bleibt nach Neustart (1) | ok |
+| Erste GUI-Fassung: Gauges überdeckten den Titel, Knopftext ragte aus dem Knopf | behoben (Retest ok bis auf wenige Pixel Knopfbreite, danach verbreitert, nicht erneut geprüft) |
+| Sounds, Tooltips im Spiel, Crafting-Rezepte (Separator braucht `electrolytic_core`, Rotary `mek_data` mit Tanks), Chunk-Unload | nicht geprüft |
+
 ## M06 Purification Chamber, Chemical Injection Chamber (10.11.2026, per Agent Control `horizon-ctl`)
 
 Build: Native `native-fdc87ae-52fd95314c56`, Content aus Branch `feat/m06-purification-injection`, Kreativwelt `TankTest`, Energie aus Creative Energy Cubes (Front zur Maschine).
