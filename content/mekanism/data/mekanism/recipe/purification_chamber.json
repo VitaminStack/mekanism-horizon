@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:purifying",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "C": "#c:circuits/advanced",
+    "O": "#c:ingots/osmium",
+    "P": "mekanism:enrichment_chamber"
+  },
+  "pattern": [
+    "ACA",
+    "OPO",
+    "ACA"
+  ],
+  "result": {
+    "id": "mekanism:purification_chamber"
+  }
+}
