@@ -46,6 +46,17 @@ Für Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combin
 - **Gas-Burning Generator:** Tank von allen Seiten erreichbar, keine Item-Slots, siehe [GENERATORS.md](GENERATORS.md).
 - Volle Tanks, Durchsatzlimits und Weltneustart-Tests sind nicht vollständig.
 
+## Bins, Personal Chest und Personal Barrel
+
+- **Bins halten nur normale Items.** Items mit Komponenten (Verzauberungen, Namen, Schaden) lehnt der Bin ab. Mekanism speichert den ganzen Stack.
+- **Creative Bin:** Kapazitaet `i32::MAX` statt `Long.MAX_VALUE` (Horizons Item-Zaehler sind 32 Bit).
+- **Fehlt gegenueber Mekanism:** Seiten-Konfiguration und Redstone-Steuerung des Bins; die Sperre wirkt nur beim Sneak-Rechtsklick auf die Front.
+- **Hopper am Bin:** Ein Hopper sieht zwei Slots (Eingang und ein Fenster mit bis zu einem Stack). Ob ein Hopper darunter schnell genug leert, ist nicht gemessen.
+- **Personal Chest/Barrel ohne Security Desk.** Horizon hat keine Spieler-Sicherheit; der Besitzer ist die UUID des Platzierers im Block-Entity-NBT. Geprueft wird beim Rechtsklick und Abbau. Explosionen, Kolben und Mods, die Block-Entities direkt lesen, umgehen das. Operatoren duerfen immer.
+- **Kein eigenes Aussehen im Menue:** nutzt `minecraft:generic_9x6`, ohne Mekanism-Textur.
+- **Chargepad nicht portiert** (Horizon-Grenze): Der Block muss pro Tick die Items aller Spieler darauf laden. `player_tick` und `set_inventory_slot` gaebe es, aber keinen Helfer, der Energie in fremde Items schreibt; Item-Energie liegt als `horizon_energy` in den Daten. Machbar als Folgearbeit.
+- Ingame-Test siehe [TESTLOG.md](TESTLOG.md), Abschnitt M08.
+
 ## Tools (`mekanismtools`)
 
 Siehe Tabelle in [TOOLS.md](TOOLS.md). Kurz:

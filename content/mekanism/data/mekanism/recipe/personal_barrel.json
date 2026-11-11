@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "C": "#c:circuits/basic",
+    "G": "#c:glass_blocks/cheap",
+    "P": "#c:barrels/wooden",
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    "SGS",
+    "PCP",
+    "SSS"
+  ],
+  "result": {
+    "id": "mekanism:personal_barrel"
+  }
+}

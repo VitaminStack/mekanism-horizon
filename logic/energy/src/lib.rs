@@ -31,6 +31,14 @@ pub mod tank;
 #[path = "../../../native/mekanism_native/api/src/pump.rs"]
 pub mod pump;
 
+/// Bins (M08).
+#[path = "../../../native/mekanism_native/api/src/bin.rs"]
+pub mod bin;
+
+/// Personal Chest and Personal Barrel (M08).
+#[path = "../../../native/mekanism_native/api/src/storage.rs"]
+pub mod storage;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {
     stored: u64,

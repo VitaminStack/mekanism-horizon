@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "mekanism:creative_bin"
+        }
+      ],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "mekanism:blocks/creative_bin"
+}
