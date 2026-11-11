@@ -52,6 +52,16 @@ pub fn index(id: &str) -> Option<usize> {
     FLUIDS.iter().position(|f| f.0 == path).map(|i| 2 + i)
 }
 
+/// The tank id at `index` (`index`'s inverse).
+pub fn id_at(index: usize) -> Option<String> {
+    match index {
+        0 => Some(WATER.to_owned()),
+        1 => Some(LAVA.to_owned()),
+        i if i < 2 + FLUIDS.len() => FLUIDS.get(i - 2).map(|f| format!("mekanism:{}", f.0)),
+        i => CHEMICALS.get(i - 2 - FLUIDS.len()).map(|c| chemical(c.0)),
+    }
+}
+
 /// Name and colour of the entry at `index` (see `index`).
 pub fn entry(index: usize) -> Option<(&'static str, u32)> {
     match index {
@@ -93,6 +103,7 @@ mod tests {
                    "mekanism:chemical/clean_iron", "mekanism:chemical/aqua"] {
             let i = index(id).unwrap_or_else(|| panic!("{id} known"));
             assert!(entry(i).is_some(), "{id}");
+            assert_eq!(id_at(i).as_deref(), Some(id), "{id}");
             assert!(i + 1 <= 0xFFFF);
         }
         assert_eq!(index("create:chocolate"), None);

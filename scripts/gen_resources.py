@@ -22,11 +22,13 @@ DUSTS = ['osmium', 'tin', 'lead', 'uranium', 'bronze', 'steel', 'refined_obsidia
          'obsidian', 'sulfur', 'lithium', 'fluorite']
 # Clumps: the Purification Chamber's output from ores and raw metals (crushed into dirty dust later).
 CLUMPS = ['osmium', 'tin', 'lead', 'uranium', 'iron', 'gold', 'copper']
+# The ore chain's other stages (M06): crystals (Chemical Crystallizer), shards (Injection Chamber) and
+# dirty dusts (Crusher, from clumps) of the same seven metals as the clumps.
 MISC_ITEMS = ['fluorite_gem', 'salt',
               'basic_control_circuit', 'advanced_control_circuit', 'elite_control_circuit',
               'ultimate_control_circuit', 'alloy_infused', 'alloy_reinforced', 'alloy_atomic',
               'enriched_carbon', 'enriched_redstone', 'enriched_diamond', 'enriched_refined_obsidian',
-              'enriched_tin', 'enriched_gold', 'enriched_iron']
+              'enriched_tin', 'enriched_gold', 'enriched_iron', 'electrolytic_core']
 
 # registry ids in declaration order, per content mod (= namespace)
 registry = {ns: {'items': [], 'blocks': []} for ns in (NS, GEN)}
@@ -87,6 +89,9 @@ for d in DUSTS:
     item(f'dust_{d}', 'minecraft:sugar')
 for c in CLUMPS:
     item(f'clump_{c}', 'minecraft:sugar')
+    item(f'dirty_dust_{c}', 'minecraft:sugar')
+    item(f'shard_{c}', 'minecraft:quartz')
+    item(f'crystal_{c}', 'minecraft:quartz')
 for i in MISC_ITEMS:
     item(i, 'minecraft:quartz' if i in ('fluorite_gem',) else 'minecraft:iron_ingot')
 
@@ -191,6 +196,11 @@ CHEMICAL_MENUS = {
     # Separator: input, left, right tanks (data slots 4-9). Rotary: chemical and fluid tanks (4-7), then its mode.
     'electrolytic_separator': {'slots': 1, 'data_slots': 10, 'results': []},
     'rotary_condensentrator': {'slots': 1, 'data_slots': 9, 'results': []},
+    # Dissolution Chamber: 0 input item; acid and slurry tanks (data slots 4-7). Washer: water, dirty and
+    # clean slurry tanks (4-9), no slot. Crystallizer: 0 output item; its input tank (4-5).
+    'chemical_dissolution_chamber': {'slots': 1, 'data_slots': 8, 'results': []},
+    'chemical_washer': {'slots': 1, 'data_slots': 10, 'results': []},
+    'chemical_crystallizer': {'slots': 1, 'data_slots': 6, 'results': [0]},
 }
 for m, menu in CHEMICAL_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
@@ -230,6 +240,10 @@ put(f'data/{NS}/loot_table/blocks/bounding_block.json', {'type': 'minecraft:bloc
 # Bio Generator: slot 0 bio fuel (`#c:fuels/bio`), its bioethanol tank kept by the native mod.
 block('bio_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
 put(f'data/{GEN}/horizon/menu/bio_generator.json', {'slots': 1, 'data_slots': 4, 'results': []}, GEN)
+# Gas-Burning Generator: no item slot (Mekanism's chemical and energy slots are not ported); its chemical
+# tank is a Horizon block-entity tank kept by the native mod. Data: energy, mB, fuel, burn rate, facing.
+block('gas_burning_generator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False, ns=GEN)
+put(f'data/{GEN}/horizon/menu/gas_burning_generator.json', {'slots': 1, 'data_slots': 5, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/heat_generator.json', {'slots': 1, 'data_slots': 7, 'results': []}, GEN)
 put(f'data/{GEN}/horizon/menu/solar_generator.json', {'slots': 1, 'data_slots': 5, 'results': [0]}, GEN)
 
@@ -269,6 +283,13 @@ for family, state in TANK_STATE.items():
 for tier in CUBE_TIERS:
     put(f'assets/{NS}/items/{tier}_fluid_tank.json',
         {'model': {'type': 'minecraft:model', 'model': f'{NS}:block/fluid_tank'}})
+
+# Electric Pump and Fluidic Plenisher (M06): one 10-bucket Horizon block-entity fluid tank each, kept by
+# native pump.rs / pumps.rs; no item slots. Data: energy, mB, fluid, working, facing, finished (the plenisher's
+# walk is over). `facing` is turned toward the placer. Not full cubes: `occludes: false`.
+for pid in ('electric_pump', 'fluidic_plenisher'):
+    block(pid, 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False)
+    put(f'data/{NS}/horizon/menu/{pid}.json', {'slots': 1, 'data_slots': 6, 'results': []})
 
 # Pushes hydrogen into neighbouring tanks (native `DEBUG_CHEMICAL_SOURCE`), for testing chemical
 # tanks until a machine makes chemicals.
@@ -437,11 +458,11 @@ put('data/c/tags/block/ores.json', {'replace': False, 'values': [
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
-     + [f'{NS}:{m}' for m in ('metallurgic_infuser', *MACHINE_MENUS)]})
+     + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in (
         'heat_generator', 'solar_generator', 'bio_generator', 'advanced_solar_generator', 'wind_generator',
-        'turbine_casing', 'fission_reactor_casing', 'fusion_reactor_frame', 'reactor_glass', 'laser_focus_matrix',
+        'gas_burning_generator', 'turbine_casing', 'fission_reactor_casing', 'fusion_reactor_frame', 'reactor_glass', 'laser_focus_matrix',
         'turbine_rotor', 'electromagnetic_coil', 'rotational_complex', 'saturating_condenser',
         'fission_fuel_assembly', 'control_rod_assembly')]}, GEN)
 

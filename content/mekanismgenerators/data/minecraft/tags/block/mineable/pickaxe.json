@@ -6,6 +6,7 @@
     "mekanismgenerators:bio_generator",
     "mekanismgenerators:advanced_solar_generator",
     "mekanismgenerators:wind_generator",
+    "mekanismgenerators:gas_burning_generator",
     "mekanismgenerators:turbine_casing",
     "mekanismgenerators:fission_reactor_casing",
     "mekanismgenerators:fusion_reactor_frame",

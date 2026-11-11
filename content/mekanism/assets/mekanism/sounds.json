@@ -1,4 +1,16 @@
 {
+  "tile.machine.chemical_crystallizer": {
+    "sounds": [
+      "mekanism:tile/chemical_crystallizer"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.chemical_crystallizer"
+  },
+  "tile.machine.chemical_dissolution_chamber": {
+    "sounds": [
+      "mekanism:tile/chemical_dissolution_chamber"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.chemical_dissolution_chamber"
+  },
   "tile.machine.chemical_infuser": {
     "sounds": [
       "mekanism:tile/chemical_infuser"
@@ -16,6 +28,12 @@
       "mekanism:tile/chemical_oxidizer"
     ],
     "subtitle": "sound_event.mekanism.tile.machine.chemical_oxidizer"
+  },
+  "tile.machine.chemical_washer": {
+    "sounds": [
+      "mekanism:tile/chemical_washer"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.chemical_washer"
   },
   "tile.machine.combiner": {
     "sounds": [

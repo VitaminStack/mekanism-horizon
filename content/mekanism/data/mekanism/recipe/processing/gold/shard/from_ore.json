@@ -1,0 +1,19 @@
+{
+  "type": "mekanism:injecting",
+  "category": "efficiency",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:hydrogen_chloride"
+  },
+  "experience": 0.5,
+  "group": "mekanism:shard_gold",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:ores/gold"
+  },
+  "output": {
+    "count": 4,
+    "id": "mekanism:shard_gold"
+  },
+  "per_tick_usage": true
+}

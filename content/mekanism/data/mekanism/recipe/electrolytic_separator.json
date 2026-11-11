@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": "mekanism:electrolytic_core",
+    "A": "#mekanism:alloys/infused",
+    "I": "#c:ingots/iron",
+    "R": "#c:dusts/redstone"
+  },
+  "pattern": [
+    "IRI",
+    "A#A",
+    "IRI"
+  ],
+  "result": {
+    "id": "mekanism:electrolytic_separator"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:crystallizing",
+  "experience": 0.25,
+  "input": {
+    "amount": 100,
+    "ingredient": "mekanism:lithium"
+  },
+  "output": {
+    "id": "mekanism:dust_lithium"
+  }
+}

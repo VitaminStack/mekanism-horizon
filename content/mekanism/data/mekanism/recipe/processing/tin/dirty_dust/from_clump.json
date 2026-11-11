@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "efficiency",
+  "experience": 0.35,
+  "group": "mekanism:dirty_dust_tin",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:clumps/tin"
+  },
+  "output": {
+    "id": "mekanism:dirty_dust_tin"
+  }
+}

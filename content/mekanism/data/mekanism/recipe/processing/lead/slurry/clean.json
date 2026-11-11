@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:washing",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:dirty_lead"
+  },
+  "experience": 0.0005,
+  "fluid_input": {
+    "amount": 5,
+    "ingredient": "minecraft:water"
+  },
+  "output": {
+    "amount": 1,
+    "id": "mekanism:clean_lead"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": "#c:dusts/gold",
+    "A": "#mekanism:alloys/infused",
+    "I": "#c:dusts/iron",
+    "O": "#c:dusts/osmium"
+  },
+  "pattern": [
+    "AOA",
+    "IA#",
+    "AOA"
+  ],
+  "result": {
+    "id": "mekanism:electrolytic_core"
+  }
+}

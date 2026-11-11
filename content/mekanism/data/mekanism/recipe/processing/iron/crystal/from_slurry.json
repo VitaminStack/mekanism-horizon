@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:crystallizing",
+  "category": "efficiency",
+  "experience": 0.35,
+  "input": {
+    "amount": 200,
+    "ingredient": "mekanism:clean_iron"
+  },
+  "output": {
+    "id": "mekanism:crystal_iron"
+  },
+  "typeDisplay": {
+    "type": "minecraft:tag",
+    "tag": "#c:ores/iron"
+  }
+}
