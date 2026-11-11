@@ -284,6 +284,23 @@ for tier in CUBE_TIERS:
     put(f'assets/{NS}/items/{tier}_fluid_tank.json',
         {'model': {'type': 'minecraft:model', 'model': f'{NS}:block/fluid_tank'}})
 
+# --- bins (M08): count in block-entity NBT, see native/.../bin.rs and bins.rs ---
+# Mekanism's BlockBin: `facing` (horizontal, toward the placer) and `active` (auto-eject downwards on).
+# BlockTile strength 3.5 / 16 as for machines; the loot copies the contents, so no explosion condition.
+BIN_STATE = {
+    'state_properties': {'active': {'type': 'boolean'}},
+    'default_state': {'facing': 'north', 'active': 'false'},
+}
+for tier in CUBE_TIERS:
+    block(f'{tier}_bin', 'minecraft:barrel', 3.5, 16.0, extra=BIN_STATE, explosion_proof=True)
+
+# --- personal storage (M08): 9 x 6 vanilla menu, owner-only through the native mod, see storage.rs ---
+# The barrel template opens `minecraft:generic_9x6` on use (the native container names it). The chest
+# faces the placer horizontally; the barrel takes all six directions from the template.
+block('personal_chest', 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}},
+      explosion_proof=True, occludes=False)
+block('personal_barrel', 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}},
+      explosion_proof=True)
 # Electric Pump and Fluidic Plenisher (M06): one 10-bucket Horizon block-entity fluid tank each, kept by
 # native pump.rs / pumps.rs; no item slots. Data: energy, mB, fluid, working, facing, finished (the plenisher's
 # walk is over). `facing` is turned toward the placer. Not full cubes: `occludes: false`.
@@ -431,6 +448,8 @@ CONVENTION_TAGS = {
     'pumpkins/normal': ['minecraft:pumpkin'],
     **{f'raw_materials/{m}': [f'minecraft:raw_{m}'] for m in ('copper', 'gold', 'iron')},
     **{f'storage_blocks/raw_{m}': [f'minecraft:raw_{m}_block'] for m in ('copper', 'gold', 'iron')},
+    'barrels/wooden': ['minecraft:barrel'],
+    'chests/wooden': ['minecraft:chest', 'minecraft:trapped_chest'],
     'rods/blaze': ['minecraft:blaze_rod'],
     'rods/breeze': ['minecraft:breeze_rod'],
     'sandstone/red_blocks': ['minecraft:red_sandstone', 'minecraft:cut_red_sandstone',
@@ -458,6 +477,7 @@ put('data/c/tags/block/ores.json', {'replace': False, 'values': [
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
+     + [f'{NS}:{t}_bin' for t in CUBE_TIERS] + [f'{NS}:personal_chest', f'{NS}:personal_barrel']
      + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in (

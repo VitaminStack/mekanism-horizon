@@ -42,6 +42,8 @@
 //! a trait mod has no energy helper for other mods' blocks, so pushes reach
 //! only Mekanism blocks (docs/upstream/horizon-energy-host.md).
 
+mod bin;
+mod bins;
 mod chemicals;
 mod cube;
 mod dictionary_tags;
@@ -56,6 +58,8 @@ mod process;
 mod pump;
 mod pumps;
 mod recipe;
+mod storage;
+mod storages;
 mod tank;
 mod tanks;
 
@@ -66,7 +70,8 @@ use cube::{Mode, Sides};
 use horizon_client::mod_api::{
     BlockEntityAcceptsFluidEvent, BlockEntityContainerEvent, BlockEntityEnergyEvent, BlockEntityEvent,
     BlockEntityFluidsEvent, BlockEntityRenderBoundingBoxEvent, BlockEntitySubmitEvent, BlockEntityTickEvent,
-    BlockEntityTicksEvent, BlockEntityUpdateTagEvent, Compound, DestroyBlockEvent, Flow, Hooks, Host,
+    BlockEntityTicksEvent, BlockEntityUpdateTagEvent, Compound, ContainerAcceptsEvent, DestroyBlockEvent, Flow,
+    Hooks, Host, LeftClickBlockEvent,
     ItemEnergyBuffer, ItemEnergyBufferEvent, ItemStack, LevelHost, LootDropsEvent, MenuButtonEvent,
     ModContainer, ModEnergyBuffer, ModFluidTanks, NativeScreen, PlaceBlockEvent, ScreenClickEvent,
     ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent, StateForPlacementEvent, Tag,
@@ -116,6 +121,10 @@ enum Kind {
     Tank(&'static tank::Tier),
     /// `tanks::DEBUG_CHEMICAL_SOURCE`.
     DebugChemical,
+    /// One of `bin::BINS`.
+    Bin(&'static bin::Tier),
+    /// `storage::CHEST` or `storage::BARREL`.
+    Storage(&'static str),
     /// The Electric Pump, or the Fluidic Plenisher (`pump.rs`).
     Pump { plenisher: bool },
 }
@@ -139,6 +148,11 @@ fn kind(block: &str) -> Option<Kind> {
     if block == tanks::DEBUG_CHEMICAL_SOURCE {
         return Some(Kind::DebugChemical);
     }
+    if let Some(t) = bin::tier_of(block) {
+        return Some(Kind::Bin(t));
+    }
+    if let Some(s) = storage::find(block) {
+        return Some(Kind::Storage(s));
     if pump::is_either(block) {
         return Some(Kind::Pump { plenisher: pump::is_plenisher(block) });
     }
@@ -419,6 +433,8 @@ impl Hooks for MekanismNative {
             Kind::Generator(g) => Some(generators::container(g)),
             Kind::Bounding => Some(generators::bounding_container()),
             Kind::Tank(t) => Some(tanks::container(t)),
+            Kind::Bin(_) => Some(bins::container()),
+            Kind::Storage(_) => Some(storages::container()),
             Kind::Pump { plenisher } => Some(pumps::container(plenisher)),
             // One hidden placeholder slot; all interactions are buttons.
             Kind::Cube { .. } => Some(ModContainer {
@@ -429,6 +445,14 @@ impl Hooks for MekanismNative {
                 menu: Some(CUBE_MENU.to_owned()),
             }),
             Kind::Debug { .. } | Kind::DebugChemical => None,
+        }
+    }
+
+    /// A hopper puts into a bin only what the bin keeps.
+    fn container_accepts(&self, _host: &dyn Host, event: &mut ContainerAcceptsEvent<'_>) -> Flow {
+        match kind(&event.entity.id) {
+            Some(Kind::Bin(t)) if !bins::accepts(t, event.entity, event.slot, event.stack) => Flow::Cancel,
+            _ => Flow::Continue,
         }
     }
 
@@ -451,7 +475,7 @@ impl Hooks for MekanismNative {
                 insert_faces: [true; 6],
                 extract_faces: [true; 6],
             }),
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical => None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) => None,
         }
     }
 
@@ -484,9 +508,27 @@ impl Hooks for MekanismNative {
         if matches!(self.gear.right_click_block(host, event.pos, event.face), Flow::Cancel) {
             return Flow::Cancel;
         }
-        let Some(Kind::Tank(t)) = kind(&host.block(event.pos)) else { return Flow::Continue };
-        let Some((item, _, _)) = host.held() else { return Flow::Continue };
-        if tanks::use_bucket(host, event.pos, event.face, &item, t) { Flow::Cancel } else { Flow::Continue }
+        match kind(&host.block(event.pos)) {
+            // Bins have no screen: every click on one is the bin's.
+            Some(Kind::Bin(t)) => {
+                bins::right_click(host, event.pos, event.face, t);
+                Flow::Cancel
+            }
+            Some(Kind::Storage(_)) if !storages::allowed(host, event.pos) => Flow::Cancel,
+            Some(Kind::Tank(t)) => {
+                let Some((item, _, _)) = host.held() else { return Flow::Continue };
+                if tanks::use_bucket(host, event.pos, event.face, &item, t) { Flow::Cancel } else { Flow::Continue }
+            }
+            _ => Flow::Continue,
+        }
+    }
+
+    /// Left click on a bin's front takes an item.
+    fn left_click_block(&self, host: &mut dyn Host, event: &mut LeftClickBlockEvent) -> Flow {
+        if let Some(Kind::Bin(t)) = kind(&host.block(event.pos)) {
+            bins::left_click(host, event.pos, event.face, t);
+        }
+        Flow::Continue
     }
 
     fn block_entity_ticks(&self, _host: &dyn Host, event: &mut BlockEntityTicksEvent) {
@@ -504,6 +546,8 @@ impl Hooks for MekanismNative {
             Some(Kind::Bounding) => generators::bounding_tick(host, event),
             Some(Kind::Tank(t)) => tanks::tick(host, event, t),
             Some(Kind::DebugChemical) => tanks::debug_tick(host, event.pos),
+            Some(Kind::Bin(t)) => bins::tick(host, event, t),
+            Some(Kind::Storage(_)) => {}
             Some(Kind::Pump { plenisher }) => pumps::tick(host, event, plenisher),
             None => {}
         }
@@ -517,6 +561,9 @@ impl Hooks for MekanismNative {
             Kind::Cube { .. } => event.context.pitch,
             Kind::Machine(_) | Kind::Generator(_) | Kind::Pump { .. } => 0.0,
             Kind::Tank(t) if t.family == tank::Family::Chemical => 0.0,
+            Kind::Bin(_) => 0.0,
+            Kind::Storage(block) if storage::horizontal_only(block) => 0.0,
+            Kind::Storage(_) => event.context.pitch,
             Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical => return None,
         };
         let facing = cube::facing_from_look(event.context.yaw, pitch);
@@ -545,7 +592,7 @@ impl Hooks for MekanismNative {
                 own_labels: true,
                 own_background: false,
             }),
-            Kind::Debug { .. } | Kind::DebugChemical => None,
+            Kind::Debug { .. } | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) => None,
         }
     }
 
@@ -625,8 +672,10 @@ impl Hooks for MekanismNative {
     }
 
     fn block_entity_update_tag(&self, event: &mut BlockEntityUpdateTagEvent) -> Option<Compound> {
-        if let Some(Kind::Tank(t)) = kind(&event.entity.id) {
-            return tanks::update_tag(&event.entity.nbt, t);
+        match kind(&event.entity.id) {
+            Some(Kind::Tank(t)) => return tanks::update_tag(&event.entity.nbt, t),
+            Some(Kind::Bin(t)) => return Some(bins::update_tag(event.entity, t)),
+            _ => {}
         }
         if &*event.entity.id != generator::WIND {
             return None;
@@ -644,6 +693,8 @@ impl Hooks for MekanismNative {
             generators::draw_advanced_solar_top(host, event.pos, event.draw);
         } else if let Some(Kind::Tank(t)) = kind(event.block) {
             tanks::draw_contents(host, &event.entity.nbt, event.draw, t);
+        } else if let Some(Kind::Bin(t)) = kind(event.block) {
+            bins::draw_front(host, &event.entity.nbt, event.pos, event.draw, t);
         }
     }
 
@@ -663,6 +714,12 @@ impl Hooks for MekanismNative {
             return Flow::Cancel;
         }
         self.hums.lock().unwrap().remove(&(host.dimension().to_owned(), event.pos));
+        // Private storage cannot be broken by anyone else; a bin remembers its contents.
+        match kind(&host.block(event.pos)) {
+            Some(Kind::Storage(_)) if !storages::allowed(host, event.pos) => return Flow::Cancel,
+            Some(Kind::Bin(t)) => bins::broken(host, event.pos, t),
+            _ => {}
+        }
         // Breaking a multiblock takes its bounding blocks with it; breaking a
         // bounding block breaks the main block, which drops (Mekanism's
         // BlockBounding), except for a player in creative mode.
@@ -699,6 +756,7 @@ impl Hooks for MekanismNative {
     fn loot_drops(&self, host: &mut dyn Host, event: &mut LootDropsEvent) {
         let Some((pos, _)) = event.context.block else { return };
         let place = (event.context.dimension.to_owned(), pos);
+        bins::fill_drops(host, event.context.dimension, pos, &mut event.drops);
         if let Some(contents) = self.broken_tanks.lock().unwrap().remove(&place) {
             tanks::fill_drops(host, &mut event.drops, contents);
         }
@@ -732,6 +790,15 @@ impl Hooks for MekanismNative {
     fn place_block(&self, host: &mut dyn Host, event: &mut PlaceBlockEvent) {
         if generator::is_multiblock(&event.stack.item) {
             generators::place_multiblock(host, event.pos, &event.stack.item);
+            return;
+        }
+        if let Some(t) = bin::tier_of(&event.stack.item) {
+            let dimension = host.dimension().to_owned();
+            bins::place(host, &dimension, event.pos, event.stack, t);
+            return;
+        }
+        if storage::find(&event.stack.item).is_some() {
+            storages::place(host, event.pos, event.stack);
             return;
         }
         if let Some(t) = tank::tier_of(&event.stack.item) {
@@ -770,6 +837,10 @@ impl Hooks for MekanismNative {
         }
         if let Some(t) = tank::tier_of(&event.stack.item) {
             event.lines.push(tanks::tooltip(&event.stack, t));
+            return;
+        }
+        if let Some(t) = bin::tier_of(&event.stack.item) {
+            event.lines.push(bins::tooltip(&event.stack, t));
             return;
         }
         let Some((capacity, _)) = cube::tier(&event.stack.item) else { return };
