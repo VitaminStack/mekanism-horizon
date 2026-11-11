@@ -218,6 +218,28 @@ Build: Content `mekanismgenerators` 0.2.0 mit `scripts/Build-Content.ps1` (`carg
 | Modelle, Texturen, Item-Icons sichtbar | nicht geprüft (Screenshots zeigten nur Gelände, Welt unter Wasser/Nacht) |
 | Craften im Crafting-Tisch, Hohlraum im Metallurgic Infuser, Abbau-Drop | ausstehend |
 
+## M11 Ausrüstung: Disassembler, Canteen, Gauge Dropper, Dictionary (11.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-96a82b9ef986` (Branch `feat/m11-utility-items`), Content `mekanism` aus demselben Stand, Kreativwelt `TankTest` (für Mining und Schaden auf Survival gestellt). Tanks mit Inhalt über `give ...[minecraft:custom_data={mekanism_fluid:...,mekanism_amount:...}]` und Platzieren, Item-Zustände mit `item replace entity @s weapon.mainhand`.
+
+| Test | Ergebnis |
+|---|---|
+| Alle vier Items laden (Content, Namen, Texturen) | ok (erster Start scheiterte an `minecraft:unbreakable`, danach Stock-Template) |
+| Dictionary: Rechtsklick auf Stein listet Block- und Item-Tags | ok |
+| Dictionary: Rechtsklick in der Luft liest Offhand (Eisenbarren: `#c:ingots/iron` u. a.) | ok, aber nur nach einem Offhand-Wechsel (kein Host-Zugriff auf die Offhand, `on_equip`-Cache) |
+| Canteen: Rechtsklick auf Tank mit Paste zieht 1.000 mB in das Item (Tank 10.000 → 9.000) | ok |
+| Canteen: Trinken (32 Ticks) bei 17 Hunger gibt 3 Punkte, kostet 150 mB; bei 16 gibt 4 Punkte, kostet 200 mB | ok |
+| Canteen: Hunger fällt danach wieder (Sättigung 0), Vanilla-Brot bleibt oben | offen: gleiche Ursache nicht belegt, Canteen gibt keine Sättigung |
+| Gauge Dropper: Rechtsklick auf Tank zieht 16 mB Wasser; anderes Fluid wird abgelehnt (Paste-Tank, Dropper mit Wasser) | ok |
+| Gauge Dropper: Sneak plus Rechtsklick auf Tank gibt 16 mB zurück (Item 100 → 84, Tank +16); Sneak plus Rechtsklick in die Luft leert | ok (erst nach Fix: der Klick löste zusätzlich `use_item` aus und leerte das Item) |
+| Disassembler: Energie im Item (`horizon_energy`), Abbau kostet 10 FE | ok |
+| Disassembler: Sneak plus Rechtsklick schaltet Normal / Vein, Action-Bar-Meldung | ok |
+| Disassembler Vein: ein Eisenerz bricht 5 zusammenhängende Erze (inkl. Diagonale), 50 FE | ok (erst nach Tag `c:ores` für Blöcke; vorher unbekannt) |
+| Disassembler ohne Energie (5 FE): Erz bleibt stehen | ok |
+| Disassembler Waffe: Schlag auf Schwein tötet in einem Treffer, kostet 2.000 FE | ok |
+| `set_inventory_slot` in Use-Hooks, `set_component` auf `custom_data` | Fehler: Horizon verweigert beides; Umgehung dokumentiert in [ITEM_HOOKS.md](ITEM_HOOKS.md) |
+| Nicht getestet | Item-Balken, Tooltips, Mehrspieler/LAN, Vein-Limit 128, Fortuna/Seidenhaut, Offhand beim Login |
+
 ## M08 Bins, Personal Chest, Personal Barrel (11.11.2026, per Agent Control `horizon-ctl`)
 
 Build: Native `native-fdc87ae-a5d971619c14` (zuvor `...55c418ea8e62`, `...e85ab11785b6`), Content mit `scripts/Build-Content.ps1`, Kreativwelt `TankTest`, Plattform bei Y 98.

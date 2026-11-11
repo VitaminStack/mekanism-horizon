@@ -40,10 +40,10 @@ def put(rel, obj, ns=NS):
     path.write_text(json.dumps(obj, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 
 
-def item(id_, template='minecraft:iron_ingot', stack=64, ns=NS):
+def item(id_, template='minecraft:iron_ingot', stack=64, ns=NS, components=None):
     registry[ns]['items'].append(id_)
-    put(f'data/{ns}/horizon/item/{id_}.json', {'template': template, 'rarity': 'common', 'max_stack_size': stack},
-        ns)
+    put(f'data/{ns}/horizon/item/{id_}.json', {'template': template, 'rarity': 'common', 'max_stack_size': stack,
+                                               **({'components': components} if components else {})}, ns)
 
 
 def loot(id_, drop, count=None, explosion_proof=False, ns=NS):
@@ -118,6 +118,23 @@ block('steel_casing', 'minecraft:iron_block', 3.5, 9.0, sounds=STONE)
 
 # --- energy (M03): cubes are ticked/buffered by native/mekanism_native ---
 item('energy_tablet', stack=1)
+# --- gear (M11): the native mod's `items.rs` gives these their use (docs/ITEM_HOOKS.md) ---
+item('dictionary', stack=1)
+item('canteen', stack=1)
+item('gauge_dropper', stack=1)
+# Atomic Disassembler: no durability (a stick template), mines like all four tools at speed 20 (Mekanism's normal mode); the
+# energy buffer, weapon bonus and vein mode are native. Base attack 4 (3 + hand), the unpowered value.
+item('atomic_disassembler', 'minecraft:stick', stack=1, components={
+    'minecraft:enchantable': {'value': 10},
+    'minecraft:attribute_modifiers': [
+        {'type': 'minecraft:attack_damage', 'amount': 3.0, 'id': 'minecraft:base_attack_damage',
+         'operation': 'add_value', 'slot': 'mainhand'},
+        {'type': 'minecraft:attack_speed', 'amount': -2.4, 'id': 'minecraft:base_attack_speed',
+         'operation': 'add_value', 'slot': 'mainhand'}],
+    'minecraft:tool': {'rules': [
+        {'blocks': f'#minecraft:mineable/{tool}', 'correct_for_drops': True, 'speed': 20.0}
+        for tool in ('pickaxe', 'axe', 'shovel', 'hoe')], 'damage_per_block': 0},
+})
 # Bio Fuel (Crusher output, Bio Generator input) and its block (MekanismBlocks: strength 0.5, grass sound).
 item('bio_fuel')
 # Sawdust: the Precision Sawmill's secondary output from logs (`#c:dusts/wood`).
@@ -448,6 +465,13 @@ CONVENTION_TAGS = {
 }
 for tag, values in CONVENTION_TAGS.items():
     put(f'data/c/tags/item/{tag}.json', {'replace': False, 'values': values})
+
+# `#c:ores` for blocks: Mekanism's disassembler vein tag reads it, vanilla has no such tag here.
+put('data/c/tags/block/ores.json', {'replace': False, 'values': [
+    *(f'minecraft:{p}{o}_ore' for o in ('coal', 'copper', 'diamond', 'emerald', 'gold', 'iron', 'lapis', 'redstone')
+      for p in ('', 'deepslate_')),
+    'minecraft:nether_gold_ore', 'minecraft:nether_quartz_ore', 'minecraft:ancient_debris',
+    *(f'#c:ores/{o}' for o in ('tin', 'osmium', 'uranium', 'fluorite', 'lead'))]})
 
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',

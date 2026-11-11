@@ -4,7 +4,11 @@ Alle nennenswerten Änderungen, gruppiert nach Meilenstein aus [TODO.md](TODO.md
 
 Basis: Mekanism 26.3 (Mekanism 10.8.0 alpha), Horizon Nightly 2026-11-08 `fdc87ae`.
 
-## [Unreleased] (Stand 10.11.2026)
+## [Unreleased] (Stand 11.11.2026)
+
+### M11 Ausrüstung und Spielhilfen
+- Hook-Audit und Machbarkeitsmatrix aller M11-Items in `docs/ITEM_HOOKS.md` (Horizon `fdc87ae`, API 411).
+- Atomic Disassembler (Energiepuffer, Waffenplus, Vein-Modus), Canteen, Gauge Dropper und Dictionary als native Items (`items.rs`, `gear.rs`) mit Assets, Rezepten und Namen aus Upstream. Nicht machbare Items (Radiation, Module, QIO) bleiben unregistriert, siehe `docs/KNOWN_ISSUES.md`.
 
 ### M08 Lager
 - Bins (Basic bis Creative), Personal Chest und Personal Barrel (Besitzer-Schutz ohne Security Desk). Chargepad offen, siehe [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).

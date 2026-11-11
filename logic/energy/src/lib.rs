@@ -31,6 +31,9 @@ pub mod tank;
 #[path = "../../../native/mekanism_native/api/src/pump.rs"]
 pub mod pump;
 
+/// Canteen, Gauge Dropper and Atomic Disassembler rules (M11).
+#[path = "../../../native/mekanism_native/api/src/gear.rs"]
+pub mod gear;
 /// Bins (M08).
 #[path = "../../../native/mekanism_native/api/src/bin.rs"]
 pub mod bin;

@@ -16,7 +16,7 @@ Erzeugt mit `python scripts/gen_tools.py <Mekanism-26.3-Checkout>` (Sparse-Clone
 
 | Original | Hier | Grund |
 |---|---|---|
-| Paxel wirkt als Axt **und** Schaufel (`PaxelItem.useOn`) | nur Axt-Aktion (Rinde schälen); Grasflächen werden nicht zu Pfaden | Content-Items haben keinen Code; `minecraft:block_transformer` nimmt eine Transformation. Braucht einen nativen Hook (`item_use_on`) |
+| Paxel wirkt als Axt **und** Schaufel (`PaxelItem.useOn`) | nur Axt-Aktion (Rinde schälen); Grasflächen werden nicht zu Pfaden | Content-Items haben keinen Code; `minecraft:block_transformer` nimmt eine Transformation. Braucht einen nativen Hook; `use_item_on` (API 13) existiert, siehe [ITEM_HOOKS.md](ITEM_HOOKS.md), ist hier aber noch nicht gebaut |
 | `mekanismtools:paxel`-Rezept mittelt die Haltbarkeit der Zutaten | `minecraft:crafting_shaped`, Paxel startet unbeschädigt | Kein eigener Rezepttyp in Horizon-Content |
 | Schild mit eigener Textur (`mekanismtools:shield` Special-Model) | Schild zeigt das Vanilla-Schild-Modell; Werte (Haltbarkeit, Blockverzögerung, Schwelle) stimmen | Eigener Item-Model-Typ ist NeoForge/Mekanism-Code |
 | Rüstungs-Trims mit Mekanism-Paletten (`neoforge:trimmed_armor`, `trim_overrides`) | Vanilla-Modell, keine Mekanism-Palette | NeoForge-only |

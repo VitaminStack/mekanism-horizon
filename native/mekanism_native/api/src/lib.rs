@@ -11,6 +11,8 @@
 //!   Solar, Wind and Gas-Burning Generator.
 //! - `chemicals`, `tank` (Horizon-free) and `tanks`: fluids, chemicals and the
 //!   Fluid and Chemical Tanks (M06).
+//! - `gear` (Horizon-free) and `items`: Dictionary, Canteen, Gauge Dropper and Atomic
+//!   Disassembler (M11; hooks in docs/ITEM_HOOKS.md).
 //!
 //! Hooks used (native hooks API; see Horizon docs/native-mods.md):
 //! - `block_entity` (API 15): a saved block entity for each block.
@@ -44,10 +46,13 @@ mod bin;
 mod bins;
 mod chemicals;
 mod cube;
+mod dictionary_tags;
 mod energy;
+mod gear;
 mod generator;
 mod generators;
 mod infuser;
+mod items;
 mod machine;
 mod process;
 mod pump;
@@ -70,7 +75,9 @@ use horizon_client::mod_api::{
     ItemEnergyBuffer, ItemEnergyBufferEvent, ItemStack, LevelHost, LootDropsEvent, MenuButtonEvent,
     ModContainer, ModEnergyBuffer, ModFluidTanks, NativeScreen, PlaceBlockEvent, ScreenClickEvent,
     ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent, StateForPlacementEvent, Tag,
-    Text, TooltipEvent, RightClickBlockEvent,
+    Text, TooltipEvent, RightClickBlockEvent, CanEatEvent, InventoryTickEvent, ItemBarEvent, OnEquipEvent,
+    LivingEntityUseItemFinishEvent, LivingEntityUseItemStartEvent, LivingIncomingDamageV2Event,
+    UseAnimationEvent, UseDurationEvent, UseItemEvent,
 };
 use machine::Machine;
 
@@ -236,6 +243,8 @@ struct MekanismNative {
     recipes: Mutex<recipe::Recipes>,
     /// Ticks until each running block's loop sound plays again (not saved).
     hums: Mutex<HashMap<(String, [i32; 3]), i32>>,
+    /// The hand-held gear's own state (`items.rs`).
+    gear: items::State,
 }
 
 impl MekanismNative {
@@ -496,6 +505,9 @@ impl Hooks for MekanismNative {
 
     /// Buckets on a fluid tank fill or empty it instead of opening its screen.
     fn right_click_block(&self, host: &mut dyn Host, event: &mut RightClickBlockEvent) -> Flow {
+        if matches!(self.gear.right_click_block(host, event.pos, event.face), Flow::Cancel) {
+            return Flow::Cancel;
+        }
         match kind(&host.block(event.pos)) {
             // Bins have no screen: every click on one is the bin's.
             Some(Kind::Bin(t)) => {
@@ -698,6 +710,9 @@ impl Hooks for MekanismNative {
 
     /// Remember what a cube or tank holds before a player breaks it, for its drop.
     fn destroy_block(&self, host: &mut dyn Host, event: &mut DestroyBlockEvent) -> Flow {
+        if matches!(self.gear.destroy_block(host, event), Flow::Cancel) {
+            return Flow::Cancel;
+        }
         self.hums.lock().unwrap().remove(&(host.dimension().to_owned(), event.pos));
         // Private storage cannot be broken by anyone else; a bin remembers its contents.
         match kind(&host.block(event.pos)) {
@@ -815,6 +830,11 @@ impl Hooks for MekanismNative {
     }
 
     fn tooltip(&self, _host: &dyn Host, event: &mut TooltipEvent) {
+        let gear = self.gear.tooltip(&event.stack);
+        if !gear.is_empty() {
+            event.lines.extend(gear);
+            return;
+        }
         if let Some(t) = tank::tier_of(&event.stack.item) {
             event.lines.push(tanks::tooltip(&event.stack, t));
             return;
@@ -834,9 +854,53 @@ impl Hooks for MekanismNative {
     }
 
     fn item_energy_buffer(&self, _host: &dyn Host, event: &mut ItemEnergyBufferEvent) -> Option<ItemEnergyBuffer> {
+        if let Some((capacity, rate)) = items::energy_buffer(event.item) {
+            return Some(ItemEnergyBuffer { capacity, max_insert: rate, max_extract: rate });
+        }
         if event.item == TABLET {
             return Some(ItemEnergyBuffer { capacity: TABLET_CAPACITY, max_insert: TABLET_RATE, max_extract: TABLET_RATE });
         }
         cube::tier(event.item).map(|(capacity, rate)| ItemEnergyBuffer { capacity, max_insert: rate, max_extract: rate })
+    }
+    // Hand-held gear (M11), `items.rs`.
+    fn use_item(&self, host: &mut dyn Host, event: &mut UseItemEvent<'_>) -> Flow {
+        self.gear.use_item(host, event.stack)
+    }
+
+    fn on_equip(&self, host: &mut dyn Host, event: &mut OnEquipEvent<'_>) {
+        self.gear.on_equip(host, event);
+    }
+
+    fn inventory_tick(&self, host: &mut dyn Host, event: &mut InventoryTickEvent) {
+        self.gear.inventory_tick(host, event);
+    }
+
+    fn living_incoming_damage_v2(&self, host: &mut dyn Host, event: &mut LivingIncomingDamageV2Event<'_>) -> Flow {
+        self.gear.damage(host, event);
+        Flow::Continue
+    }
+
+    fn living_entity_use_item_start(&self, host: &mut dyn Host, event: &mut LivingEntityUseItemStartEvent<'_>) -> Flow {
+        self.gear.use_start(host, event)
+    }
+
+    fn living_entity_use_item_finish(&self, host: &mut dyn Host, event: &mut LivingEntityUseItemFinishEvent<'_>) {
+        self.gear.use_finish(host, event);
+    }
+
+    fn use_duration(&self, _host: &dyn Host, event: &mut UseDurationEvent<'_>) {
+        self.gear.use_duration(event);
+    }
+
+    fn use_animation(&self, _host: &dyn Host, event: &mut UseAnimationEvent<'_>) {
+        self.gear.use_animation(event);
+    }
+
+    fn can_eat(&self, host: &dyn Host, event: &mut CanEatEvent<'_>) {
+        self.gear.can_eat(host, event);
+    }
+
+    fn item_bar(&self, _host: &dyn Host, event: &mut ItemBarEvent<'_>) {
+        self.gear.bar(event);
     }
 }
