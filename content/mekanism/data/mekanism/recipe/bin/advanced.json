@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:bin",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "C": "#c:circuits/advanced",
+    "P": "mekanism:basic_bin",
+    "_": "#mekanism:stone_crafting_materials"
+  },
+  "pattern": [
+    "_C_",
+    "APA",
+    "___"
+  ],
+  "result": {
+    "id": "mekanism:advanced_bin"
+  }
+}

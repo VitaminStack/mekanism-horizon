@@ -142,7 +142,9 @@
 
 - [ ] Logistical Transporters (vier Tiers), Restrictive und Diversion Transporter.
 - [ ] Routenfindung, Filter, Prioritaeten, Backpressure und Netzwerk-Reload.
-- [ ] Bins (inkl. Creative), Personal Chest, Personal Barrel, Chargepad.
+- [x] Bins (Basic bis Ultimate und Creative): Menge im Block-Entity-NBT (Horizon-Slots enden bei 99), Hopper fuellen/leeren ueber zwei Slots, Rechtsklick vorn legt die Hand ein, Linksklick vorn nimmt 1 Item (Sneak: Stack), Sneak + leere Hand sperrt den Typ (vorn) oder schaltet Auto-Eject (Seiten). Item behaelt den Inhalt, Front zeigt Item und Menge. Kapazitaeten nach `BinTier`, Creative `i32::MAX`. Siehe `native/.../bin.rs`, `bins.rs`.
+- [x] Personal Chest und Personal Barrel: 9x6-Menue, Besitzer = Platzierer (UUID im NBT), Oeffnen und Abbauen nur fuer Besitzer oder Operatoren, Hopper ausgesperrt. Kein Security Desk (Robit/Security Desk offen). Siehe `storage.rs`, `storages.rs`.
+- [ ] Chargepad: nicht portiert. Der Block braucht Spieler-Inventar-Zugriff pro Tick und Item-Energie fremder Items; Horizon bietet dafuer nur `player_tick` und `set_inventory_slot`, aber keinen Item-Energie-Helfer. Siehe `docs/KNOWN_ISSUES.md`.
 - [ ] Digital Miner und Seismic Vibrator.
 - [ ] Teleporter, Portable Teleporter, Teleporter Frames.
 - [ ] Quantum Entangloporter mit Energie, Items, Fluids und Chemicals.

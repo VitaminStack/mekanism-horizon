@@ -8,16 +8,16 @@ Inoffizieller Port von [Mekanism](https://github.com/mekanism/Mekanism) für [Mi
 
 <!-- progress:start -->
 ```text
-Gesamt                      ████████░░░░░░░░░░░░  42%  (66/157)
+Gesamt                      █████████░░░░░░░░░░░  44%  (70/159)
 
 Projektbasis                ████████████████████ 100%  (10/10)
 Energy Cube                 ████████████████████ 100%  (10/10)
 Rohstoffe & Energie         ████████████░░░░░░░░  61%  (14/23)
 Maschinen & Chemie          ████████░░░░░░░░░░░░  42%  (11/26)
-Automation & Logistik       ░░░░░░░░░░░░░░░░░░░░   0%  (0/17)
+Automation & Logistik       ██░░░░░░░░░░░░░░░░░░  11%  (2/19)
 Multiblocks & Reaktoren     ░░░░░░░░░░░░░░░░░░░░   0%  (0/16)
 Tools & Additions           ████████░░░░░░░░░░░░  38%  (10/26)
-Tests & Releases            █░░░░░░░░░░░░░░░░░░░   5%  (1/19)
+Tests & Releases            ███░░░░░░░░░░░░░░░░░  16%  (3/19)
 Naechste Schritte           ████████████████████ 100%  (10/10)
 ```
 <!-- progress:end -->

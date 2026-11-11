@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:bin",
+  "key": {
+    "A": "#mekanism:alloys/reinforced",
+    "C": "#c:circuits/elite",
+    "P": "mekanism:advanced_bin",
+    "_": "#mekanism:stone_crafting_materials"
+  },
+  "pattern": [
+    "_C_",
+    "APA",
+    "___"
+  ],
+  "result": {
+    "id": "mekanism:elite_bin"
+  }
+}

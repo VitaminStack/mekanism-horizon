@@ -217,3 +217,26 @@ Build: Content `mekanismgenerators` 0.2.0 mit `scripts/Build-Content.ps1` (`carg
 | `recipe give` `turbine/blade`, `hohlraum`, `reactor/frame` (Rezept mit fehlendem Tag `#c:pellets/polonium`) | ok, Rezepte existieren, Laden ohne Fehler |
 | Modelle, Texturen, Item-Icons sichtbar | nicht geprüft (Screenshots zeigten nur Gelände, Welt unter Wasser/Nacht) |
 | Craften im Crafting-Tisch, Hohlraum im Metallurgic Infuser, Abbau-Drop | ausstehend |
+
+## M08 Bins, Personal Chest, Personal Barrel (11.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-a5d971619c14` (zuvor `...55c418ea8e62`, `...e85ab11785b6`), Content mit `scripts/Build-Content.ps1`, Kreativwelt `TankTest`, Plattform bei Y 98.
+
+| Test | Ergebnis |
+|---|---|
+| Hopper über Basic Bin füllt ihn, Fenster-Slot hält bis zu einem Stack, Rest in `mekanism_bin_count` | ok |
+| Rechtsklick vorn legt die Hand ein (64 Kobblestone); Rechtsklick auf Seite/hinten tut nichts | ok |
+| Linksklick vorn (Survival) gibt 1 Item, Menge sinkt | ok |
+| Abbau (Survival, Eisenspitzhacke): Item behält Inhalt (`mekanism_bin_item/count/lock` in `custom_data`, 126), Eingabe-Slot fällt als Item; Platzieren stellt ihn wieder her (64 im Fenster + 62) | ok |
+| Eject: Sneak-Rechtsklick auf die Seite schaltet `active=true`; Hopper darunter füllt eine Kiste (39 Eisen in 4 s) | ok |
+| Sneak + leere Hand vorn sperrt den Typ (Actionbar „Bin locked: Cobblestone“); Sperre bleibt bei leerem Bin | ok |
+| Creative Bin: nimmt Diamant als Typ, Menge `i32::MAX`, verbraucht nichts aus der Hand | ok |
+| Bin ohne Lock vergisst den Typ, wenn Hopper/Eject ihn leeren; zweiter Typ im Eingangsslot blockierte erst (Fehler, behoben: `accepts` prüft auch das Fenster) | behoben |
+| Item auf der Front (Cobblestone) und Zahl „10“ sichtbar; nachts blass | ok |
+| Neustart: Inhalt, Sperre und Typ des Bins bleiben | ok |
+| Personal Chest/Barrel: Platzieren setzt `mekanism_owner` (UUID) und Namen; Chest dreht sich nach Platzierer | ok |
+| Personal Chest öffnet 9x6-Menü „Personal Chest“; Shift-Klick legt Items ein; Abbau gibt Items und Chest | ok |
+| Fremder Besitzer (NBT auf Fantasie-UUID): Menü öffnet trotzdem, weil der Testspieler Operator ist (gewollt) | Ablehnung nicht prüfbar (nur Singleplayer) |
+| Hopper am Personal Chest | nicht geprüft |
+| Crafting-Rezepte (`#c:chests/wooden` und `#c:barrels/wooden` ergänzt), Tooltip mit Inhalt, Sounds | nicht geprüft |
+| Chargepad | nicht portiert (siehe KNOWN_ISSUES) |
