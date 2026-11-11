@@ -6,6 +6,7 @@
   "block.mekanismgenerators.fission_fuel_assembly": "Kernbrennstoffbaugruppe",
   "block.mekanismgenerators.fission_reactor_casing": "Kernreaktorgehäuse",
   "block.mekanismgenerators.fusion_reactor_frame": "Fusionsreaktorrahmen",
+  "block.mekanismgenerators.gas_burning_generator": "Gasverbrennender Generator",
   "block.mekanismgenerators.heat_generator": "Wärmegenerator",
   "block.mekanismgenerators.laser_focus_matrix": "Laser-Fokusmatrix",
   "block.mekanismgenerators.reactor_glass": "Reaktorglas",
@@ -19,6 +20,7 @@
   "item.mekanismgenerators.solar_panel": "Solarmodul",
   "item.mekanismgenerators.turbine_blade": "Rotorblatt",
   "sound_event.mekanismgenerators.tile.generator.bio": "Bio Generator summt",
+  "sound_event.mekanismgenerators.tile.generator.gas": "Gas Generator summt",
   "sound_event.mekanismgenerators.tile.generator.heat": "Wärmegenerator summt",
   "sound_event.mekanismgenerators.tile.generator.solar": "Solar Generator summt",
   "sound_event.mekanismgenerators.tile.generator.wind": "Windgenerator rauscht"

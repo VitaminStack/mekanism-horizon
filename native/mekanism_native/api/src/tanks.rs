@@ -31,7 +31,7 @@ const ITEM_AMOUNT: &str = "mekanism_amount";
 pub(super) type Contents = (Option<String>, i32, u8);
 
 /// Contents of a tank: Horizon's `fluids` list, first tank (`Fluid`, `Amount`).
-fn read_fluid(nbt: &Compound) -> (Option<String>, i32) {
+pub(super) fn read_fluid(nbt: &Compound) -> (Option<String>, i32) {
     let Some(Tag::List(list)) = nbt.get(&key(nbt, "fluids")) else { return (None, 0) };
     let Some(Tag::Compound(tank)) = list.first() else { return (None, 0) };
     let fluid = match tank.get(&key(tank, "Fluid")) {
@@ -46,7 +46,7 @@ fn read_fluid(nbt: &Compound) -> (Option<String>, i32) {
 }
 
 /// `read_fluid`'s writer, in Horizon's layout; only on change.
-fn write_fluid(nbt: &mut Compound, fluid: Option<&str>, amount: i32) {
+pub(super) fn write_fluid(nbt: &mut Compound, fluid: Option<&str>, amount: i32) {
     let want = match fluid {
         Some(f) if amount > 0 => (Some(f.to_owned()), amount),
         _ => (None, 0),

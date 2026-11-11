@@ -66,7 +66,7 @@ SOUNDS = {
          'tile.machine.chemical_dissolution_chamber', 'tile.machine.chemical_washer',
          'tile.machine.chemical_crystallizer'],
     'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar', 'tile.generator.bio',
-                           'tile.generator.wind'],
+                           'tile.generator.wind', 'tile.generator.gas'],
 }
 
 

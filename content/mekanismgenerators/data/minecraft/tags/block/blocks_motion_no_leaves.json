@@ -5,6 +5,7 @@
     "mekanismgenerators:solar_generator",
     "mekanismgenerators:bio_generator",
     "mekanismgenerators:advanced_solar_generator",
-    "mekanismgenerators:wind_generator"
+    "mekanismgenerators:wind_generator",
+    "mekanismgenerators:gas_burning_generator"
   ]
 }

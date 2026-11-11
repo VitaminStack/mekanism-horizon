@@ -9,7 +9,11 @@ Basis: Mekanism 26.3 (Mekanism 10.8.0 alpha), Horizon Nightly 2026-11-08 `fdc87a
 ### M13 Dokumentation
 - Installationsanleitung, Known Issues, Contributing, Lizenzprüfung und dieser Changelog.
 
+### M04 Generatoren
+- Gas-Burning Generator (nativ): Chemical-Tank, Brennwerte Hydrogen/Ethene, GUI, Sound; `electrolytic_core` und `electrolytic_separator` craftbar.
+
 ### M06 Chemie und Maschinen
+- Electric Pump und Fluidic Plenisher (nativ, `pump.rs`/`pumps.rs`): Wasser und Lava aus/in die Welt, Tank 10.000 mB, Breitensuche wie Upstream.
 - Chemical Dissolution Chamber, Chemical Washer und Chemical Crystallizer; Kristall-, Splitter- und schmutzige-Staub-Items für 7 Metalle; Erzkette (1 Erz zu 5 Barren) ingame getestet, siehe [docs/ORE_PROCESSING.md](docs/ORE_PROCESSING.md).
 - Chemical Oxidizer und Chemical Infuser ([#16](https://github.com/VitaminStack/mekanism-horizon/pull/16)). Chemie-Ausgabe in Output-Tanks, zwei Chemie-Inputs; ein Deadlock beim Auswerfen unter dem Rezept-Lock wurde behoben.
 - Purification Chamber und Chemical Injection Chamber mit Klumpen-Items ([#14](https://github.com/VitaminStack/mekanism-horizon/pull/14)).

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "B": "#c:buckets/empty",
+    "O": "#c:ingots/osmium",
+    "X": "mekanism:steel_casing"
+  },
+  "pattern": [
+    " B ",
+    "AXA",
+    "OOO"
+  ],
+  "result": {
+    "id": "mekanism:electric_pump"
+  }
+}

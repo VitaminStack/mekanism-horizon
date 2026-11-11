@@ -8,12 +8,12 @@
 
 use horizon_client::mod_api::{
     BlockEntityDraw, BlockEntityTickEvent, Compound, Host, ItemStack, ModContainer, ModEnergyBuffer,
-    NativeScreen, ScreenDrawEvent, Tag,
+    ModFluidTanks, NativeScreen, ScreenDrawEvent, Tag,
 };
 
 use super::{
-    MekanismNative, SOUND_WEATHER, cube, facing, gauge, generator, give, key, offset, read_energy, shrink,
-    write_int, ENERGY,
+    MekanismNative, SOUND_WEATHER, chemicals, cube, facing, gauge, generator, give, key, offset, read_energy,
+    shrink, tanks, write_int, ENERGY,
 };
 
 /// Block entity NBT of the Heat Generator: stored heat (Tag::Double) and lava in mB.
@@ -24,8 +24,8 @@ const LAVA: &str = "mekanism_lava";
 /// A Wind Generator turning its blades, sent to clients (1 or 0).
 pub(super) const WIND_ACTIVE: &str = "mekanism_wind_active";
 
-pub(super) const ALL: [&str; 5] =
-    [generator::HEAT, generator::SOLAR, generator::BIO, generator::ADVANCED_SOLAR, generator::WIND];
+pub(super) const ALL: [&str; 6] =
+    [generator::HEAT, generator::SOLAR, generator::BIO, generator::ADVANCED_SOLAR, generator::WIND, generator::GAS];
 
 /// The generator `block` is, as its id constant.
 pub(super) fn find(block: &str) -> Option<&'static str> {
@@ -49,6 +49,7 @@ fn name(g: &str) -> &'static str {
         generator::ADVANCED_SOLAR => "Advanced Solar Generator",
         generator::HEAT => "Heat Generator",
         generator::BIO => "Bio-Generator",
+        generator::GAS => "Gas-Burning Generator",
         _ => "Solar Generator",
     }
 }
@@ -117,6 +118,7 @@ pub(super) fn container(g: &str) -> ModContainer {
         generator::BIO => (vec![0], generator::BIO_MENU),
         generator::ADVANCED_SOLAR => (Vec::new(), generator::ADVANCED_SOLAR_MENU),
         generator::WIND => (Vec::new(), generator::WIND_MENU),
+        generator::GAS => (Vec::new(), generator::GAS_MENU),
         _ => (Vec::new(), generator::SOLAR_MENU),
     };
     ModContainer {
@@ -145,6 +147,18 @@ pub(super) fn energy_buffer(g: &str) -> ModEnergyBuffer {
     ModEnergyBuffer { capacity, max_insert: 0, max_extract: capacity, insert_faces: [false; 6], extract_faces: faces }
 }
 
+/// The Gas-Burning Generator's one chemical tank, reached from every side
+/// (Mekanism: every side but the front; Horizon's faces are per block type).
+/// Input only: nothing takes the fuel back out.
+pub(super) fn gas_fluids() -> ModFluidTanks {
+    ModFluidTanks {
+        tanks: vec![generator::GAS_TANK],
+        faces: std::array::from_fn(|_| vec![0]),
+        inputs: vec![0],
+        outputs: Vec::new(),
+    }
+}
+
 pub(super) fn screen(g: &str) -> NativeScreen {
     let fuel = match g {
         generator::HEAT => Some(generator::HEAT_FUEL_SLOT),
@@ -166,6 +180,7 @@ pub(super) fn draw(host: &dyn Host, event: &mut ScreenDrawEvent, g: &str) {
     match g {
         generator::HEAT => draw_heat(host, event),
         generator::BIO => draw_bio(host, event),
+        generator::GAS => draw_gas(host, event),
         _ => draw_solar(host, event, g),
     }
 }
@@ -174,6 +189,14 @@ pub(super) fn tooltip(g: &str, data: &[i32], at: [f32; 2]) -> Vec<String> {
     match g {
         generator::HEAT => generator::heat_tooltip(data, at),
         generator::BIO => generator::bio_tooltip(data, at),
+        generator::GAS => {
+            let id = data
+                .get(generator::GAS_DATA_FUEL)
+                .and_then(|i| usize::try_from(*i).ok()?.checked_sub(1))
+                .and_then(chemicals::id_at);
+            let density = id.as_deref().and_then(generator::gas_fuel).map_or(0, |f| f.0);
+            generator::gas_tooltip(data, at, &id.as_deref().map_or_else(String::new, chemicals::name), density)
+        }
         _ => generator::solar_tooltip(g, data, at),
     }
 }
@@ -184,6 +207,7 @@ impl MekanismNative {
             generator::HEAT => self.heat_tick(host, event),
             generator::SOLAR => self.solar_tick(host, event),
             generator::BIO => self.bio_tick(host, event),
+            generator::GAS => self.gas_tick(host, event),
             generator::ADVANCED_SOLAR => self.advanced_solar_tick(host, event),
             _ => self.wind_tick(host, event),
         }
@@ -285,6 +309,29 @@ impl MekanismNative {
         write_int(&mut e.nbt, ENERGY, energy);
         write_int(&mut e.nbt, BIO_FUEL, fuel);
         let data = generator::bio_menu_data(energy, fuel, active, f);
+        if e.data.as_slice() != data.as_slice() {
+            e.data = data.to_vec();
+        }
+    }
+
+    /// One Gas-Burning Generator tick, as Mekanism's `TileEntityGasGenerator`:
+    /// burn the tank's fuel (`generator::gas_tick`), push the energy out of the front.
+    fn gas_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
+        let pos = event.pos;
+        let (fluid, tank) = tanks::read_fluid(&event.entity.nbt);
+        let mut amount = tank.clamp(0, generator::GAS_TANK);
+        let mut energy = read_energy(&event.entity.nbt, ENERGY).clamp(0, generator::GAS_STORAGE);
+        let fuel = fluid.as_deref().and_then(generator::gas_fuel);
+        let used = fuel.map_or(0, |f| generator::gas_tick(&mut amount, &mut energy, f));
+        let f = facing(host, pos);
+        energy -= give(host, pos, f, energy, energy);
+        self.hum(host, pos, generator::GAS_SOUND, generator::GAS_SOUND_TICKS, used > 0);
+
+        let e = &mut *event.entity;
+        write_int(&mut e.nbt, ENERGY, energy);
+        tanks::write_fluid(&mut e.nbt, fluid.as_deref(), amount);
+        let kind = fluid.as_deref().filter(|_| amount > 0).and_then(chemicals::index).map_or(0, |i| i as i32 + 1);
+        let data = generator::gas_menu_data(energy, amount, kind, used, f);
         if e.data.as_slice() != data.as_slice() {
             e.data = data.to_vec();
         }
@@ -528,6 +575,35 @@ pub(super) fn draw_bio(host: &dyn Host, event: &mut ScreenDrawEvent) {
     host.fill(event.batch, [x + sx, y + sy, sw, sh], 0xFF242A2F);
     host.text(event.batch, &format!("{} FE/t", d(generator::BIO_DATA_PRODUCING)), [x + sx + 4.0, y + sy + 4.0], 0x3FA9F5, false);
     host.text(event.batch, &format!("{} mB", d(generator::BIO_DATA_FUEL)), [x + sx + 4.0, y + sy + 16.0], 0x3FA9F5, false);
+    host.text(event.batch, "Inventory", [x + 8.0, y + generator::INVENTORY_Y - 10.0], 0x404040, false);
+}
+
+/// The Gas-Burning Generator's screen: the fuel gauge (in the chemical's
+/// colour) in the middle, Mekanism's burn rate below, the energy bar right.
+pub(super) fn draw_gas(host: &dyn Host, event: &mut ScreenDrawEvent) {
+    let [x, y] = event.origin;
+    let d = |i: usize| event.data.get(i).copied().unwrap_or(0);
+    let title = match host.screen_title() {
+        Some(t) if event.block != generator::BOUNDING => t,
+        _ => name(generator::GAS).to_owned(),
+    };
+    host.text(event.batch, &title, [x + 8.0, y + 6.0], 0x404040, false);
+    let color = usize::try_from(d(generator::GAS_DATA_FUEL))
+        .ok()
+        .and_then(|i| i.checked_sub(1))
+        .and_then(chemicals::entry)
+        .map_or(0, |e| e.1);
+    let [gx, gy, gw, gh] = generator::GAS_GAUGE;
+    let fill = d(generator::GAS_DATA_AMOUNT) as f32 / generator::GAS_TANK as f32;
+    gauge(host, event.batch, [x + gx, y + gy, gw, gh], fill, color);
+    energy_bar(host, event.batch, event.origin, d(generator::GAS_DATA_ENERGY), generator::GAS_STORAGE);
+    host.text(
+        event.batch,
+        &format!("Burn rate: {} mB/t", d(generator::GAS_DATA_USED)),
+        [x + 8.0, y + generator::INVENTORY_Y - 22.0],
+        0x404040,
+        false,
+    );
     host.text(event.batch, "Inventory", [x + 8.0, y + generator::INVENTORY_Y - 10.0], 0x404040, false);
 }
 
