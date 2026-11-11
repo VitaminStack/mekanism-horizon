@@ -27,6 +27,9 @@ pub mod generator;
 pub mod chemicals;
 #[path = "../../../native/mekanism_native/api/src/tank.rs"]
 pub mod tank;
+/// Electric Pump and Fluidic Plenisher rules (M06).
+#[path = "../../../native/mekanism_native/api/src/pump.rs"]
+pub mod pump;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {

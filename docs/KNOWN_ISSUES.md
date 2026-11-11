@@ -25,7 +25,7 @@ Für Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combin
 - Balkenfarben genähert, GUI-Layout vereinfacht (176x166 statt Mekanisms größerer Oberfläche beim Chemical Infuser).
 - Purification/Injection beziehen Chemie vorerst aus Items (Flint: Sauerstoff, Salz: Chlorwasserstoff). Wasserdampf-Rezepte laufen erst mit einer Maschine, die ihn erzeugt.
 - Chemical Oxidizer/Infuser: keine Chemie-Item-Slots, kein Auto-Eject-Schalter (immer alle Seiten), keine Rezeptpaar-Prüfung beim Einfüllen, keine Pfeil-Animation. Crafting-Rezepte (`mek_data` mit Dynamic Tank) fehlen, bis Dynamic Tank/Personal Storage existieren. Test per `/give`.
-- Fluid-Outputs (Electrolytic Separator, Pump) und Item-Outputs mit Chemie-Zweitausgabe fehlen im Rezeptsystem.
+- Item-Outputs mit Chemie-Zweitausgabe fehlen im Rezeptsystem.
 - Machine-Sounds, Tooltips und Crafting-Rezepte ingame nicht überall geprüft ([TESTLOG.md](TESTLOG.md)).
 
 ## Energy Cube
@@ -38,7 +38,10 @@ Für Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combin
 ## Tanks und Chemie
 
 - Fluid-Anzeige mit **Shaderpack** (Bliss) falsch dargestellt. Ursache liegt in Horizons Shader-Pfad für `draw_fluid_box`, ohne Shader korrekt.
-- Herstellung vieler Fluids/Chemicals fehlt (Electrolytic Separator, Pump, Rotary Condensentrator usw.).
+- Herstellung vieler Fluids/Chemicals fehlt noch (Dissolution Chamber, Washer, Crystallizer, Neutron Activator usw.).
+- **Electric Pump:** pumpt nur Wasser und Lava (kein Schwerwasser über den Filter-Upgrade, keine Upgrades überhaupt), keine Fluid-Container-Slots, keine Redstone-Steuerung, kein Zurücksetzen per Sneak-Rechtsklick (er setzt sich selbst zurück, wenn keine Quelle mehr gefunden wird). Wasser in Waterlogged-Blöcken (Tang, Seegras) wird nicht gepumpt. Tank-Ausgang nur nach oben, wie Mekanism.
+- **Fluidic Plenisher:** nimmt nur Wasser und Lava an (Horizon hat keine Welt-Blöcke für Mekanism-Fluids). Ersetzbare Blöcke sind eine feste Liste (Gras, Farn, Busch, Ranken, Feuer, Leuchtflechte), Horizon nennt kein `canBeReplaced`. Keine Upgrades, kein Redstone, Wasser im Nether verdunstet nicht.
+- **Gas-Burning Generator:** Tank von allen Seiten erreichbar, keine Item-Slots, siehe [GENERATORS.md](GENERATORS.md).
 - Volle Tanks, Durchsatzlimits und Weltneustart-Tests sind nicht vollständig.
 
 ## Tools (`mekanismtools`)

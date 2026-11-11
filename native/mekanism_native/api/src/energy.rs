@@ -11,7 +11,7 @@
 //! docs/upstream/horizon-energy-host.md), so pushes reach only the blocks
 //! `acceptor` knows.
 
-use super::{cube, machine};
+use super::{cube, machine, pump};
 
 /// A block that takes energy from a neighbouring Mekanism block.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -27,6 +27,9 @@ pub struct Acceptor {
 pub fn acceptor(block: &str) -> Option<Acceptor> {
     if let Some((capacity, rate)) = cube::tier(block) {
         return Some(Acceptor { capacity, rate, sided: true });
+    }
+    if pump::is_either(block) {
+        return Some(Acceptor { capacity: pump::CAPACITY, rate: pump::CAPACITY, sided: false });
     }
     // Machines take up to their whole buffer per call (no side config ported).
     machine::find(block).map(|m| Acceptor { capacity: m.capacity(), rate: m.capacity(), sided: false })

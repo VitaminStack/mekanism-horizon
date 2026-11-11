@@ -217,3 +217,18 @@ Build: Content `mekanismgenerators` 0.2.0 mit `scripts/Build-Content.ps1` (`carg
 | `recipe give` `turbine/blade`, `hohlraum`, `reactor/frame` (Rezept mit fehlendem Tag `#c:pellets/polonium`) | ok, Rezepte existieren, Laden ohne Fehler |
 | Modelle, Texturen, Item-Icons sichtbar | nicht geprüft (Screenshots zeigten nur Gelände, Welt unter Wasser/Nacht) |
 | Craften im Crafting-Tisch, Hohlraum im Metallurgic Infuser, Abbau-Drop | ausstehend |
+
+## M04 Gas-Burning Generator, M06 Electric Pump, Fluidic Plenisher (11.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-f49dcb5728e7`, Content aus Branch `feat/m04-gas-generator-pump` (`scripts/Build-Content.ps1`), Kreativwelt `TankTest`, Energie aus Creative Energy Cubes vor der Maschine.
+
+| Test | Ergebnis |
+|---|---|
+| Gas-Burning Generator mit 1.000 mB Hydrogen: Tank leert sich (zu 288 mB nach wenigen Ticks), Energy Cube vor der Front lädt (1.436 FE) | ok |
+| Pump über Wasserquelle: 7.000 mB in 5 s, `mekanism_pump_type` 1, Quelle bleibt (Standardregel `water_source_conversion`) | ok |
+| Pump über Lava: Knoten wachsen auf die Nachbarquellen, Lava wird verbraucht, 5.000 mB gehen nach oben in einen Fluid Tank | ok |
+| Plenisher (Wasser, 10.000 mB) in 3 x 3 x 2 Grube: setzt Quellen, Weg im NBT, Wasserfluss füllt Rest; mit Nachfüllung `finished` 1, Listen gelöscht | ok |
+| Fertiger Plenisher setzt entferntes Lava unter sich neu (1.000 mB Abzug je Block) | ok |
+| GUI Plenisher: Titel, Gauge in Lavafarbe, Status „Finished“, Fluidname, Menge, Energiebalken (Screenshot) | ok |
+| Pump-GUI, Tooltips, Sound, Crafting-Rezepte, Neustart (Tank/Weg bleiben), Chunk-Unload | nicht geprüft |
+| Erster Content-Stand wurde von einem parallelen Build einer anderen Session im geteilten `horizon-mods`-Ordner überschrieben (Blöcke „unknown“); neu gebaut | behoben |
