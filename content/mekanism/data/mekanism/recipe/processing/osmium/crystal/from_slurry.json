@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:crystallizing",
+  "category": "efficiency",
+  "experience": 0.35,
+  "input": {
+    "amount": 200,
+    "ingredient": "mekanism:clean_osmium"
+  },
+  "output": {
+    "id": "mekanism:crystal_osmium"
+  },
+  "typeDisplay": {
+    "type": "minecraft:tag",
+    "tag": "#c:ores/osmium"
+  }
+}

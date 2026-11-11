@@ -79,3 +79,9 @@ Logik in `pump.rs` (Horizon-frei, Tests in `logic/energy`), Host-Seite in `pumps
 - **Pump:** alle 19 Ticks eine Quelle (1.000 mB), zuerst unter der Pumpe, dann die Nachbarn bereits gepumpter Blöcke im Radius 80 (rekursiv, wie `TileEntityElectricPump`). Der Tank gibt bis 256 mB/t nach oben ab (`fluid_insert`). Wasser mit Spielregel `water_source_conversion` und Lava mit `lava_source_conversion` verschwinden nicht (Mekanisms `pumpInfiniteFluidSources` aus).
 - **Plenisher:** nimmt Wasser/Lava nur von oben. Alle 20 Ticks ein Block: erst die Breitensuche über Luft und fließendes Fluid unterhalb (nie nach oben, höchstens 4.000 Blöcke), dann setzt er je Durchlauf einen Eimer. Der Weg steht im Block-Entity-NBT (`mekanism_plenisher_*`).
 - Welt-Zugriff: `Host::block`, `block_property` (`level` 0 = Quelle), `set_block` (Flags 3), `Level::is_loaded` und `Level::game_rule`. Entladene Chunks werden nie gelesen oder beschrieben.
+## Erzverarbeitung (Dissolution Chamber, Chemical Washer, Chemical Crystallizer)
+
+Schlämme (`dirty_*`, `clean_*`) sind Chemicals der Tabelle (`mekanism:chemical/dirty_iron`). Dissolution: Item + Säure
+aus Tank 0 (`Machine::chemical_tank`, per-Tick-Verbrauch) zu Schlamm in Tank 1. Washer: `machine::wash` (Wasser + Schlamm
+zu Schlamm, alles oder nichts). Crystallizer: `Op::Crystallize`, Chemical aus Tank 0 zu Item im Output-Slot. Rezept-Formen
+`dissolution`, `washing`, `crystallizing` in `recipe.rs`; Überblick und Grenzen: `docs/ORE_PROCESSING.md`.

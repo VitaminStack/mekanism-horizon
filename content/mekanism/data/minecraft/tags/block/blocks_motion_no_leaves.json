@@ -29,6 +29,9 @@
     "mekanism:rotary_condensentrator",
     "mekanism:electrolytic_separator",
     "mekanism:electric_pump",
-    "mekanism:fluidic_plenisher"
+    "mekanism:fluidic_plenisher",
+    "mekanism:chemical_dissolution_chamber",
+    "mekanism:chemical_washer",
+    "mekanism:chemical_crystallizer"
   ]
 }

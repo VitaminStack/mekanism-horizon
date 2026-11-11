@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "efficiency",
+  "experience": 0.35,
+  "group": "mekanism:dirty_dust_iron",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:clumps/iron"
+  },
+  "output": {
+    "id": "mekanism:dirty_dust_iron"
+  }
+}

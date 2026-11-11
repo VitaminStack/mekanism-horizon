@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:crushing",
+  "category": "efficiency",
+  "experience": 0.5,
+  "group": "mekanism:dirty_dust_lead",
+  "input": {
+    "count": 1,
+    "ingredient": "#mekanism:clumps/lead"
+  },
+  "output": {
+    "id": "mekanism:dirty_dust_lead"
+  }
+}

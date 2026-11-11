@@ -232,3 +232,17 @@ Build: Native `native-fdc87ae-f49dcb5728e7`, Content aus Branch `feat/m04-gas-ge
 | GUI Plenisher: Titel, Gauge in Lavafarbe, Status „Finished“, Fluidname, Menge, Energiebalken (Screenshot) | ok |
 | Pump-GUI, Tooltips, Sound, Crafting-Rezepte, Neustart (Tank/Weg bleiben), Chunk-Unload | nicht geprüft |
 | Erster Content-Stand wurde von einem parallelen Build einer anderen Session im geteilten `horizon-mods`-Ordner überschrieben (Blöcke „unknown“); neu gebaut | behoben |
+## M06 Dissolution Chamber, Washer, Crystallizer und Erzkette (11.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-1c7ad4927bd3`, Content aus Branch `feat/m06-ore-processing`, Kreativwelt `TankTest`, Energie aus Creative Energy Cubes (Front zur Maschine), Tankinhalte per `/data merge`, Tick-Rate per `/tick rate` (bis 1.000/s) für die langen Läufe. Die Maschinen stehen nebeneinander und werfen ihre Output-Tanks in den Nachbarn aus (Dissolution, Washer, Crystallizer).
+
+| Test | Ergebnis |
+|---|---|
+| Dissolution: 1 Eisenerz + 100 mB Schwefelsäure (1 mB je Tick, 100 Ticks) ergibt 1.000 mB schmutzigen Eisen-Schlamm, ausgeworfen in den Washer (Säure 1.000 zu 900) | ok |
+| Washer: Schlamm + Wasser (5 mB je 1 mB Schlamm, ein Durchlauf je Tick) ergibt sauberen Schlamm, ausgeworfen in den Crystallizer (Wasser 6.000 zu 1.000) | ok |
+| Crystallizer: 200 mB sauberer Schlamm je Eisenkristall, 200 Ticks, 5 Kristalle aus einem Erz | ok |
+| Kette weiter: 5 Kristalle + Chlorwasserstoff (Injection Chamber) zu 5 Splittern, + Sauerstoff (Purification Chamber) zu 5 Klumpen, Crusher zu 5 schmutzigen Stäuben, Enrichment Chamber zu 5 Stäuben, Ofen zu **5 Eisenbarren aus einem Eisenerz** (Vanilla-Ofen mit dem importierten `from_dust_smelting`) | ok |
+| Crystallizer-Output voll (64 Goldkristalle): Maschine pausiert, Schlamm wird weiter eingefüllt (1.000 zu 1.063 mB) | ok |
+| Dissolution ohne Säure: Fortschritt hält (81), läuft nach Nachfüllen weiter | ok |
+| GUIs: Titel, Gauges (Wasser blau, Schlamm gelb, Säure oliv), Item-Slot, Fortschrittsbalken, Energie (Screenshots) | ok |
+| Sounds, Tooltips, Crafting-Rezepte, Weltneustart, Chunk-Unload der neuen Maschinen | nicht geprüft |
