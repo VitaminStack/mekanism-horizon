@@ -5,6 +5,12 @@
     ],
     "subtitle": "sound_event.mekanismgenerators.tile.generator.bio"
   },
+  "tile.generator.gas": {
+    "sounds": [
+      "mekanismgenerators:generator/gas_burning"
+    ],
+    "subtitle": "sound_event.mekanismgenerators.tile.generator.gas"
+  },
   "tile.generator.heat": {
     "sounds": [
       "mekanismgenerators:generator/heat"

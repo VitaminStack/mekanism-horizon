@@ -240,3 +240,31 @@ Build: Native `native-fdc87ae-a5d971619c14` (zuvor `...55c418ea8e62`, `...e85ab1
 | Hopper am Personal Chest | nicht geprüft |
 | Crafting-Rezepte (`#c:chests/wooden` und `#c:barrels/wooden` ergänzt), Tooltip mit Inhalt, Sounds | nicht geprüft |
 | Chargepad | nicht portiert (siehe KNOWN_ISSUES) |
+## M04 Gas-Burning Generator, M06 Electric Pump, Fluidic Plenisher (11.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-f49dcb5728e7`, Content aus Branch `feat/m04-gas-generator-pump` (`scripts/Build-Content.ps1`), Kreativwelt `TankTest`, Energie aus Creative Energy Cubes vor der Maschine.
+
+| Test | Ergebnis |
+|---|---|
+| Gas-Burning Generator mit 1.000 mB Hydrogen: Tank leert sich (zu 288 mB nach wenigen Ticks), Energy Cube vor der Front lädt (1.436 FE) | ok |
+| Pump über Wasserquelle: 7.000 mB in 5 s, `mekanism_pump_type` 1, Quelle bleibt (Standardregel `water_source_conversion`) | ok |
+| Pump über Lava: Knoten wachsen auf die Nachbarquellen, Lava wird verbraucht, 5.000 mB gehen nach oben in einen Fluid Tank | ok |
+| Plenisher (Wasser, 10.000 mB) in 3 x 3 x 2 Grube: setzt Quellen, Weg im NBT, Wasserfluss füllt Rest; mit Nachfüllung `finished` 1, Listen gelöscht | ok |
+| Fertiger Plenisher setzt entferntes Lava unter sich neu (1.000 mB Abzug je Block) | ok |
+| GUI Plenisher: Titel, Gauge in Lavafarbe, Status „Finished“, Fluidname, Menge, Energiebalken (Screenshot) | ok |
+| Pump-GUI, Tooltips, Sound, Crafting-Rezepte, Neustart (Tank/Weg bleiben), Chunk-Unload | nicht geprüft |
+| Erster Content-Stand wurde von einem parallelen Build einer anderen Session im geteilten `horizon-mods`-Ordner überschrieben (Blöcke „unknown“); neu gebaut | behoben |
+## M06 Dissolution Chamber, Washer, Crystallizer und Erzkette (11.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-1c7ad4927bd3`, Content aus Branch `feat/m06-ore-processing`, Kreativwelt `TankTest`, Energie aus Creative Energy Cubes (Front zur Maschine), Tankinhalte per `/data merge`, Tick-Rate per `/tick rate` (bis 1.000/s) für die langen Läufe. Die Maschinen stehen nebeneinander und werfen ihre Output-Tanks in den Nachbarn aus (Dissolution, Washer, Crystallizer).
+
+| Test | Ergebnis |
+|---|---|
+| Dissolution: 1 Eisenerz + 100 mB Schwefelsäure (1 mB je Tick, 100 Ticks) ergibt 1.000 mB schmutzigen Eisen-Schlamm, ausgeworfen in den Washer (Säure 1.000 zu 900) | ok |
+| Washer: Schlamm + Wasser (5 mB je 1 mB Schlamm, ein Durchlauf je Tick) ergibt sauberen Schlamm, ausgeworfen in den Crystallizer (Wasser 6.000 zu 1.000) | ok |
+| Crystallizer: 200 mB sauberer Schlamm je Eisenkristall, 200 Ticks, 5 Kristalle aus einem Erz | ok |
+| Kette weiter: 5 Kristalle + Chlorwasserstoff (Injection Chamber) zu 5 Splittern, + Sauerstoff (Purification Chamber) zu 5 Klumpen, Crusher zu 5 schmutzigen Stäuben, Enrichment Chamber zu 5 Stäuben, Ofen zu **5 Eisenbarren aus einem Eisenerz** (Vanilla-Ofen mit dem importierten `from_dust_smelting`) | ok |
+| Crystallizer-Output voll (64 Goldkristalle): Maschine pausiert, Schlamm wird weiter eingefüllt (1.000 zu 1.063 mB) | ok |
+| Dissolution ohne Säure: Fortschritt hält (81), läuft nach Nachfüllen weiter | ok |
+| GUIs: Titel, Gauges (Wasser blau, Schlamm gelb, Säure oliv), Item-Slot, Fortschrittsbalken, Energie (Screenshots) | ok |
+| Sounds, Tooltips, Crafting-Rezepte, Weltneustart, Chunk-Unload der neuen Maschinen | nicht geprüft |

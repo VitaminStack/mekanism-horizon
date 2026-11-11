@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:crystallizing",
+  "experience": 0.15,
+  "input": {
+    "amount": 15,
+    "ingredient": "mekanism:brine"
+  },
+  "output": {
+    "id": "mekanism:salt"
+  }
+}

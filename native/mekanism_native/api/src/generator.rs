@@ -13,6 +13,13 @@
 //! burns 1 mB for 25 FE when all of it fits (`GeneratorsConfig`; storage 30 s).
 //! The tank holds no fluid of Horizon's: there are no pipes yet.
 //!
+//! Gas-Burning Generator (`TileEntityGasGenerator`): a 1000 mB chemical tank that
+//! takes only chemicals with a fuel attribute (`chemical_attribute_fuel` data map:
+//! hydrogen 2 energy per mB, ethene 8, each at most 10 mB per tick). Each tick it
+//! burns `ceil(max burn * how full the tank is)` mB, capped by what is left and by
+//! the energy that still fits (storage 1000 x hydrogen's density). The tank is
+//! Horizon's block-entity tank (`mekanism:chemical/<id>`), filled from neighbours.
+//!
 //! Advanced Solar Generator (`TileEntityAdvancedSolarGenerator`, 12 FE/t peak,
 //! storage 12 s) and Wind Generator (`TileEntityWindGenerator`, 1 to 5 FE/t by
 //! height, storage 5 s) are multiblocks: bounding blocks (`mekanism:bounding_block`)
@@ -36,6 +43,7 @@ pub const SOLAR: &str = "mekanismgenerators:solar_generator";
 pub const BIO: &str = "mekanismgenerators:bio_generator";
 pub const ADVANCED_SOLAR: &str = "mekanismgenerators:advanced_solar_generator";
 pub const WIND: &str = "mekanismgenerators:wind_generator";
+pub const GAS: &str = "mekanismgenerators:gas_burning_generator";
 pub const BOUNDING: &str = "mekanism:bounding_block";
 /// Registered by `data/mekanismgenerators/horizon/menu/<generator>.json`.
 pub const HEAT_MENU: &str = HEAT;
@@ -43,6 +51,7 @@ pub const SOLAR_MENU: &str = SOLAR;
 pub const BIO_MENU: &str = BIO;
 pub const ADVANCED_SOLAR_MENU: &str = ADVANCED_SOLAR;
 pub const WIND_MENU: &str = WIND;
+pub const GAS_MENU: &str = GAS;
 /// Mekanism's loops while running (`tile.generator.*` in `sounds.json`) and
 /// their clip lengths in ticks.
 pub const HEAT_SOUND: &str = "mekanismgenerators:tile.generator.heat";
@@ -53,6 +62,8 @@ pub const BIO_SOUND: &str = "mekanismgenerators:tile.generator.bio";
 pub const BIO_SOUND_TICKS: i32 = 56;
 pub const WIND_SOUND: &str = "mekanismgenerators:tile.generator.wind";
 pub const WIND_SOUND_TICKS: i32 = 258;
+pub const GAS_SOUND: &str = "mekanismgenerators:tile.generator.gas";
+pub const GAS_SOUND_TICKS: i32 = 47;
 
 pub const TICKS_PER_SECOND: i32 = 20;
 
@@ -215,6 +226,40 @@ pub fn bio_tick(fuel: &mut i32, energy: &mut i32) -> bool {
 /// all the fuel it gives fits in the tank.
 pub fn bio_fits(fuel: i32, from_item: i32) -> bool {
     from_item > 0 && fuel + from_item <= BIO_TANK
+}
+
+// --- Gas-Burning Generator ---
+pub const GAS_TANK: i32 = 1_000;
+/// `chemical_attribute_fuel`: (chemical id path, energy per mB, max mB burned per tick).
+pub const GAS_FUELS: [(&str, i32, i32); 2] = [("hydrogen", 2, 10), ("ethene", 8, 10)];
+/// `1000 * hydrogenEnergyDensity` (`GeneratorsBlockTypes`).
+pub const GAS_STORAGE: i32 = 1_000 * GAS_FUELS[0].1;
+
+/// The fuel a tank id burns as: (energy per mB, max mB per tick).
+pub fn gas_fuel(tank_id: &str) -> Option<(i32, i32)> {
+    let path = tank_id.strip_prefix("mekanism:chemical/")?;
+    GAS_FUELS.iter().find(|(id, ..)| *id == path).map(|&(_, e, m)| (e, m))
+}
+
+/// One Gas-Burning Generator tick on a tank of `amount` mB of a fuel with
+/// `(density, max_burn)`: the mB burned, `ceil(max_burn * fullness)` limited by
+/// the tank and the energy that fits, with the energy of the whole mB added
+/// (`TileEntityGasGenerator.onUpdateServer`).
+pub fn gas_tick(amount: &mut i32, energy: &mut i32, (density, max_burn): (i32, i32)) -> i32 {
+    if *amount <= 0 || density <= 0 {
+        return 0;
+    }
+    let fullness = *amount as f64 / GAS_TANK as f64;
+    let burn = ((max_burn as f64 * fullness).ceil() as i32).min(*amount);
+    let room = (GAS_STORAGE - *energy).max(0);
+    let inserted = density.saturating_mul(burn).min(room);
+    if inserted <= 0 {
+        return 0;
+    }
+    let mb = (inserted + density - 1) / density;
+    *amount -= mb;
+    *energy += inserted;
+    mb
 }
 
 // --- multiblocks ---
@@ -500,6 +545,32 @@ pub fn bio_menu_data(energy: i32, fuel: i32, active: bool, facing: usize) -> [i3
     [energy, fuel, if active { BIO_GENERATION } else { 0 }, facing as i32]
 }
 
+pub const GAS_GAUGE: [f32; 4] = [55.0, 18.0, 66.0, 50.0];
+pub const GAS_SCREEN: [f32; 4] = [48.0, 23.0, 80.0, 40.0];
+pub const GAS_DATA_ENERGY: usize = 0;
+pub const GAS_DATA_AMOUNT: usize = 1;
+/// `chemicals::index + 1` of the fuel in the tank (0 empty).
+pub const GAS_DATA_FUEL: usize = 2;
+pub const GAS_DATA_USED: usize = 3;
+pub const GAS_DATA_FACING: usize = 4;
+pub const GAS_DATA_LEN: usize = 5;
+
+pub fn gas_menu_data(energy: i32, amount: i32, fuel_index: i32, used: i32, facing: usize) -> [i32; GAS_DATA_LEN] {
+    [energy, amount, fuel_index, used, facing as i32]
+}
+
+pub fn gas_tooltip(data: &[i32], at: [f32; 2], fuel_name: &str, density: i32) -> Vec<String> {
+    let d = |i: usize| data.get(i).copied().unwrap_or(0);
+    if inside(GAS_GAUGE, at) {
+        let name = if d(GAS_DATA_AMOUNT) > 0 { fuel_name } else { "Empty" };
+        return vec![format!("{name}: {} / {GAS_TANK} mB", d(GAS_DATA_AMOUNT))];
+    }
+    if inside(ENERGY_BAR, at) {
+        return energy_lines(d(GAS_DATA_ENERGY), GAS_STORAGE, d(GAS_DATA_USED) * density);
+    }
+    Vec::new()
+}
+
 pub fn inside(rect: [f32; 4], at: [f32; 2]) -> bool {
     let [x, y, w, h] = rect;
     at[0] >= x && at[0] < x + w && at[1] >= y && at[1] < y + h
@@ -536,6 +607,7 @@ pub fn panel_storage(block: &str) -> i32 {
     match block {
         ADVANCED_SOLAR => ADVANCED_SOLAR_STORAGE,
         WIND => WIND_STORAGE,
+        GAS => GAS_STORAGE,
         _ => SOLAR_STORAGE,
     }
 }
@@ -561,6 +633,48 @@ pub fn solar_tooltip(block: &str, data: &[i32], at: [f32; 2]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn gas_burns_by_fullness() {
+        let hydrogen = gas_fuel("mekanism:chemical/hydrogen").unwrap();
+        assert_eq!(hydrogen, (2, 10));
+        assert_eq!(gas_fuel("mekanism:chemical/ethene"), Some((8, 10)));
+        assert_eq!(gas_fuel("mekanism:chemical/oxygen"), None);
+        assert_eq!(gas_fuel("mekanism:hydrogen"), None, "the liquid is no fuel");
+        let (mut amount, mut energy) = (1_000, 0);
+        assert_eq!(gas_tick(&mut amount, &mut energy, hydrogen), 10);
+        assert_eq!((amount, energy), (990, 20));
+        // Half full: 5 mB. A nearly empty tank still burns 1 mB.
+        let (mut amount, mut energy) = (500, 0);
+        assert_eq!(gas_tick(&mut amount, &mut energy, hydrogen), 5);
+        let (mut amount, mut energy) = (3, 0);
+        assert_eq!(gas_tick(&mut amount, &mut energy, hydrogen), 1);
+        assert_eq!((amount, energy), (2, 2));
+        assert_eq!(gas_tick(&mut 0, &mut 0, hydrogen), 0);
+    }
+
+    #[test]
+    fn gas_stops_when_energy_is_full_and_rounds_up() {
+        let ethene = (8, 10);
+        let (mut amount, mut energy) = (1_000, GAS_STORAGE);
+        assert_eq!(gas_tick(&mut amount, &mut energy, ethene), 0);
+        assert_eq!((amount, energy), (1_000, GAS_STORAGE));
+        // 5 FE of room: 1 mB (ceil 5/8) is burned and gives only the 5 that fit.
+        let (mut amount, mut energy) = (1_000, GAS_STORAGE - 5);
+        assert_eq!(gas_tick(&mut amount, &mut energy, ethene), 1);
+        assert_eq!((amount, energy), (999, GAS_STORAGE));
+        let (mut amount, mut energy) = (1_000, 0);
+        assert_eq!(gas_tick(&mut amount, &mut energy, ethene), 10);
+        assert_eq!(energy, 80, "ethene: 10 mB x 8");
+    }
+
+    #[test]
+    fn gas_menu_fits_16_bits_and_tooltips() {
+        let d = gas_menu_data(GAS_STORAGE, GAS_TANK, 60_000, 10, 5);
+        assert!(d.iter().all(|v| (0..=0xFFFF).contains(v)));
+        assert_eq!(gas_tooltip(&d, [60.0, 30.0], "Hydrogen", 2), vec!["Hydrogen: 1000 / 1000 mB"]);
+        assert_eq!(gas_tooltip(&d, [165.0, 30.0], "Hydrogen", 2)[1], "Producing: 20 FE/t");
+    }
 
     #[test]
     fn bounding_shapes_match_mekanism() {

@@ -8,7 +8,7 @@
 //! - `machine`, `infuser`: the processing machines' table and operation (Horizon-free);
 //!   `process`: their tick, container and screen; `recipe`: Mekanism's recipe files.
 //! - `generator` (Horizon-free) and `generators`: Heat, Solar, Bio, Advanced
-//!   Solar and Wind Generator.
+//!   Solar, Wind and Gas-Burning Generator.
 //! - `chemicals`, `tank` (Horizon-free) and `tanks`: fluids, chemicals and the
 //!   Fluid and Chemical Tanks (M06).
 //!
@@ -50,6 +50,8 @@ mod generators;
 mod infuser;
 mod machine;
 mod process;
+mod pump;
+mod pumps;
 mod recipe;
 mod storage;
 mod storages;
@@ -116,6 +118,8 @@ enum Kind {
     Bin(&'static bin::Tier),
     /// `storage::CHEST` or `storage::BARREL`.
     Storage(&'static str),
+    /// The Electric Pump, or the Fluidic Plenisher (`pump.rs`).
+    Pump { plenisher: bool },
 }
 
 fn kind(block: &str) -> Option<Kind> {
@@ -142,6 +146,8 @@ fn kind(block: &str) -> Option<Kind> {
     }
     if let Some(s) = storage::find(block) {
         return Some(Kind::Storage(s));
+    if pump::is_either(block) {
+        return Some(Kind::Pump { plenisher: pump::is_plenisher(block) });
     }
     generators::find(block).map(Kind::Generator)
 }
@@ -420,6 +426,7 @@ impl Hooks for MekanismNative {
             Kind::Tank(t) => Some(tanks::container(t)),
             Kind::Bin(_) => Some(bins::container()),
             Kind::Storage(_) => Some(storages::container()),
+            Kind::Pump { plenisher } => Some(pumps::container(plenisher)),
             // One hidden placeholder slot; all interactions are buttons.
             Kind::Cube { .. } => Some(ModContainer {
                 slots: 1,
@@ -451,6 +458,7 @@ impl Hooks for MekanismNative {
                 extract_faces: [false; 6],
             }),
             Kind::Generator(g) => Some(generators::energy_buffer(g)),
+            Kind::Pump { .. } => Some(pumps::energy_buffer()),
             Kind::Cube { capacity, rate } => Some(ModEnergyBuffer {
                 capacity,
                 max_insert: rate,
@@ -467,6 +475,8 @@ impl Hooks for MekanismNative {
         match kind(event.block)? {
             Kind::Tank(t) => Some(tanks::fluids(t)),
             Kind::Machine(m) => m.tanks.map(process::fluids),
+            Kind::Generator(generator::GAS) => Some(generators::gas_fluids()),
+            Kind::Pump { plenisher } => Some(pumps::fluids(plenisher)),
             _ => None,
         }
     }
@@ -475,6 +485,9 @@ impl Hooks for MekanismNative {
     fn block_entity_accepts_fluid(&self, host: &dyn Host, event: &mut BlockEntityAcceptsFluidEvent) -> Flow {
         match kind(event.block) {
             Some(Kind::Tank(t)) if !tank::accepts(t.family, event.fluid) => Flow::Cancel,
+            Some(Kind::Generator(generator::GAS)) if generator::gas_fuel(event.fluid).is_none() => Flow::Cancel,
+            // The plenisher places only what a world holds.
+            Some(Kind::Pump { plenisher: true }) if pump::Liquid::from_id(event.fluid).is_none() => Flow::Cancel,
             Some(Kind::Machine(m)) if m.tanks.is_some()
                 && !process::accepts(host, m, &mut self.recipes.lock().unwrap(), event.tank, event.fluid) => Flow::Cancel,
             _ => Flow::Continue,
@@ -522,7 +535,9 @@ impl Hooks for MekanismNative {
             Some(Kind::Tank(t)) => tanks::tick(host, event, t),
             Some(Kind::DebugChemical) => tanks::debug_tick(host, event.pos),
             Some(Kind::Bin(t)) => bins::tick(host, event, t),
-            Some(Kind::Storage(_)) | None => {}
+            Some(Kind::Storage(_)) => {}
+            Some(Kind::Pump { plenisher }) => pumps::tick(host, event, plenisher),
+            None => {}
         }
     }
 
@@ -532,7 +547,7 @@ impl Hooks for MekanismNative {
     fn state_for_placement(&self, level: &dyn LevelHost, event: &mut StateForPlacementEvent) -> Option<Option<horizon_client::mod_api::BlockStateId>> {
         let pitch = match kind(&event.context.item)? {
             Kind::Cube { .. } => event.context.pitch,
-            Kind::Machine(_) | Kind::Generator(_) => 0.0,
+            Kind::Machine(_) | Kind::Generator(_) | Kind::Pump { .. } => 0.0,
             Kind::Tank(t) if t.family == tank::Family::Chemical => 0.0,
             Kind::Bin(_) => 0.0,
             Kind::Storage(block) if storage::horizontal_only(block) => 0.0,
@@ -554,6 +569,7 @@ impl Hooks for MekanismNative {
             // Only the Advanced Solar and the Wind Generator are multiblocks: one layout.
             Kind::Bounding => Some(generators::screen(generator::WIND)),
             Kind::Tank(_) => Some(tanks::screen()),
+            Kind::Pump { .. } => Some(pumps::screen()),
             // The cube's dummy container slot is hidden.
             Kind::Cube { .. } => Some(NativeScreen {
                 width: 176.0,
@@ -580,6 +596,7 @@ impl Hooks for MekanismNative {
             }
             Some(Kind::Cube { capacity, rate }) => draw_cube(host, event, capacity, rate),
             Some(Kind::Tank(t)) => tanks::draw(host, event, t),
+            Some(Kind::Pump { plenisher }) => pumps::draw(host, event, plenisher),
             _ => {}
         }
     }
@@ -605,6 +622,7 @@ impl Hooks for MekanismNative {
                 }
             }
             Some(Kind::Tank(t)) => event.lines.extend(tank::tooltip(t, event.data, event.at)),
+            Some(Kind::Pump { .. }) => event.lines.extend(pump::tooltip(event.data, event.at)),
             _ => {}
         }
     }

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "C": "#c:circuits/basic",
+    "I": "#c:ingots/tin",
+    "P": "mekanism:electric_pump"
+  },
+  "pattern": [
+    "III",
+    "CPC",
+    "III"
+  ],
+  "result": {
+    "id": "mekanism:fluidic_plenisher"
+  }
+}

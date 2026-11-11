@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:crystallizing",
+  "category": "efficiency",
+  "experience": 0.5,
+  "input": {
+    "amount": 200,
+    "ingredient": "mekanism:clean_lead"
+  },
+  "output": {
+    "id": "mekanism:crystal_lead"
+  },
+  "typeDisplay": {
+    "type": "minecraft:tag",
+    "tag": "#c:ores/lead"
+  }
+}
