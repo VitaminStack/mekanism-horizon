@@ -174,14 +174,19 @@
 
 ## M11 - Ausruestung, Items und Spielhilfen [P2/P3]
 
-- [ ] Atomic Disassembler, Electric Bow, Flamethrower, HDPE-Reinforced Elytra.
-- [ ] Jetpack, Armored Jetpack, Free Runners, Armored Free Runners.
-- [ ] Scuba Equipment und Hazmat Suit.
-- [ ] MekaSuit (alle Teile), Meka-Tool und Modification Station.
-- [ ] MekaSuit-/Tool-Module, Energiekosten und Effekte.
-- [ ] Canteen, Gauge Dropper, Geiger Counter, Dosimeter, Dictionary.
-- [ ] Crafting Formula, Network Reader und Portable QIO Dashboard.
-- [ ] Player-Movement, Item-NBT, Client/Server-Sync und Sicherheit testen.
+Hook-Prüfung und Machbarkeit je Item: [docs/ITEM_HOOKS.md](docs/ITEM_HOOKS.md). Nativ in `items.rs`/`gear.rs`. Items ohne Funktion werden nicht registriert.
+
+- [x] Hook-Audit gegen `fdc87ae` (API 411): Item-Verwendung, Tick im Inventar, Energiepuffer, Item-NBT, Bewegung, Atmen, Tasten. Korrektur: `use_item_on` existiert (API 13), siehe `docs/TOOLS.md`.
+- [x] Atomic Disassembler: Energiepuffer, Abbau, ohne Haltbarkeit, Waffenplus (2.000 FE), Sneak-Modus Normal/Vein, Vein-Mining (Tag `atomic_disassembler_ore`, 128 Blöcke). *(Modi Slow/Fast/Off, Tempoänderung je Modus fehlen: Abbautempo ist statisch.)*
+- [ ] Electric Bow, Flamethrower: machbar (`arrow_loose`, `on_use_tick`, Gas im Item), nicht gebaut.
+- [ ] HDPE-Reinforced Elytra: Blocker, Rezept braucht `mekanism:hdpe_sheet` (M06).
+- [ ] Jetpack, Armored Jetpack, Free Runners, Armored Free Runners, Scuba Equipment: machbar (`inventory_tick`, `entity_set_velocity`, `living_breathe`, `living_incoming_damage`), nicht gebaut; Rüstungswerte brauchen den Java-Quellcode.
+- [ ] Hazmat Suit: Blocker, kein Radiation-System.
+- [ ] MekaSuit (alle Teile), Meka-Tool, Modification Station, Module: Blocker, kein Modulsystem.
+- [x] Canteen (Nutritional Paste, Trinken, Balken; Auffüllen per Rechtsklick auf Tank statt Nutritional Liquifier), Gauge Dropper (Block-Tanks statt GUI-Gauges), Dictionary (Tags nur aus generierter Liste).
+- [ ] Geiger Counter, Dosimeter: Blocker, kein Radiation-System.
+- [ ] Crafting Formula (Formulaic Assemblicator fehlt), Network Reader (Transmitter fehlen), Portable QIO Dashboard (QIO und Polonium-Pellets fehlen): Blocker.
+- [ ] Player-Movement, Item-NBT, Client/Server-Sync und Sicherheit testen. *(Item-NBT, Energie, Vein-Mining, Trinken und Dropper getestet, siehe TESTLOG; Bewegung, LAN und Server offen.)*
 
 ## M12 - Unterprojekte komplettieren [P2/P3]
 

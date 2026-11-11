@@ -28,6 +28,10 @@ pub mod chemicals;
 #[path = "../../../native/mekanism_native/api/src/tank.rs"]
 pub mod tank;
 
+/// Canteen, Gauge Dropper and Atomic Disassembler rules (M11).
+#[path = "../../../native/mekanism_native/api/src/gear.rs"]
+pub mod gear;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {
     stored: u64,

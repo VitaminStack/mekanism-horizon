@@ -69,3 +69,18 @@ Multiblocks (Thermal Evaporation, Turbine, Fission/Fusion-Reaktor, Boiler, SPS u
 ## Fehler melden
 
 Als GitHub-Issue mit Horizon-Stand (Commit/Nightly), Native-Build-Name, Mod-Versionen, Schritten zur Reproduktion und Log-Auszug. Siehe [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+## Ausrüstung und Spielhilfen (M11)
+
+Details und Machbarkeit je Item: [ITEM_HOOKS.md](ITEM_HOOKS.md).
+
+- **Nicht registriert**: Electric Bow, Flamethrower, Jetpack, Free Runners, Scuba, Hazmat, MekaSuit, Meka-Tool, Geiger Counter, Dosimeter, Crafting Formula, Network Reader, Portable QIO Dashboard, HDPE-Elytra. Ein craftbares Item ohne Funktion wäre vorgetäuscht. Gründe: fehlende Systeme (Radiation, Module, QIO, Transmitter, Formulaic Assemblicator), fehlendes `hdpe_sheet`, oder Hooks vorhanden, aber noch nicht gebaut.
+- **Atomic Disassembler**: nur Modi Normal und Vein Mining (Sneak plus Rechtsklick); Slow, Fast und Off fehlen, das Abbautempo ist eine feste Komponente. Energie lädt nur über Cubes und Tablet-Logik von Horizon, kein Ladeslot im Item. Ohne Energie baut er nichts ab.
+- **Canteen**: Auffüllen per Rechtsklick auf einen Tank mit Nutritional Paste (1.000 mB), weil der Nutritional Liquifier fehlt.
+- **Gauge Dropper**: arbeitet auf Block-Tanks und Maschinen mit Fluidtank, nicht auf GUI-Gauges.
+- **Dictionary**: prüft eine generierte Tagliste (Horizon kann Tags nicht auflisten), kennt also keine Tags außerhalb der Content-Mods und weniger Vanilla-Tags.
+- **Canteen**: gibt keine Sättigung; ein getrunkener Hungerpunkt sinkt bei Sättigung 0 wieder wie jeder andere (ob das Original Sättigung gibt, ist nicht geprüft).
+- **Dictionary (Offhand)**: Horizon bietet keinen Lesezugriff auf die Offhand; das Item dort wird erst nach dem nächsten Wechsel erkannt (`on_equip`), nicht direkt nach dem Laden der Welt.
+- **Item-Änderungen** (Energie, Füllstand, Modus) wirken mit bis zu einem Tick Verzug: Use-Hooks dürfen das Inventar nicht schreiben, die Änderung wird im nächsten `inventory_tick` angewendet. Beim Neuaufbau des Stacks gehen andere Komponenten verloren, die Items haben aber keine.
+- **Zahlenwerte** (Kapazitäten, Kosten, Schrittweiten) sind Mekanisms Standardwerte nach Kenntnis, nicht aus dem Java-Quellcode gelesen (Sparse-Checkout ohne `src/main/java`).
+
