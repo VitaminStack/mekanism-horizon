@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:injecting",
+  "category": "efficiency",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:hydrogen_chloride"
+  },
+  "experience": 0.35,
+  "group": "mekanism:shard_copper",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#mekanism:crystals/copper"
+  },
+  "output": {
+    "id": "mekanism:shard_copper"
+  },
+  "per_tick_usage": true
+}

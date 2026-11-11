@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:crystallizing",
+  "category": "efficiency",
+  "experience": 0.35,
+  "input": {
+    "amount": 200,
+    "ingredient": "mekanism:clean_tin"
+  },
+  "output": {
+    "id": "mekanism:crystal_tin"
+  },
+  "typeDisplay": {
+    "type": "minecraft:tag",
+    "tag": "#c:ores/tin"
+  }
+}

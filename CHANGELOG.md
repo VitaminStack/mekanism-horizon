@@ -10,6 +10,7 @@ Basis: Mekanism 26.3 (Mekanism 10.8.0 alpha), Horizon Nightly 2026-11-08 `fdc87a
 - Installationsanleitung, Known Issues, Contributing, Lizenzprüfung und dieser Changelog.
 
 ### M06 Chemie und Maschinen
+- Chemical Dissolution Chamber, Chemical Washer und Chemical Crystallizer; Kristall-, Splitter- und schmutzige-Staub-Items für 7 Metalle; Erzkette (1 Erz zu 5 Barren) ingame getestet, siehe [docs/ORE_PROCESSING.md](docs/ORE_PROCESSING.md).
 - Chemical Oxidizer und Chemical Infuser ([#16](https://github.com/VitaminStack/mekanism-horizon/pull/16)). Chemie-Ausgabe in Output-Tanks, zwei Chemie-Inputs; ein Deadlock beim Auswerfen unter dem Rezept-Lock wurde behoben.
 - Purification Chamber und Chemical Injection Chamber mit Klumpen-Items ([#14](https://github.com/VitaminStack/mekanism-horizon/pull/14)).
 - Fluid- und Chemical-Tabellen aus Upstream, Fluid und Chemical Tanks (Auto-Eject, Dumping-Modi, Eimer, Fluid-Rendering, GUI) ([#10](https://github.com/VitaminStack/mekanism-horizon/pull/10), [#11](https://github.com/VitaminStack/mekanism-horizon/pull/11)).

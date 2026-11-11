@@ -21,6 +21,13 @@
 //!   `mekanism:brine`).
 //! - chemical and fluid for each other (`rotary`): `chemical_input`,
 //!   `chemical_output`, `fluid_input`, `fluid_output`, read as a `Rotation`.
+//! - item and chemical to chemical (`dissolution`): `item_input`, `chemical_input`
+//!   {`ingredient`, `amount`}, `output` {`id`, `amount`}, `per_tick_usage`; a `Recipe`
+//!   whose chemical comes from an input tank and goes to the output tank.
+//! - fluid and chemical to chemical (`washing`): `fluid_input`, `chemical_input`
+//!   {`ingredient`, `amount`}, `output` {`id`, `amount`}, read as a `Washing`.
+//! - chemical to item (`crystallizing`): `input` {`ingredient`, `amount`}, `output` {`id`},
+//!   read as a `Crystal`.
 //!
 //! A recipe that names an unknown item is skipped, as Mekanism skips recipes
 //! whose ingredients do not resolve. Chemicals stay ids here: each machine
@@ -141,6 +148,37 @@ impl Infusion {
     }
 }
 
+/// A fluid and a chemical make a chemical (`washing`): the Chemical Washer's
+/// dirty slurry and water make clean slurry.
+pub struct Washing {
+    /// The fluid's tank id and mB.
+    pub fluid: (String, i32),
+    pub chemical: (String, i32),
+    pub output: (String, i32),
+}
+
+impl Washing {
+    fn parse(_: &dyn Host, j: &Value) -> Option<Self> {
+        Some(Washing {
+            fluid: fluid_ingredient(&j["fluid_input"])?,
+            chemical: chemical_ingredient(&j["chemical_input"])?,
+            output: chemical_stack(&j["output"])?,
+        })
+    }
+}
+
+/// A chemical makes an item (`crystallizing`): `chemical` mB of a slurry make `output`.
+pub struct Crystal {
+    pub chemical: (String, i32),
+    pub output: ItemStack,
+}
+
+impl Crystal {
+    fn parse(host: &dyn Host, j: &Value) -> Option<Self> {
+        Some(Crystal { chemical: chemical_ingredient(&j["input"])?, output: host.recipe_result(&j["output"])? })
+    }
+}
+
 /// A fluid splits into two chemicals (`separating`).
 pub struct Separation {
     /// The fluid's tank id and mB.
@@ -249,6 +287,8 @@ pub struct Recipes {
     infusion: Table<Infusion>,
     separation: Table<Separation>,
     rotation: Table<Rotation>,
+    washing: Table<Washing>,
+    crystal: Table<Crystal>,
 }
 
 impl Recipes {
@@ -270,6 +310,16 @@ impl Recipes {
     /// The Rotary Condensentrator's recipes.
     pub fn rotating(&mut self, host: &dyn Host, kind: &'static str) -> &[Rotation] {
         self.rotation.refresh(host, kind, Rotation::parse)
+    }
+
+    /// The Chemical Washer's recipes.
+    pub fn washing(&mut self, host: &dyn Host, kind: &'static str) -> &[Washing] {
+        self.washing.refresh(host, kind, Washing::parse)
+    }
+
+    /// The Chemical Crystallizer's recipes.
+    pub fn crystallizing(&mut self, host: &dyn Host, kind: &'static str) -> &[Crystal] {
+        self.crystal.refresh(host, kind, Crystal::parse)
     }
 
     /// The chemical conversions (item to chemical) into any buffer.

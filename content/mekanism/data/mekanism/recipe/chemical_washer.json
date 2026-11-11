@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "B": "mekanism:basic_fluid_tank",
+    "C": "#c:circuits/ultimate",
+    "I": "#c:ingots/refined_obsidian",
+    "T": "mekanism:basic_chemical_tank",
+    "X": "mekanism:steel_casing"
+  },
+  "pattern": [
+    "IBI",
+    "CXC",
+    "ITI"
+  ],
+  "result": {
+    "id": "mekanism:chemical_washer"
+  }
+}

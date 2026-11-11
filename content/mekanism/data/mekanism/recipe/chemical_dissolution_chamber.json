@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "C": "#c:circuits/ultimate",
+    "I": "#c:ingots/refined_obsidian",
+    "T": "mekanism:basic_chemical_tank",
+    "X": "mekanism:steel_casing"
+  },
+  "pattern": [
+    "ITI",
+    "CXC",
+    "ITI"
+  ],
+  "result": {
+    "id": "mekanism:chemical_dissolution_chamber"
+  }
+}

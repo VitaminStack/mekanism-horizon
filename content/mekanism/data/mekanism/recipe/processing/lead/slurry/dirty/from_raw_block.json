@@ -1,0 +1,19 @@
+{
+  "type": "mekanism:dissolution",
+  "category": "efficiency",
+  "chemical_input": {
+    "amount": 2,
+    "ingredient": "mekanism:sulfuric_acid"
+  },
+  "experience": 0.5,
+  "group": "mekanism:dirty_lead",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:storage_blocks/raw_lead"
+  },
+  "output": {
+    "amount": 6000,
+    "id": "mekanism:dirty_lead"
+  },
+  "per_tick_usage": true
+}

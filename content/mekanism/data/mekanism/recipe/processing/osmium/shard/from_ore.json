@@ -1,0 +1,19 @@
+{
+  "type": "mekanism:injecting",
+  "category": "efficiency",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:hydrogen_chloride"
+  },
+  "experience": 0.35,
+  "group": "mekanism:shard_osmium",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:ores/osmium"
+  },
+  "output": {
+    "count": 4,
+    "id": "mekanism:shard_osmium"
+  },
+  "per_tick_usage": true
+}

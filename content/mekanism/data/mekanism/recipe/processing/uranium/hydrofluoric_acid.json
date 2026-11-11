@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:dissolution",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:sulfuric_acid"
+  },
+  "experience": 0.65,
+  "group": "mekanism:hydrofluoric_acid",
+  "item_input": {
+    "count": 1,
+    "ingredient": "#c:gems/fluorite"
+  },
+  "output": {
+    "amount": 1000,
+    "id": "mekanism:hydrofluoric_acid"
+  },
+  "per_tick_usage": true
+}

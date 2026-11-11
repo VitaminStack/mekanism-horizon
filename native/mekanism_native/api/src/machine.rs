@@ -2,7 +2,8 @@
 //! (Enrichment Chamber, Crusher, Metallurgic Infuser, Osmium Compressor,
 //! Combiner, Precision Sawmill, Purification Chamber, Chemical Injection
 //! Chamber, Chemical Oxidizer, Chemical Infuser, Electrolytic Separator, Rotary
-//! Condensentrator), and the operation they share. The parts that
+//! Condensentrator, Chemical Dissolution Chamber, Chemical Washer, Chemical
+//! Crystallizer), and the operation they share. The parts that
 //! need no Horizon types, so their tests run in `logic/energy`; recipes are in
 //! `recipe.rs`, the tick and screen in `process.rs`.
 //!
@@ -22,7 +23,11 @@
 //! fuel energy density 2, one operation per tick), `TileEntityRotaryCondensentrator`
 //! (`CAPACITY` 10 buckets each, `UsageConfig.rotaryCondensentrator` 2, one
 //! operation per tick, `mode` false = chemical to fluid) and
-//! `AttributeEnergy.STORAGE_MULTIPLIER` (storage 4 x usage).
+//! `TileEntityChemicalDissolutionChamber` (usage 16, `BASE_TICKS_REQUIRED` 5 s, two
+//! tanks of `MAX_CHEMICAL` 10 buckets), `TileEntityChemicalWasher` (usage 5, one
+//! operation per tick, water and two slurry tanks of 10 buckets),
+//! `TileEntityChemicalCrystallizer` (usage 15, 10 s, one input tank of 10
+//! buckets) and `AttributeEnergy.STORAGE_MULTIPLIER` (storage 4 x usage).
 //!
 //! Not ported: the energy slot (charging from items), upgrades, side config
 //! and redstone control.
@@ -171,6 +176,20 @@ pub fn convert(tanks: &mut [Fluid], t: &FluidTanks, input: (usize, &str, i32), o
     true
 }
 
+/// One operation of the Chemical Washer (`washing`): takes the fluid from tank
+/// 0 and the dirty slurry from tank 1 and puts the clean slurry into tank 2.
+/// All or nothing, as `convert`.
+pub fn wash(tanks: &mut [Fluid], t: &FluidTanks, fluid: (&str, i32), dirty: (&str, i32), clean: (&str, i32)) -> bool {
+    let [water, slurry, out] = tanks else { return false };
+    if !(water.has(fluid.0, fluid.1) && slurry.has(dirty.0, dirty.1) && out.fits(clean.0, clean.1, t.tanks[WASHER_OUTPUT].max)) {
+        return false;
+    }
+    water.take(fluid.1);
+    slurry.take(dirty.1);
+    out.add(clean.0, clean.1);
+    true
+}
+
 /// One operation of a machine that mixes two chemicals (`chemical_infusing`):
 /// takes `left` and `right` from the input tanks, in either order (Mekanism's
 /// orderless recipe), and puts `out` into the output tank. Does nothing and
@@ -205,6 +224,11 @@ pub enum Op {
     /// Chemical (tank 0) and fluid (tank 1) turn into each other (`rotary`), by
     /// a mode a button toggles; the rect is that button.
     Rotate([f32; 4]),
+    /// A fluid (tank 0) and a slurry (tank 1) make a slurry (tank 2): the Chemical Washer (`washing`).
+    Wash,
+    /// A chemical (tank 0) turns into an item in the output slot, over `ticks`: the Chemical
+    /// Crystallizer (`crystallizing`).
+    Crystallize,
 }
 
 pub struct Machine {
@@ -261,7 +285,16 @@ impl Machine {
 
     /// Whether it works on its fluid and chemical tanks alone (no item input).
     pub fn tank_op(&self) -> bool {
-        !matches!(self.op, Op::Item)
+        !matches!(self.op, Op::Item | Op::Crystallize)
+    }
+
+    /// The tank an item machine takes its chemical from (the Dissolution Chamber's
+    /// acid), when it has no buffer filled from an item.
+    pub fn chemical_tank(&self) -> Option<usize> {
+        if self.buffer.is_some() || !matches!(self.op, Op::Item) {
+            return None;
+        }
+        self.tanks.and_then(|t| t.inputs.first().copied())
     }
 }
 
@@ -404,7 +437,40 @@ pub const ROTARY_MODE_BUTTON: [f32; 4] = [44.0, 36.0, 88.0, 16.0];
 /// Menu button id of the mode button (the dump button is 100).
 pub const BUTTON_MODE: i32 = 101;
 
-pub const MACHINES: [Machine; 12] = [
+/// The Chemical Dissolution Chamber: the item slot at (28, 36), the acid gauge left
+/// of it and the slurry gauge right of the progress bar (the screen is 176 x 166
+/// here; Mekanism's has extra slots for chemical items and energy).
+const DISSOLUTION_SLOT_POS: [[f32; 2]; 1] = [[28.0, 36.0]];
+pub const DISSOLUTION_TANKS: FluidTanks = FluidTanks {
+    tanks: &[
+        FluidTank { gauge: [6.0, 17.0, 16.0, 54.0], max: 10_000 },
+        FluidTank { gauge: [131.0, 17.0, 18.0, 54.0], max: 10_000 },
+    ],
+    inputs: &[0],
+    outputs: &[1],
+};
+
+/// The Chemical Washer: water, dirty slurry and clean slurry gauges, 10 buckets each.
+pub const WASHER_TANKS: FluidTanks = FluidTanks {
+    tanks: &[
+        FluidTank { gauge: [22.0, 17.0, 18.0, 54.0], max: 10_000 },
+        FluidTank { gauge: [74.0, 17.0, 18.0, 54.0], max: 10_000 },
+        FluidTank { gauge: [132.0, 17.0, 18.0, 54.0], max: 10_000 },
+    ],
+    inputs: &[0, 1],
+    outputs: &[2],
+};
+pub const WASHER_OUTPUT: usize = 2;
+
+/// The Chemical Crystallizer: one input tank and the output slot right of its bar.
+const CRYSTALLIZER_SLOT_POS: [[f32; 2]; 1] = [[116.0, 35.0]];
+pub const CRYSTALLIZER_TANKS: FluidTanks = FluidTanks {
+    tanks: &[FluidTank { gauge: [30.0, 17.0, 18.0, 54.0], max: 10_000 }],
+    inputs: &[0],
+    outputs: &[],
+};
+
+pub const MACHINES: [Machine; 15] = [
     electric(
         "mekanism:enrichment_chamber",
         "mekanism:enriching",
@@ -573,12 +639,64 @@ pub const MACHINES: [Machine; 12] = [
             ROTARY_SOUND_TICKS,
         )
     },
+    Machine {
+        ticks: 100,
+        output: None,
+        tanks: Some(&DISSOLUTION_TANKS),
+        slot_pos: &DISSOLUTION_SLOT_POS,
+        progress_bar: [50.0, 40.0, 48.0, 8.0],
+        ..electric(
+            "mekanism:chemical_dissolution_chamber",
+            "mekanism:dissolution",
+            "Chemical Dissolution Chamber",
+            16,
+            "mekanism:tile.machine.chemical_dissolution_chamber",
+            DISSOLUTION_SOUND_TICKS,
+        )
+    },
+    Machine {
+        ticks: 1,
+        input: None,
+        output: None,
+        op: Op::Wash,
+        tanks: Some(&WASHER_TANKS),
+        hidden: 1,
+        slot_pos: &[],
+        progress_bar: [0.0; 4],
+        ..electric(
+            "mekanism:chemical_washer",
+            "mekanism:washing",
+            "Chemical Washer",
+            5,
+            "mekanism:tile.machine.chemical_washer",
+            WASHER_SOUND_TICKS,
+        )
+    },
+    Machine {
+        input: None,
+        output: Some(0),
+        op: Op::Crystallize,
+        tanks: Some(&CRYSTALLIZER_TANKS),
+        slot_pos: &CRYSTALLIZER_SLOT_POS,
+        progress_bar: [54.0, 40.0, 56.0, 8.0],
+        ..electric(
+            "mekanism:chemical_crystallizer",
+            "mekanism:crystallizing",
+            "Chemical Crystallizer",
+            15,
+            "mekanism:tile.machine.chemical_crystallizer",
+            CRYSTALLIZER_SOUND_TICKS,
+        )
+    },
 ];
 
 const OXIDIZER_SOUND_TICKS: i32 = 44;
 const CHEMICAL_INFUSER_SOUND_TICKS: i32 = 41;
 const SEPARATOR_SOUND_TICKS: i32 = 40;
 const ROTARY_SOUND_TICKS: i32 = 71;
+const DISSOLUTION_SOUND_TICKS: i32 = 25;
+const WASHER_SOUND_TICKS: i32 = 81;
+const CRYSTALLIZER_SOUND_TICKS: i32 = 51;
 /// Clip lengths of `tile/compressor.ogg`, `tile/combiner.ogg` and
 /// `tile/precision_sawmill.ogg`, `tile/purification_chamber.ogg` and
 /// `tile/chemical_injection_chamber.ogg` in ticks, rounded up.
@@ -752,6 +870,9 @@ mod tests {
         assert_eq!(slots("mekanism:chemical_infuser"), (None, None, None, None, None, 1));
         assert_eq!(slots("mekanism:electrolytic_separator"), (None, None, None, None, None, 1));
         assert_eq!(slots("mekanism:rotary_condensentrator"), (None, None, None, None, None, 1));
+        assert_eq!(slots("mekanism:chemical_dissolution_chamber"), (Some(0), None, None, None, None, 1));
+        assert_eq!(slots("mekanism:chemical_washer"), (None, None, None, None, None, 1));
+        assert_eq!(slots("mekanism:chemical_crystallizer"), (None, Some(0), None, None, None, 1));
     }
 
     #[test]
@@ -1084,5 +1205,53 @@ mod tests {
         assert_eq!(tooltip(sep, &data, [80.0, 40.0]), vec!["Hydrogen: 2400 / 2400 mB"]);
         assert_eq!(tooltip(sep, &data, [120.0, 40.0]), vec!["Oxygen: 10 / 2400 mB"]);
         assert_eq!(tooltip(sep, &data, [30.0, 40.0]), vec!["Empty: 0 / 24000 mB"]);
+    }
+
+    #[test]
+    fn ore_machines_match_mekanism() {
+        let dis = machine("mekanism:chemical_dissolution_chamber");
+        assert_eq!((dis.usage, dis.capacity(), dis.ticks, dis.op), (16, 64, 100, Op::Item));
+        assert_eq!((dis.input, dis.output, dis.chemical_tank()), (Some(0), None, Some(0)));
+        assert_eq!((dis.tanks.unwrap().inputs, dis.tanks.unwrap().outputs), (&[0][..], &[1][..]));
+        let wash = machine("mekanism:chemical_washer");
+        assert_eq!((wash.usage, wash.capacity(), wash.ticks, wash.op), (5, 20, 1, Op::Wash));
+        assert_eq!((wash.tanks.unwrap().inputs, wash.tanks.unwrap().outputs), (&[0, 1][..], &[2][..]));
+        assert!(wash.tank_op() && wash.chemical_tank().is_none());
+        let cry = machine("mekanism:chemical_crystallizer");
+        assert_eq!((cry.usage, cry.capacity(), cry.ticks, cry.op), (15, 60, 200, Op::Crystallize));
+        assert_eq!((cry.input, cry.output, cry.tank_op()), (None, Some(0), false));
+        assert!(cry.tanks.unwrap().tanks.iter().chain(wash.tanks.unwrap().tanks).chain(dis.tanks.unwrap().tanks).all(|t| t.max == 10_000));
+        assert_eq!(machine("mekanism:chemical_oxidizer").chemical_tank(), None, "the oxidizer's tank is only an output");
+    }
+
+    /// Dirty slurry and 5 mB of water make clean slurry; nothing is taken while any input is short or the output full.
+    #[test]
+    fn washing_takes_water_and_slurry_for_clean_slurry() {
+        let (dirty, clean) = (chemicals::chemical("dirty_copper"), chemicals::chemical("clean_copper"));
+        let run = |t: &mut Vec<Fluid>| wash(t, &WASHER_TANKS, (chemicals::WATER, 5), (&dirty, 1), (&clean, 1));
+        let mut tanks = vec![Fluid { id: Some(chemicals::WATER.into()), amount: 12 }, fluid("dirty_copper", 3), Fluid::default()];
+        assert!(run(&mut tanks));
+        assert_eq!((tanks[0].amount, tanks[1].amount, tanks[2].amount), (7, 2, 1));
+        assert_eq!(tanks[2].id.as_deref(), Some(clean.as_str()));
+        assert!(run(&mut tanks));
+        assert!(!run(&mut tanks), "2 water left, the recipe needs 5");
+        assert_eq!((tanks[0].amount, tanks[1].amount, tanks[2].amount), (2, 1, 2), "nothing taken");
+        let mut full = vec![Fluid { id: Some(chemicals::WATER.into()), amount: 5 }, fluid("dirty_copper", 1), fluid("clean_copper", 10_000)];
+        assert!(!run(&mut full), "output tank is full");
+        let mut other = vec![Fluid { id: Some(chemicals::WATER.into()), amount: 5 }, fluid("dirty_gold", 1), Fluid::default()];
+        assert!(!run(&mut other), "another slurry");
+    }
+
+    #[test]
+    fn ore_machine_tooltips() {
+        let dis = machine("mekanism:chemical_dissolution_chamber");
+        let data = menu_data(64, 50, 2, true, None, &[fluid("sulfuric_acid", 40), fluid("dirty_iron", 1_000)]);
+        assert_eq!(tooltip(dis, &data, [10.0, 40.0]), vec!["Sulfuric Acid: 40 / 10000 mB"]);
+        assert_eq!(tooltip(dis, &data, [140.0, 40.0]), vec!["Dirty Iron Slurry: 1000 / 10000 mB"]);
+        assert_eq!(tooltip(dis, &data, [70.0, 43.0]), vec!["Progress: 50%"]);
+        let cry = machine("mekanism:chemical_crystallizer");
+        let data = menu_data(60, 100, 2, true, None, &[fluid("clean_gold", 200)]);
+        assert_eq!(tooltip(cry, &data, [35.0, 40.0]), vec!["Clean Gold Slurry: 200 / 10000 mB"]);
+        assert_eq!(tooltip(cry, &data, [80.0, 43.0]), vec!["Progress: 50%"]);
     }
 }

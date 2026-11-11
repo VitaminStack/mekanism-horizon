@@ -1,0 +1,16 @@
+{
+  "type": "mekanism:crystallizing",
+  "category": "efficiency",
+  "experience": 0.625,
+  "input": {
+    "amount": 200,
+    "ingredient": "mekanism:clean_uranium"
+  },
+  "output": {
+    "id": "mekanism:crystal_uranium"
+  },
+  "typeDisplay": {
+    "type": "minecraft:tag",
+    "tag": "#c:ores/uranium"
+  }
+}

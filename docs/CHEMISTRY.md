@@ -71,3 +71,10 @@ nicht, wartet die Maschine.
 Blocker/Grenzen: kein Item-Slot-Fill der Tanks (Chemie-Items fehlen), Mengen `i32`, kein Pfeil-Overlay.
 Der Eject-Aufruf liegt außerhalb des Rezept-Locks, weil `fluid_insert` den `accepts`-Hook des Nachbarn
 synchron aufruft (derselbe Mutex: sonst Deadlock).
+
+## Erzverarbeitung (Dissolution Chamber, Chemical Washer, Chemical Crystallizer)
+
+Schlämme (`dirty_*`, `clean_*`) sind Chemicals der Tabelle (`mekanism:chemical/dirty_iron`). Dissolution: Item + Säure
+aus Tank 0 (`Machine::chemical_tank`, per-Tick-Verbrauch) zu Schlamm in Tank 1. Washer: `machine::wash` (Wasser + Schlamm
+zu Schlamm, alles oder nichts). Crystallizer: `Op::Crystallize`, Chemical aus Tank 0 zu Item im Output-Slot. Rezept-Formen
+`dissolution`, `washing`, `crystallizing` in `recipe.rs`; Überblick und Grenzen: `docs/ORE_PROCESSING.md`.
