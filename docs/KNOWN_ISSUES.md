@@ -17,7 +17,7 @@ Stand: 10.11.2026, Version 0.2.0 (Content-Mods `mekanismtools` und `mekanismaddi
 
 ## Maschinen und Generatoren
 
-Für Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification/Injection Chamber, Chemical Oxidizer und Infuser gilt gemeinsam:
+Für Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification/Injection Chamber, Chemical Oxidizer und Infuser, Chemical Dissolution Chamber, Washer und Crystallizer gilt gemeinsam:
 
 - Fehlt: Energie-Slot, Upgrades, Side-Configuration, Redstone-Steuerung.
 - Infuse-Inhalt und Energie bleiben beim Abbau nicht am Item (Metallurgic Infuser).
@@ -25,6 +25,7 @@ Für Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combin
 - Balkenfarben genähert, GUI-Layout vereinfacht (176x166 statt Mekanisms größerer Oberfläche beim Chemical Infuser).
 - Purification/Injection beziehen Chemie vorerst aus Items (Flint: Sauerstoff, Salz: Chlorwasserstoff). Wasserdampf-Rezepte laufen erst mit einer Maschine, die ihn erzeugt.
 - Chemical Oxidizer/Infuser: keine Chemie-Item-Slots, kein Auto-Eject-Schalter (immer alle Seiten), keine Rezeptpaar-Prüfung beim Einfüllen, keine Pfeil-Animation. Crafting-Rezepte (`mek_data` mit Dynamic Tank) fehlen, bis Dynamic Tank/Personal Storage existieren. Test per `/give`.
+- Erzkette ([ORE_PROCESSING.md](ORE_PROCESSING.md)): Energized Smelter blockiert (Vanilla-Ofen für Staub zu Barren), kein Wasser-Eimer für den Washer, falscher Schlamm im Washer-Eingang blockiert ihn (Horizons `accepts`-Hook kennt Position und anderen Tank nicht).
 - Fluid-Outputs (Electrolytic Separator, Pump) und Item-Outputs mit Chemie-Zweitausgabe fehlen im Rezeptsystem.
 - Machine-Sounds, Tooltips und Crafting-Rezepte ingame nicht überall geprüft ([TESTLOG.md](TESTLOG.md)).
 

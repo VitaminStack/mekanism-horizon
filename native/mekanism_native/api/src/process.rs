@@ -200,6 +200,49 @@ fn rotate(
     ran
 }
 
+/// One tick of the Chemical Washer: the first recipe whose water and dirty
+/// slurry the input tanks hold, with room in the output tank, runs once at
+/// `usage`; without energy it waits. Returns whether it ran.
+fn wash(host: &dyn Host, m: &Machine, t: &FluidTanks, recipes: &mut Recipes, fluids: &mut [Fluid], energy: &mut i32) -> bool {
+    if *energy < m.usage {
+        return false;
+    }
+    let ran = recipes.washing(host, m.recipe).iter().any(|r| {
+        machine::wash(fluids, t, (&r.fluid.0, r.fluid.1), (&r.chemical.0, r.chemical.1), (&r.output.0, r.output.1))
+    });
+    if ran {
+        *energy -= m.usage;
+    }
+    ran
+}
+
+/// One tick of the Chemical Crystallizer: the recipe the input tank holds the
+/// chemical of runs over `ticks` at `usage`, using it up when the item lands in
+/// the output slot. It starts over when the tank runs short and waits while the
+/// slot has no room or there is no energy. Returns whether it is running.
+fn crystallize(
+    host: &dyn Host,
+    m: &Machine,
+    recipes: &mut Recipes,
+    items: &mut [Option<ItemStack>],
+    fluids: &mut [Fluid],
+    energy: &mut i32,
+    progress: &mut i32,
+) -> bool {
+    let Some(slot) = m.output else { return false };
+    let Some(r) = recipes.crystallizing(host, m.recipe).iter().find(|r| fluids[0].has(&r.chemical.0, r.chemical.1)) else {
+        *progress = 0;
+        return false;
+    };
+    let Some(out) = merged(host, items[slot].as_ref(), &r.output) else { return false };
+    let active = *energy >= m.usage;
+    if machine::step(m.usage, m.ticks, energy, progress) {
+        fluids[0].take(r.chemical.1);
+        items[slot] = Some(out);
+    }
+    active
+}
+
 /// The machine's tanks as Horizon's fluid tanks: from every side, the inputs
 /// take and the outputs give.
 pub fn fluids(t: &FluidTanks) -> ModFluidTanks {
@@ -218,7 +261,21 @@ pub fn fluids(t: &FluidTanks) -> ModFluidTanks {
 pub fn accepts(host: &dyn Host, m: &Machine, recipes: &mut Recipes, tank: usize, fluid: &str) -> bool {
     let chemical = chemicals::is_chemical(fluid);
     match m.op {
-        Op::Item => false,
+        // An item machine's input tank takes the chemicals its recipes use up (the Dissolution Chamber's
+        // acid); one without (the Oxidizer) has none.
+        Op::Item => {
+            chemical
+                && m.tanks.is_some_and(|t| t.inputs.contains(&tank))
+                && recipes.processing(host, m.recipe).iter().any(|r| {
+                    r.chemical.as_ref().is_some_and(|c| chemicals::from_recipe(&c.id).as_deref() == Some(fluid))
+                })
+        }
+        Op::Wash => match tank {
+            0 => !chemical && recipes.washing(host, m.recipe).iter().any(|r| r.fluid.0 == fluid),
+            1 => chemical && recipes.washing(host, m.recipe).iter().any(|r| r.chemical.0 == fluid),
+            _ => false,
+        },
+        Op::Crystallize => chemical && recipes.crystallizing(host, m.recipe).iter().any(|r| r.chemical.0 == fluid),
         Op::Infuse => chemical && recipes.infusing(host, m.recipe).iter().any(|r| r.partner(fluid).is_some()),
         Op::Separate => {
             tank == machine::SEPARATOR_INPUT && !chemical && recipes.separating(host, m.recipe).iter().any(|r| r.input.0 == fluid)
@@ -268,6 +325,7 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
         }
     }
 
+    let chem_tank = m.chemical_tank();
     let extra = |n: u32, test: &dyn Fn(&ItemStack) -> bool| {
         m.extra.and_then(|e| items[e].as_ref()).is_some_and(|s| test(s) && s.count >= n)
     };
@@ -280,6 +338,10 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
                     // A per-tick chemical is waited for; one used at the end must be there.
                     (Some(kind), Some(t)) if c.per_tick => t.takes(kind),
                     (Some(kind), Some(t)) => t.has(kind, c.amount),
+                    // From an input tank (a chemical is a tank id there).
+                    (None, _) => chem_tank.zip(chemicals::from_recipe(&c.id)).is_some_and(|(i, id)| {
+                        if c.per_tick { fluids[i].id.as_deref().is_none_or(|have| have == id) } else { fluids[i].has(&id, c.amount) }
+                    }),
                     _ => false,
                 })
         })
@@ -289,8 +351,11 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
         active = match m.op {
             Op::Separate => separate(host, m, t, recipes, &mut fluids, &mut energy),
             Op::Rotate(_) => rotate(host, m, t, recipes, &mut fluids, &mut energy, mode),
+            Op::Wash => wash(host, m, t, recipes, &mut fluids, &mut energy),
             _ => mix(host, m, t, recipes, &mut fluids, &mut energy),
         };
+    } else if m.op == Op::Crystallize {
+        active = crystallize(host, m, recipes, &mut items, &mut fluids, &mut energy, &mut progress);
     } else {
         match recipe {
             None => progress = 0,
@@ -311,14 +376,23 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
                     && second.as_ref().is_none_or(|s| s.0.is_some());
                 let per_tick = r.chemical.as_ref().filter(|c| c.per_tick).and_then(|c| Some((chemical_kind(m, c)?, c.amount)));
                 let fed = per_tick.is_none_or(|(kind, amount)| tank.is_some_and(|t| t.has(kind, amount)));
+                // The per-tick chemical of an input tank, as (tank, id, mB).
+                let feed = r.chemical.as_ref().filter(|c| c.per_tick).and_then(|c| Some((chem_tank?, chemicals::from_recipe(&c.id)?, c.amount)));
+                let fed = fed && feed.as_ref().is_none_or(|(i, id, n)| fluids[*i].has(id, *n));
                 if room && fed {
                     active = energy >= m.usage;
                     if let (true, Some((_, amount)), Some(t)) = (active, per_tick, tank.as_mut()) {
                         t.take(amount);
                     }
+                    if let (true, Some((i, _, n))) = (active, &feed) {
+                        fluids[*i].take(*n);
+                    }
                     if machine::step(m.usage, m.ticks, &mut energy, &mut progress) {
                         if let (Some(c), Some(t)) = (r.chemical.as_ref().filter(|c| !c.per_tick), tank.as_mut()) {
                             t.take(c.amount);
+                        }
+                        if let (Some(c), Some(i)) = (r.chemical.as_ref().filter(|c| !c.per_tick), chem_tank) {
+                            fluids[i].take(c.amount);
                         }
                         let slot = m.input.expect("a recipe matched an input");
                         let input = items[slot].as_ref().expect("recipe matched an input");

@@ -8,16 +8,16 @@ Inoffizieller Port von [Mekanism](https://github.com/mekanism/Mekanism) für [Mi
 
 <!-- progress:start -->
 ```text
-Gesamt                      ████████░░░░░░░░░░░░  42%  (66/157)
+Gesamt                      █████████░░░░░░░░░░░  45%  (70/157)
 
 Projektbasis                ████████████████████ 100%  (10/10)
 Energy Cube                 ████████████████████ 100%  (10/10)
 Rohstoffe & Energie         ████████████░░░░░░░░  61%  (14/23)
-Maschinen & Chemie          ████████░░░░░░░░░░░░  42%  (11/26)
+Maschinen & Chemie          ██████████░░░░░░░░░░  50%  (13/26)
 Automation & Logistik       ░░░░░░░░░░░░░░░░░░░░   0%  (0/17)
 Multiblocks & Reaktoren     ░░░░░░░░░░░░░░░░░░░░   0%  (0/16)
 Tools & Additions           ████████░░░░░░░░░░░░  38%  (10/26)
-Tests & Releases            █░░░░░░░░░░░░░░░░░░░   5%  (1/19)
+Tests & Releases            ███░░░░░░░░░░░░░░░░░  16%  (3/19)
 Naechste Schritte           ████████████████████ 100%  (10/10)
 ```
 <!-- progress:end -->
@@ -39,7 +39,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content
 
 Voraussetzungen, Spielordner-Konfiguration und separater Native-Build: **[Windows-Anleitung](README-WINDOWS.md)**.
 
-> Im Spiel getestet: Rohstoffe und Erze, Energy Cubes und Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification und Chemical Injection Chamber, Chemical Oxidizer und Infuser, Electrolytic Separator und Rotary Condensentrator, Heat-, Solar-, Advanced-Solar-, Bio- und Wind-Generator sowie Fluid und Chemical Tanks (`docs/TESTLOG.md`). Kabel, Pipes und die meisten Maschinen fehlen noch. Nur in Testwelten verwenden.
+> Im Spiel getestet: Rohstoffe und Erze, Energy Cubes und Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification und Chemical Injection Chamber, Chemical Oxidizer und Infuser, Electrolytic Separator, Rotary Condensentrator, Dissolution Chamber, Washer und Crystallizer (Erzkette), Heat-, Solar-, Advanced-Solar-, Bio- und Wind-Generator sowie Fluid und Chemical Tanks (`docs/TESTLOG.md`). Kabel, Pipes und die meisten Maschinen fehlen noch. Nur in Testwelten verwenden.
 
 [Installation](docs/INSTALL.md) · [Changelog](CHANGELOG.md) · [Known Issues](docs/KNOWN_ISSUES.md) · [Mitmachen](CONTRIBUTING.md) · [Lizenzen](docs/LICENSES.md)
 

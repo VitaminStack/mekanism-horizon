@@ -22,6 +22,8 @@ DUSTS = ['osmium', 'tin', 'lead', 'uranium', 'bronze', 'steel', 'refined_obsidia
          'obsidian', 'sulfur', 'lithium', 'fluorite']
 # Clumps: the Purification Chamber's output from ores and raw metals (crushed into dirty dust later).
 CLUMPS = ['osmium', 'tin', 'lead', 'uranium', 'iron', 'gold', 'copper']
+# The ore chain's other stages (M06): crystals (Chemical Crystallizer), shards (Injection Chamber) and
+# dirty dusts (Crusher, from clumps) of the same seven metals as the clumps.
 MISC_ITEMS = ['fluorite_gem', 'salt',
               'basic_control_circuit', 'advanced_control_circuit', 'elite_control_circuit',
               'ultimate_control_circuit', 'alloy_infused', 'alloy_reinforced', 'alloy_atomic',
@@ -87,6 +89,9 @@ for d in DUSTS:
     item(f'dust_{d}', 'minecraft:sugar')
 for c in CLUMPS:
     item(f'clump_{c}', 'minecraft:sugar')
+    item(f'dirty_dust_{c}', 'minecraft:sugar')
+    item(f'shard_{c}', 'minecraft:quartz')
+    item(f'crystal_{c}', 'minecraft:quartz')
 for i in MISC_ITEMS:
     item(i, 'minecraft:quartz' if i in ('fluorite_gem',) else 'minecraft:iron_ingot')
 
@@ -174,6 +179,11 @@ CHEMICAL_MENUS = {
     # Separator: input, left, right tanks (data slots 4-9). Rotary: chemical and fluid tanks (4-7), then its mode.
     'electrolytic_separator': {'slots': 1, 'data_slots': 10, 'results': []},
     'rotary_condensentrator': {'slots': 1, 'data_slots': 9, 'results': []},
+    # Dissolution Chamber: 0 input item; acid and slurry tanks (data slots 4-7). Washer: water, dirty and
+    # clean slurry tanks (4-9), no slot. Crystallizer: 0 output item; its input tank (4-5).
+    'chemical_dissolution_chamber': {'slots': 1, 'data_slots': 8, 'results': []},
+    'chemical_washer': {'slots': 1, 'data_slots': 10, 'results': []},
+    'chemical_crystallizer': {'slots': 1, 'data_slots': 6, 'results': [0]},
 }
 for m, menu in CHEMICAL_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})

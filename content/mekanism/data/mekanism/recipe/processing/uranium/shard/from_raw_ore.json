@@ -1,0 +1,19 @@
+{
+  "type": "mekanism:injecting",
+  "category": "efficiency",
+  "chemical_input": {
+    "amount": 1,
+    "ingredient": "mekanism:hydrogen_chloride"
+  },
+  "experience": 0.625,
+  "group": "mekanism:shard_uranium",
+  "item_input": {
+    "count": 3,
+    "ingredient": "#c:raw_materials/uranium"
+  },
+  "output": {
+    "count": 8,
+    "id": "mekanism:shard_uranium"
+  },
+  "per_tick_usage": true
+}

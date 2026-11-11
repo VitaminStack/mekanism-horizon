@@ -46,7 +46,8 @@ REF = re.compile(r'"(#?)(mekanism|mekanismgenerators):([a-z0-9_/.]+)"')
 MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversion', 'mekanism:enriching',
                    'mekanism:crushing', 'mekanism:compressing', 'mekanism:combining', 'mekanism:sawing',
                    'mekanism:purifying', 'mekanism:injecting', 'mekanism:oxidizing', 'mekanism:chemical_infusing',
-                   'mekanism:separating', 'mekanism:rotary'}
+                   'mekanism:separating', 'mekanism:rotary', 'mekanism:dissolution', 'mekanism:washing',
+                   'mekanism:crystallizing'}
 # Chemicals with Mekanism's infuse-type attribute: what the Metallurgic Infuser takes.
 INFUSE_TYPES = {f'{NS}:{t}' for t in ('carbon', 'redstone', 'diamond', 'refined_obsidian', 'tin', 'gold',
                                       'bio', 'fungi')}
@@ -61,7 +62,9 @@ SOUNDS = {
          'tile.machine.compressor', 'tile.machine.combiner', 'tile.machine.precision_sawmill',
          'tile.machine.purification_chamber', 'tile.machine.chemical_injection_chamber',
          'tile.machine.chemical_oxidizer', 'tile.machine.chemical_infuser',
-         'tile.machine.electrolytic_separator', 'tile.machine.rotary_condensentrator'],
+         'tile.machine.electrolytic_separator', 'tile.machine.rotary_condensentrator',
+         'tile.machine.chemical_dissolution_chamber', 'tile.machine.chemical_washer',
+         'tile.machine.chemical_crystallizer'],
     'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar', 'tile.generator.bio',
                            'tile.generator.wind'],
 }
@@ -224,9 +227,11 @@ def main(up):
             # `type` and `group` name no item, chemicals are no items; every other plain Mekanism id
             # must be registered.
             skip = ('type', 'group', 'chemical_input', 'fluid_input', 'fluid_output', 'chemical_output') + (
-                ('output',) if kind in ('mekanism:chemical_conversion', 'mekanism:oxidizing') else ()) + (
+                ('output',) if kind in ('mekanism:chemical_conversion', 'mekanism:oxidizing', 'mekanism:dissolution',
+                                        'mekanism:washing') else ()) + (
                 ('left_input', 'right_input', 'output') if kind == 'mekanism:chemical_infusing' else ()) + (
-                ('input', 'output') if kind == 'mekanism:separating' else ())
+                ('input', 'output') if kind == 'mekanism:separating' else ()) + (
+                ('input',) if kind == 'mekanism:crystallizing' else ())
             scan = json.dumps({k: v for k, v in recipe.items() if k not in skip})
             refs = {f'{m.group(2)}:{m.group(3)}' for m in REF.finditer(scan) if not m.group(1)}
             if refs <= known:
