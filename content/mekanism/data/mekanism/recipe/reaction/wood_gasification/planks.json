@@ -1,0 +1,31 @@
+{
+  "type": "mekanism:reaction",
+  "category": "gasification",
+  "chemical_input": {
+    "amount": 400,
+    "ingredient": "mekanism:oxygen"
+  },
+  "duration": 600,
+  "experience": 0.03,
+  "fluid_input": {
+    "amount": 400,
+    "ingredient": "minecraft:water"
+  },
+  "group": "mekanism:dust_charcoal",
+  "item_input": {
+    "count": 20,
+    "ingredient": [
+      "#minecraft:planks",
+      "minecraft:bamboo_mosaic"
+    ]
+  },
+  "output": {
+    "chemical": {
+      "amount": 400,
+      "id": "mekanism:hydrogen"
+    },
+    "item": {
+      "id": "mekanism:dust_charcoal"
+    }
+  }
+}

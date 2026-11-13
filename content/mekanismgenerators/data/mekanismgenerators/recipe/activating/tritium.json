@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:activating",
+  "experience": 0.00020000001,
+  "input": {
+    "amount": 1,
+    "ingredient": "mekanism:lithium"
+  },
+  "output": {
+    "amount": 1,
+    "id": "mekanismgenerators:tritium"
+  }
+}

@@ -283,7 +283,9 @@ impl MekanismNative {
         let active = process::tick(host, event, m, &mut self.recipes.lock().unwrap());
         // After the lock is released: a neighbour's `accepts` hook takes it too.
         process::eject_output(host, event, m);
-        self.hum(host, event.pos, m.sound, m.sound_ticks, active);
+        if !m.sound.is_empty() {
+            self.hum(host, event.pos, m.sound, m.sound_ticks, active);
+        }
     }
 
     /// Push energy out of the cube's output sides into neighbouring cubes whose
@@ -467,7 +469,8 @@ impl Hooks for MekanismNative {
     fn block_entity_energy(&self, _host: &dyn Host, event: &mut BlockEntityEnergyEvent) -> Option<ModEnergyBuffer> {
         match kind(event.block)? {
             // Machines take energy on every side and give none.
-            Kind::Machine(m) => Some(ModEnergyBuffer {
+            // (the Solar Neutron Activator uses none)
+            Kind::Machine(m) => (!m.solar()).then(|| ModEnergyBuffer {
                 capacity: m.capacity(),
                 max_insert: m.capacity(),
                 max_extract: 0,

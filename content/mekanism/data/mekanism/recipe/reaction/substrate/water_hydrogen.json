@@ -1,0 +1,27 @@
+{
+  "type": "mekanism:reaction",
+  "chemical_input": {
+    "amount": 100,
+    "ingredient": "mekanism:hydrogen"
+  },
+  "duration": 100,
+  "experience": 0.35,
+  "fluid_input": {
+    "amount": 10,
+    "ingredient": "minecraft:water"
+  },
+  "group": "mekanism:substrate",
+  "item_input": {
+    "count": 2,
+    "ingredient": "#c:fuels/bio"
+  },
+  "output": {
+    "chemical": {
+      "amount": 300,
+      "id": "mekanism:ethene"
+    },
+    "item": {
+      "id": "mekanism:substrate"
+    }
+  }
+}

@@ -23,7 +23,7 @@ pub const FLUIDS: [(&str, &str, u32); 18] = [
 ];
 
 /// Mekanism's chemicals (`data/mekanism/mekanism/chemical`): id path, English name, tint.
-pub const CHEMICALS: [(&str, &str, u32); 64] = [
+pub const CHEMICALS: [(&str, &str, u32); 67] = [
     ("antimatter", "Antimatter", 0xFFA464B3),
     ("aqua", "Aqua Pigment", 0xFF30FFF9),
     ("bio", "Biomass", 0xFF5A4630),
@@ -88,4 +88,7 @@ pub const CHEMICALS: [(&str, &str, u32); 64] = [
     ("water_vapor", "Water Vapor", 0xFFC8C8C8),
     ("white", "White Pigment", 0xFFFFFFFF),
     ("yellow", "Yellow Pigment", 0xFFFFDD4F),
+    ("deuterium", "Deuterium", 0xFFFF3232),
+    ("fusion_fuel", "D-T Fuel", 0xFF7E007D),
+    ("tritium", "Tritium", 0xFF64FF70),
 ];

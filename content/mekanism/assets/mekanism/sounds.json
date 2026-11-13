@@ -65,6 +65,12 @@
     ],
     "subtitle": "sound_event.mekanism.tile.machine.enrichment_chamber"
   },
+  "tile.machine.isotopic_centrifuge": {
+    "sounds": [
+      "mekanism:tile/isotopic_centrifuge"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.isotopic_centrifuge"
+  },
   "tile.machine.metallurgic_infuser": {
     "sounds": [
       "mekanism:tile/metallurgic_infuser"
@@ -100,6 +106,12 @@
       "mekanism:tile/precision_sawmill"
     ],
     "subtitle": "sound_event.mekanism.tile.machine.precision_sawmill"
+  },
+  "tile.machine.pressurized_reaction_chamber": {
+    "sounds": [
+      "mekanism:tile/pressurized_reaction_chamber"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.pressurized_reaction_chamber"
   },
   "tile.machine.purification_chamber": {
     "sounds": [

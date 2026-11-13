@@ -32,10 +32,14 @@ pub fn chemical(path: &str) -> String {
 }
 
 /// The tank id of a recipe's chemical (`mekanism:hydrogen` -> `mekanism:chemical/hydrogen`);
-/// none for an id of another namespace. An id that only a fluid has (`mekanism:nutritional_paste`,
-/// the Nutritional Liquifier's output) stays the fluid's tank id.
+/// Mekanism Generators' chemicals (`mekanismgenerators:tritium`) get one the same way. None for an
+/// id of another namespace. An id that only a fluid has (`mekanism:nutritional_paste`, the
+/// Nutritional Liquifier's output) stays the fluid's tank id.
 pub fn from_recipe(id: &str) -> Option<String> {
-    let path = id.strip_prefix("mekanism:").filter(|p| !p.is_empty() && !p.contains(':'))?;
+    let path = id
+        .strip_prefix("mekanism:")
+        .or_else(|| id.strip_prefix("mekanismgenerators:"))
+        .filter(|p| !p.is_empty() && !p.contains(':'))?;
     let fluid_only = FLUIDS.iter().any(|f| f.0 == path) && !CHEMICALS.iter().any(|c| c.0 == path);
     Some(if fluid_only { format!("mekanism:{path}") } else { chemical(path) })
 }
@@ -99,6 +103,8 @@ mod tests {
         assert_eq!(from_recipe("mekanism:nutritional_paste").as_deref(), Some("mekanism:nutritional_paste"));
         assert_eq!(from_recipe("mekanism:hydrogen").as_deref(), Some("mekanism:chemical/hydrogen"), "a chemical wins over a fluid of its name");
         assert_eq!(from_recipe("mekanism:red").as_deref(), Some("mekanism:chemical/red"));
+
+        assert_eq!(from_recipe("mekanismgenerators:tritium").as_deref(), Some("mekanism:chemical/tritium"));
         assert_eq!(from_recipe("create:brine"), None);
         assert_eq!(from_recipe("mekanism:"), None);
     }
@@ -123,7 +129,7 @@ mod tests {
             assert!(FLUIDS.iter().any(|e| e.0 == f), "fluid {f}");
         }
         for c in ["hydrogen", "oxygen", "chlorine", "sulfur_dioxide", "ethene", "dirty_iron",
-                  "clean_gold", "white", "polonium", "antimatter", "water_vapor"] {
+                  "clean_gold", "white", "polonium", "antimatter", "water_vapor", "tritium", "deuterium", "fusion_fuel"] {
             assert!(CHEMICALS.iter().any(|e| e.0 == c), "chemical {c}");
         }
         // Ids must be valid Horizon tank ids (lowercase, digits, `_`).

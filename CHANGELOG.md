@@ -9,6 +9,10 @@ Basis: Mekanism 26.3 (Mekanism 10.8.0 alpha), Horizon Nightly 2026-11-08 `fdc87a
 ### M06 Nutrition und Pigmente
 - Nutritional Liquifier, Pigment Extractor, Pigment Mixer und Painting Machine (nativ, Tabelle `machine::MACHINES`) mit 40 Nahrungs-, 275 Extraktions-, 16 Misch- und 288 Painting-Rezepten, Item `dye_base`; ingame ungetestet (Testplan in `docs/TESTLOG.md`).
 
+### M06 Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator
+- Drei native Chemie-Maschinen mit Rezepten, Modellen, Sounds und Namen aus Upstream (`mekanism:reaction`, `centrifuging`, `activating`), neue Items `substrate` und `hdpe_pellet`, Generators-Chemicals (Deuterium, Tritium, Fusion Fuel) in der Chemie-Tabelle. Ingame ungetestet, siehe [docs/CHEMISTRY.md](docs/CHEMISTRY.md) und [docs/TESTLOG.md](docs/TESTLOG.md).
+- Fix: fehlende Klammer in `kind()` (`lib.rs`) aus einem Merge von `main`, das native Crate kompilierte nicht.
+
 ### M11 Ausrüstung und Spielhilfen
 - Hook-Audit und Machbarkeitsmatrix aller M11-Items in `docs/ITEM_HOOKS.md` (Horizon `fdc87ae`, API 411).
 - Atomic Disassembler (Energiepuffer, Waffenplus, Vein-Modus), Canteen, Gauge Dropper und Dictionary als native Items (`items.rs`, `gear.rs`) mit Assets, Rezepten und Namen aus Upstream. Nicht machbare Items (Radiation, Module, QIO) bleiben unregistriert, siehe `docs/KNOWN_ISSUES.md`.

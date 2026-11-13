@@ -1,0 +1,23 @@
+{
+  "type": "mekanism:reaction",
+  "chemical_input": {
+    "amount": 10,
+    "ingredient": "mekanism:oxygen"
+  },
+  "duration": 60,
+  "energy_required": 10,
+  "experience": 0.2,
+  "fluid_input": {
+    "amount": 50,
+    "ingredient": "mekanism:ethene"
+  },
+  "item_input": {
+    "count": 1,
+    "ingredient": "mekanism:substrate"
+  },
+  "output": {
+    "item": {
+      "id": "mekanism:hdpe_pellet"
+    }
+  }
+}
