@@ -370,8 +370,8 @@ Build: Native `native-fdc87ae-e93aa89e0e57` (erster Lauf für PR 25 und 26 mit `
 | Mixer: 1.000 + 1.000 mB Rot und Gelb zu 2.000 mB Orange, 2 mB je Tick; voller Output pausiert; Rot + Rot läuft nicht | ok |
 | Painting: weiße Wolle + 256 mB Rot zu roter Wolle, 256 mB abgezogen; GUI mit Gauge, Fortschritt, Energie (Screenshot) | ok |
 | Basic Pipe: Kette Creative Tank, 2 Pipes, Fluid Tank; Arme zu Pipe und Tank | ok |
-| Basic Pipe: Durchsatz in einen großen Tank etwa 125 statt 250 mB/t | **Abweichung** (`push_plan` schiebt nur an Nachbarn mit niedrigerem Füllanteil) |
-| Tube mit Wasserstoff in einen Chemical Tank; Fluid Tank daneben bleibt leer | ok (Tube zeigt zusätzlich einen Arm zum Fluid Tank) |
+| Basic Pipe: Durchsatz in einen großen Tank etwa 125 statt 250 mB/t | war Abweichung, **behoben**: Endpunkte (Tanks, Maschinen, nicht oberhalb) nehmen die volle Rate unabhängig vom Füllanteil; nachgeprüft mit Build `native-fdc87ae-cd0f0bc7d6a2`: Creative Tank, 3 Pipes, Fluid Tank gibt 5.000 mB in 20 Ticks = 250 mB/t |
+| Tube mit Wasserstoff in einen Chemical Tank; Fluid Tank daneben bleibt leer | ok; Arm zum Fluid Tank war Abweichung, **behoben** (Arm nur zu Tanks der eigenen Familie; nachgeprüft, Tube neben Fluid Tanks ohne Arm) |
 | Heat Generator mit Lava zu Conductor 1 zu Conductor 2: etwa 323 K nach 200 Ticks | ok |
 | Neustart: Items, Tanks, Fortschritt, Energie, Wärme von Liquifier, Extractor, Mixer, Painting, Pipe, Tank, Conductor bleiben | ok |
 | Reaction Chamber: Kohle + Wasser + Sauerstoff zu Schwefelstaub + Wasserstoff (je 100 mB), 2 FE/t, 100 Ticks | ok |

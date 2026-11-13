@@ -93,10 +93,14 @@ pub struct Neighbour {
     pub dir: usize,
     pub amount: i32,
     pub capacity: i32,
+    /// An end point (a tank or machine that is no transmitter and not above the pipe, where
+    /// active tanks push from): it takes fluid at the full rate whatever its fill ratio, as
+    /// Mekanism's network fills its acceptors. Others only get fluid while emptier.
+    pub sink: bool,
 }
 
-/// The fluid to offer each neighbour this tick. Only neighbours with room and a
-/// lower fill ratio than the buffer get any, so a line levels out and nothing
+/// The fluid to offer each neighbour this tick. Only neighbours with room and, unless they are
+/// a `sink`, a lower fill ratio than the buffer get any, so a line levels out and nothing
 /// flows back into a fuller tank; the tier's rate is split between them.
 pub fn push_plan(amount: i32, capacity: i32, rate: i32, neighbours: &[Neighbour]) -> Vec<(usize, i32)> {
     if amount <= 0 || capacity <= 0 {
@@ -105,7 +109,8 @@ pub fn push_plan(amount: i32, capacity: i32, rate: i32, neighbours: &[Neighbour]
     let lower: Vec<&Neighbour> = neighbours
         .iter()
         .filter(|n| {
-            n.capacity > n.amount && (n.amount as i64) * (capacity as i64) < (amount as i64) * (n.capacity as i64)
+            n.capacity > n.amount
+                && (n.sink || (n.amount as i64) * (capacity as i64) < (amount as i64) * (n.capacity as i64))
         })
         .collect();
     if lower.is_empty() {
@@ -203,7 +208,7 @@ mod tests {
     use super::*;
 
     fn n(dir: usize, amount: i32, capacity: i32) -> Neighbour {
-        Neighbour { dir, amount, capacity }
+        Neighbour { dir, amount, capacity, sink: false }
     }
 
     #[test]
@@ -244,6 +249,13 @@ mod tests {
         // A full neighbour or an empty pipe moves nothing.
         assert!(push_plan(1_000, 2_000, 250, &[n(3, 10_000, 10_000)]).is_empty());
         assert!(push_plan(0, 2_000, 250, &[n(3, 0, 10_000)]).is_empty());
+    }
+
+    #[test]
+    fn a_sink_takes_the_full_rate_even_when_fuller() {
+        let sink = Neighbour { sink: true, ..n(0, 5_000, 10_000) };
+        assert_eq!(push_plan(1_000, 2_000, 250, &[sink]), [(0, 250)]);
+        assert!(push_plan(1_000, 2_000, 250, &[n(0, 5_000, 10_000)]).is_empty());
     }
 
     #[test]

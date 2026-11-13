@@ -13,7 +13,7 @@
 
 use horizon_client::mod_api::{BlockEntityTickEvent, Direction, Host, ModFluidTanks, Tag};
 
-use super::{cube, generator, generators, key, offset, tanks, transmitter};
+use super::{cube, generator, generators, key, offset, tank, tanks, transmitter};
 use transmitter::{Cell, Kind, Neighbour, Tier};
 
 /// The conductor's heat in Kelvin times its capacity (1), a `Tag::Double`.
@@ -44,9 +44,13 @@ fn connects(host: &dyn Host, pos: [i32; 3], dir: usize, t: &Tier) -> bool {
     }
     match t.kind {
         Kind::Conductor => block == generator::HEAT,
-        Kind::Pipe | Kind::Tube => host
-            .fluid_tanks(host.dimension(), np, direction(cube::opposite(dir)))
-            .is_some_and(|tanks| !tanks.is_empty()),
+        Kind::Pipe | Kind::Tube => {
+            // A tank of the other family (a fluid tank next to a tube) gets no arm.
+            tank::tier_of(&block).is_none_or(|b| Some(b.family) == t.family())
+                && host
+                    .fluid_tanks(host.dimension(), np, direction(cube::opposite(dir)))
+                    .is_some_and(|tanks| !tanks.is_empty())
+        }
     }
 }
 
@@ -87,7 +91,7 @@ fn push_tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, t: &Tier) {
             capacity += tank.capacity;
         }
         if capacity > 0 {
-            neighbours.push(Neighbour { dir, amount: held, capacity });
+            neighbours.push(Neighbour { dir, amount: held, capacity, sink: !t.joins(&host.block(offset(pos, dir))) && dir != cube::UP });
         }
     }
     let mut left = amount;
