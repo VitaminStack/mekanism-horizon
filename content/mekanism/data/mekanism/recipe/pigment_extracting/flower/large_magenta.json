@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.2,
+  "group": "magenta_dye",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:lilac"
+  },
+  "output": {
+    "amount": 1536,
+    "id": "mekanism:magenta"
+  }
+}

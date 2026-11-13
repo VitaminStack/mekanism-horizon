@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:liquification",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:baked_potato"
+  },
+  "output": {
+    "amount": 250,
+    "id": "mekanism:nutritional_paste"
+  }
+}

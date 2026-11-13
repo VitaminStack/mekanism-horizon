@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:liquification",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:beetroot_soup"
+  },
+  "output": {
+    "amount": 300,
+    "id": "mekanism:nutritional_paste"
+  }
+}

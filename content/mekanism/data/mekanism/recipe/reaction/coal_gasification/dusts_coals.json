@@ -1,0 +1,31 @@
+{
+  "type": "mekanism:reaction",
+  "category": "gasification",
+  "chemical_input": {
+    "amount": 100,
+    "ingredient": "mekanism:oxygen"
+  },
+  "duration": 100,
+  "experience": 0.1,
+  "fluid_input": {
+    "amount": 100,
+    "ingredient": "minecraft:water"
+  },
+  "group": "mekanism:dust_sulfur",
+  "item_input": {
+    "count": 1,
+    "ingredient": [
+      "#c:dusts/coal",
+      "#c:dusts/charcoal"
+    ]
+  },
+  "output": {
+    "chemical": {
+      "amount": 100,
+      "id": "mekanism:hydrogen"
+    },
+    "item": {
+      "id": "mekanism:dust_sulfur"
+    }
+  }
+}

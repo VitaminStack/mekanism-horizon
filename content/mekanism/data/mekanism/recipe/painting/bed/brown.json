@@ -1,0 +1,33 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 256,
+    "ingredient": "mekanism:brown"
+  },
+  "experience": 0.1,
+  "group": "mekanism:bed_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:white_bed",
+      "minecraft:orange_bed",
+      "minecraft:magenta_bed",
+      "minecraft:light_blue_bed",
+      "minecraft:yellow_bed",
+      "minecraft:lime_bed",
+      "minecraft:pink_bed",
+      "minecraft:gray_bed",
+      "minecraft:light_gray_bed",
+      "minecraft:cyan_bed",
+      "minecraft:purple_bed",
+      "minecraft:blue_bed",
+      "minecraft:green_bed",
+      "minecraft:red_bed",
+      "minecraft:black_bed"
+    ]
+  },
+  "output": {
+    "id": "minecraft:brown_bed"
+  },
+  "per_tick_usage": false
+}

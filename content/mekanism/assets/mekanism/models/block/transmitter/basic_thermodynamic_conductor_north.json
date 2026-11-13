@@ -1,0 +1,41 @@
+{
+  "textures": {
+    "center": "mekanism:block/models/multipart/basic_thermodynamic_conductor",
+    "side": "mekanism:block/models/multipart/basic_thermodynamic_conductor_vertical",
+    "particle": "mekanism:block/models/multipart/basic_thermodynamic_conductor"
+  },
+  "elements": [
+    {
+      "from": [
+        6,
+        6,
+        0
+      ],
+      "to": [
+        10,
+        10,
+        6
+      ],
+      "faces": {
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#side"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        },
+        "up": {
+          "texture": "#center"
+        },
+        "down": {
+          "texture": "#center"
+        }
+      }
+    }
+  ]
+}

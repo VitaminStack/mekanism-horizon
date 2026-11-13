@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": "minecraft:bowl",
+    "C": "#c:circuits/basic",
+    "R": "#c:dusts/redstone",
+    "X": "mekanism:steel_casing"
+  },
+  "pattern": [
+    "RCR",
+    "#X#",
+    "RCR"
+  ],
+  "result": {
+    "id": "mekanism:nutritional_liquifier"
+  }
+}

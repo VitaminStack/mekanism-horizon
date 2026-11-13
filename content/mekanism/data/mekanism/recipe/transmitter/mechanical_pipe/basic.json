@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "group": "mekanism:mechanical_pipe",
+  "key": {
+    "#": "#c:buckets/empty",
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    "S#S"
+  ],
+  "result": {
+    "count": 8,
+    "id": "mekanism:basic_mechanical_pipe"
+  }
+}

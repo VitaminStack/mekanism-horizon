@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:liquification",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:mushroom_stew"
+  },
+  "output": {
+    "amount": 300,
+    "id": "mekanism:nutritional_paste"
+  }
+}

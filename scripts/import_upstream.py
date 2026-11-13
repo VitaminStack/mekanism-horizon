@@ -35,19 +35,27 @@ SOURCES = {NS: 'src/main/resources', GEN: 'src/generators/resources'}
 VANILLA_RECIPES = {'minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 'minecraft:smelting',
                    'minecraft:blasting', 'minecraft:smoking', 'minecraft:campfire_cooking',
                    'minecraft:stonecutting'}
+# Pipes, tubes and conductors (M06): blockstates, models and item definitions by gen_resources.py (upstream's
+# are OBJ models behind a custom loader); their textures `block/models/multipart/<id>(_vertical).png` are
+# upstream's, copied as they are.
+TRANSMITTERS = {f'{NS}:{t}_{k}' for k in ('mechanical_pipe', 'pressurized_tube', 'thermodynamic_conductor')
+                for t in ('basic', 'advanced', 'elite', 'ultimate')}
 # Assets written elsewhere: the energy cubes by scripts/import_energy_cube.py (custom model loader
-# turned into plain models), the debug blocks by gen_resources.py.
+# turned into plain models), the debug blocks and transmitters by gen_resources.py.
 ASSET_SKIP = {f'{NS}:{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')} | {
-    f'{NS}:debug_energy_source', f'{NS}:debug_energy_sink', f'{NS}:debug_chemical_source'}
+    f'{NS}:debug_energy_source', f'{NS}:debug_energy_sink', f'{NS}:debug_chemical_source'} | TRANSMITTERS
 # Item definitions written by gen_resources.py (upstream's use a custom item model type).
-ITEM_SKIP = {f'{NS}:{t}_fluid_tank' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')}
+ITEM_SKIP = {f'{NS}:{t}_fluid_tank' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')} | TRANSMITTERS
 REF = re.compile(r'"(#?)(mekanism|mekanismgenerators):([a-z0-9_/.]+)"')
 # Mekanism machine recipe types whose machine exists here.
 MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversion', 'mekanism:enriching',
                    'mekanism:crushing', 'mekanism:compressing', 'mekanism:combining', 'mekanism:sawing',
                    'mekanism:purifying', 'mekanism:injecting', 'mekanism:oxidizing', 'mekanism:chemical_infusing',
                    'mekanism:separating', 'mekanism:rotary', 'mekanism:dissolution', 'mekanism:washing',
-                   'mekanism:crystallizing'}
+                   'mekanism:crystallizing', 'mekanism:pigment_extracting', 'mekanism:pigment_mixing',
+                   'mekanism:painting', 'mekanism:reaction', 'mekanism:centrifuging', 'mekanism:activating'}
+# Recipes whose `input` and `output` are both chemicals.
+CHEMICAL_TO_CHEMICAL = {'mekanism:centrifuging', 'mekanism:activating'}
 # Chemicals with Mekanism's infuse-type attribute: what the Metallurgic Infuser takes.
 INFUSE_TYPES = {f'{NS}:{t}' for t in ('carbon', 'redstone', 'diamond', 'refined_obsidian', 'tin', 'gold',
                                       'bio', 'fungi')}
@@ -64,7 +72,9 @@ SOUNDS = {
          'tile.machine.chemical_oxidizer', 'tile.machine.chemical_infuser',
          'tile.machine.electrolytic_separator', 'tile.machine.rotary_condensentrator',
          'tile.machine.chemical_dissolution_chamber', 'tile.machine.chemical_washer',
-         'tile.machine.chemical_crystallizer'],
+         'tile.machine.chemical_crystallizer', 'tile.machine.nutritional_liquifier',
+         'tile.machine.pigment_extractor', 'tile.machine.pigment_mixer', 'tile.machine.painting_machine',
+         'tile.machine.pressurized_reaction_chamber', 'tile.machine.isotopic_centrifuge'],
     'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar', 'tile.generator.bio',
                            'tile.generator.wind', 'tile.generator.gas'],
 }
@@ -83,6 +93,16 @@ def flat_or(ingredient):
         v = flat_or(v)
         out.extend(v if isinstance(v, list) else [v])
     return out
+
+
+def without(up, ingredient):
+    """NeoForge's `neoforge:difference` (a Mekanism item tag minus one item, the Painting Machine's colorable
+    items) as a plain list of ids: Horizon reads no such ingredient. Other ingredients stay."""
+    if not (isinstance(ingredient, dict) and ingredient.get('type', ingredient.get('neoforge:ingredient_type')) == 'neoforge:difference'):
+        return ingredient
+    ns, _, path = ingredient['base'][1:].partition(':')
+    tag = json.loads((up / 'src/datagen/generated' / NS / 'data' / ns / 'tags/item' / f'{path}.json').read_text(encoding='utf-8'))
+    return [v for v in tag['values'] if v != ingredient['subtracted']]
 
 
 def fluid_id(ref):
@@ -198,14 +218,16 @@ def main(up):
                 # Conversions only into a machine's buffer; the others feed later machines.
                 if kind == 'mekanism:chemical_conversion' and recipe['output']['id'] not in BUFFER_CHEMICALS:
                     continue
-                if 'chemical_input' in recipe:
-                    # A chemical tag becomes its one chemical; a plain id stays.
-                    tag = recipe['chemical_input']['ingredient']
+                # A chemical tag becomes its one chemical; a plain id stays. Chemical-to-chemical
+                # recipes (centrifuging, activating) have it as `input`.
+                chem = recipe.get('chemical_input') or (recipe['input'] if kind in CHEMICAL_TO_CHEMICAL else None)
+                if chem:
+                    tag = chem['ingredient']
                     if tag.startswith('#'):
                         if tag not in chem_tags:
                             print(f'  unresolved chemical {tag} in {src.name}')
                             continue
-                        recipe['chemical_input']['ingredient'] = chem_tags[tag]
+                        chem['ingredient'] = chem_tags[tag]
                 # The fluid a separating or rotary recipe takes: its tag becomes the fluid's id.
                 fluid = recipe.get('input') if kind == 'mekanism:separating' else recipe.get('fluid_input')
                 if fluid:
@@ -217,10 +239,10 @@ def main(up):
                         print(f'  unresolved fluid {fluid["ingredient"]} in {src.name}')
                         continue
                     fluid['ingredient'] = fluid_id(fluid['ingredient'])
-                else:
+                if kind == 'mekanism:reaction' or not fluid:
                     for slot in ('input', 'item_input', 'main_input', 'extra_input'):
-                        if slot in recipe:
-                            recipe[slot]['ingredient'] = flat_or(recipe[slot]['ingredient'])
+                        if slot in recipe and kind not in CHEMICAL_TO_CHEMICAL:
+                            recipe[slot]['ingredient'] = flat_or(without(up, recipe[slot]['ingredient']))
                 text = json.dumps(recipe, indent=2)
             elif kind not in VANILLA_RECIPES:
                 continue
@@ -229,10 +251,16 @@ def main(up):
             skip = ('type', 'group', 'chemical_input', 'fluid_input', 'fluid_output', 'chemical_output') + (
                 ('output',) if kind in ('mekanism:chemical_conversion', 'mekanism:oxidizing', 'mekanism:dissolution',
                                         'mekanism:washing') else ()) + (
-                ('left_input', 'right_input', 'output') if kind == 'mekanism:chemical_infusing' else ()) + (
+                ('left_input', 'right_input', 'output') if kind in ('mekanism:chemical_infusing', 'mekanism:pigment_mixing') else ()) + (
+                ('output',) if kind == 'mekanism:pigment_extracting' else ()) + (
                 ('input', 'output') if kind == 'mekanism:separating' else ()) + (
-                ('input',) if kind == 'mekanism:crystallizing' else ())
-            scan = json.dumps({k: v for k, v in recipe.items() if k not in skip})
+                ('input',) if kind == 'mekanism:crystallizing' else ()) + (
+                ('input', 'output') if kind in CHEMICAL_TO_CHEMICAL else ())
+            scanned = {k: v for k, v in recipe.items() if k not in skip}
+            if kind == 'mekanism:reaction' and 'output' in scanned:
+                # Only the item output names an item; its chemical output is a chemical id.
+                scanned['output'] = scanned['output'].get('item', {})
+            scan = json.dumps(scanned)
             refs = {f'{m.group(2)}:{m.group(3)}' for m in REF.finditer(scan) if not m.group(1)}
             if refs <= known:
                 dst = content(ns) / 'data' / ns / 'recipe' / src.relative_to(recipe_dir)

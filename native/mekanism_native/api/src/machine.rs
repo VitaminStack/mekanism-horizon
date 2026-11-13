@@ -3,7 +3,9 @@
 //! Combiner, Precision Sawmill, Purification Chamber, Chemical Injection
 //! Chamber, Chemical Oxidizer, Chemical Infuser, Electrolytic Separator, Rotary
 //! Condensentrator, Chemical Dissolution Chamber, Chemical Washer, Chemical
-//! Crystallizer), and the operation they share. The parts that
+//! Crystallizer, Nutritional Liquifier, Pigment Extractor, Pigment Mixer,
+//! Painting Machine, Pressurized Reaction Chamber, Isotopic Centrifuge, Solar
+//! Neutron Activator), and the operation they share. The parts that
 //! need no Horizon types, so their tests run in `logic/energy`; recipes are in
 //! `recipe.rs`, the tick and screen in `process.rs`.
 //!
@@ -27,7 +29,16 @@
 //! tanks of `MAX_CHEMICAL` 10 buckets), `TileEntityChemicalWasher` (usage 5, one
 //! operation per tick, water and two slurry tanks of 10 buckets),
 //! `TileEntityChemicalCrystallizer` (usage 15, 10 s, one input tank of 10
-//! buckets) and `AttributeEnergy.STORAGE_MULTIPLIER` (storage 4 x usage).
+//! buckets), `TileEntityNutritionalLiquifier` (usage 8, 5 s, paste tank of 10
+//! buckets), `TileEntityPigmentExtractor` (usage 5, 5 s, pigment tank of 20 buckets),
+//! `TileEntityPigmentMixer` (usage 5, one operation per tick, inputs of 1 bucket and
+//! an output of 2), `TileEntityPaintingMachine` (usage 5, 10 s, pigment tank of 15
+//! buckets), `TileEntityPressurizedReactionChamber` (`UsageConfig.pressurizedReactionBase` 2
+//! plus each recipe's `energy_required`, `duration` per recipe, `MAX_FLUID` and `MAX_GAS` 10
+//! buckets), `TileEntityIsotopicCentrifuge` (usage 8, one operation per tick, 10 buckets per
+//! tank), `TileEntitySolarNeutronActivator` (no energy; `maxSolarNeutronActivatorRate` 64 mB/t
+//! at peak, scaled by the biome and the sun) and `AttributeEnergy.STORAGE_MULTIPLIER`
+//! (storage 4 x usage; the Reaction Chamber's follows its longest recipe, see `PRC_STORAGE`).
 //!
 //! Not ported: the energy slot (charging from items), upgrades, side config
 //! and redstone control.
@@ -211,6 +222,68 @@ pub fn infuse(tanks: &mut [Fluid], max: i32, left: (&str, i32), right: (&str, i3
     true
 }
 
+/// Whether the Pressurized Reaction Chamber can run a recipe: its fluid (tank 0) and chemical
+/// (tank 1) are there, and `out` (a chemical for tank 2) fits whole.
+pub fn can_react(tanks: &[Fluid], t: &FluidTanks, fluid: (&str, i32), gas: (&str, i32), out: Option<(&str, i32)>) -> bool {
+    let [water, input, output] = tanks else { return false };
+    water.has(fluid.0, fluid.1)
+        && input.has(gas.0, gas.1)
+        && out.is_none_or(|(id, n)| output.fits(id, n, t.tanks[PRC_OUTPUT].max))
+}
+
+/// The end of a Pressurized Reaction Chamber operation: takes the fluid and the chemical and adds
+/// `out`. Call after `can_react`; returns false and changes nothing otherwise.
+pub fn react(tanks: &mut [Fluid], t: &FluidTanks, fluid: (&str, i32), gas: (&str, i32), out: Option<(&str, i32)>) -> bool {
+    if !can_react(tanks, t, fluid, gas, out) {
+        return false;
+    }
+    tanks[0].take(fluid.1);
+    tanks[1].take(gas.1);
+    if let Some((id, n)) = out {
+        tanks[PRC_OUTPUT].add(id, n);
+    }
+    true
+}
+
+/// Up to `ops` operations of a chemical `input` (tank 0) turning into `output` (tank 1), each
+/// all or nothing, as `OneInputCachedRecipe` limits them by the input held and the room left.
+/// Returns how many ran. The Isotopic Centrifuge (one a tick) and the Solar Neutron Activator.
+pub fn transmute(tanks: &mut [Fluid], t: &FluidTanks, input: (&str, i32), output: (&str, i32), ops: i32) -> i32 {
+    let [src, dst] = tanks else { return 0 };
+    let held = if src.id.as_deref() == Some(input.0) { src.amount / input.1 } else { 0 };
+    let room = if dst.id.as_deref().is_none_or(|have| have == output.0) { (t.tanks[1].max - dst.amount) / output.1 } else { 0 };
+    let n = ops.min(held).min(room);
+    if n <= 0 {
+        return 0;
+    }
+    src.take(n * input.1);
+    dst.add(output.0, n * output.1);
+    n
+}
+
+/// `maxSolarNeutronActivatorRate` at its default: mB per tick at a peak multiplier of 1.
+pub const SNA_RATE: f32 = 64.0;
+
+/// What the Solar Neutron Activator produces per tick: the best it can in this biome
+/// (`peak_multiplier` from `generator::peak_multiplier`) and what the sun lets it now
+/// (0 without sun), as `TileEntitySolarNeutronActivator.recalculateProductionRate`.
+pub fn activation_rate(peak_multiplier: f32, brightness: f32, sees_sun: bool) -> (f32, f32) {
+    let peak = SNA_RATE * peak_multiplier;
+    (peak, if sees_sun { peak * brightness.max(0.0) } else { 0.0 })
+}
+
+/// Ticks one operation takes and how many run at once for a production `rate`: below 1 mB/t one
+/// every `ceil(1 / rate)` ticks, else `floor(rate)` each tick; none without production.
+pub fn activation_schedule(rate: f32) -> (i32, i32) {
+    if rate <= 0.0 {
+        (1, 0)
+    } else if rate < 1.0 {
+        ((1.0 / rate).ceil() as i32, 1)
+    } else {
+        (1, rate as i32)
+    }
+}
+
 /// What a machine does each tick; the item machines share one operation, the
 /// others work on their fluid and chemical tanks.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -229,6 +302,15 @@ pub enum Op {
     /// A chemical (tank 0) turns into an item in the output slot, over `ticks`: the Chemical
     /// Crystallizer (`crystallizing`).
     Crystallize,
+    /// An item (slot 0), a fluid (tank 0) and a chemical (tank 1) make an item and/or a chemical
+    /// (tank 2) over each recipe's own duration and energy: the Pressurized Reaction Chamber (`reaction`).
+    React,
+    /// A chemical (tank 0) turns into another (tank 1), one operation a tick: the Isotopic
+    /// Centrifuge (`centrifuging`).
+    Transmute,
+    /// The same, at the rate the sun and biome allow, without energy: the Solar Neutron Activator
+    /// (`activating`).
+    Activate,
 }
 
 pub struct Machine {
@@ -267,11 +349,13 @@ pub struct Machine {
     pub slot_pos: &'static [[f32; 2]],
     pub energy_gauge: [f32; 4],
     pub progress_bar: [f32; 4],
+    /// Energy it stores in FE (`AttributeEnergy.STORAGE_MULTIPLIER` x usage unless set otherwise).
+    pub storage: i32,
 }
 
 impl Machine {
     pub const fn capacity(&self) -> i32 {
-        4 * self.usage
+        self.storage
     }
 
     pub const fn slots(&self) -> usize {
@@ -285,7 +369,17 @@ impl Machine {
 
     /// Whether it works on its fluid and chemical tanks alone (no item input).
     pub fn tank_op(&self) -> bool {
-        !matches!(self.op, Op::Item | Op::Crystallize)
+        !matches!(self.op, Op::Item | Op::Crystallize | Op::React)
+    }
+
+    /// Whether it needs no energy (the Solar Neutron Activator).
+    pub const fn solar(&self) -> bool {
+        matches!(self.op, Op::Activate)
+    }
+
+    /// Highest value the saved progress takes: the reaction chamber counts its recipe's duration.
+    pub const fn max_progress(&self) -> i32 {
+        if matches!(self.op, Op::React) { 65_535 } else { self.ticks }
     }
 
     /// The tank an item machine takes its chemical from (the Dissolution Chamber's
@@ -332,6 +426,7 @@ const fn electric(
         slot_pos: &ELECTRIC_SLOT_POS,
         energy_gauge: ELECTRIC_ENERGY_GAUGE,
         progress_bar: ELECTRIC_PROGRESS_BAR,
+        storage: 4 * usage,
     }
 }
 
@@ -470,7 +565,77 @@ pub const CRYSTALLIZER_TANKS: FluidTanks = FluidTanks {
     outputs: &[],
 };
 
-pub const MACHINES: [Machine; 15] = [
+/// The Nutritional Liquifier (`GuiNutritionalLiquifier`): the item at (26, 36), its progress bar right
+/// of it and the paste gauge at (131, 13); the output slot (the food's container, a bowl) and the
+/// container slots are not ported. Its tank is a fluid tank (`mekanism:nutritional_paste`).
+const LIQUIFIER_SLOT_POS: [[f32; 2]; 1] = [[26.0, 36.0]];
+pub const LIQUIFIER_TANKS: FluidTanks = FluidTanks {
+    tanks: &[FluidTank { gauge: [131.0, 13.0, 18.0, 58.0], max: 10_000 }],
+    inputs: &[],
+    outputs: &[0],
+};
+
+/// The Pigment Extractor (`GuiPigmentExtractor`): item at (26, 36), pigment gauge as the Oxidizer's
+/// (`MAX_PIGMENT` 20 buckets).
+pub const EXTRACTOR_TANKS: FluidTanks = FluidTanks {
+    tanks: &[FluidTank { gauge: [131.0, 13.0, 18.0, 58.0], max: 20_000 }],
+    inputs: &[],
+    outputs: &[0],
+};
+
+/// The Pigment Mixer: left and right pigment gauges (`MAX_INPUT_PIGMENT`, 1 bucket) and the output
+/// between them (`MAX_OUTPUT_PIGMENT`, 2 buckets), laid out as the Chemical Infuser's.
+pub const MIXER_TANKS: FluidTanks = FluidTanks {
+    tanks: &[
+        FluidTank { gauge: [25.0, 17.0, 18.0, 54.0], max: 1_000 },
+        FluidTank { gauge: [133.0, 17.0, 18.0, 54.0], max: 1_000 },
+        FluidTank { gauge: [79.0, 16.0, 18.0, 54.0], max: 2_000 },
+    ],
+    inputs: &[0, 1],
+    outputs: &[2],
+};
+
+/// The Pressurized Reaction Chamber: fluid and chemical input gauges, the small chemical output
+/// gauge right of the output slot (the screen is 176 x 166 here, Mekanism's 171 high).
+const PRC_SLOT_POS: [[f32; 2]; 2] = [[54.0, 40.0], [116.0, 40.0]];
+pub const PRC_TANKS: FluidTanks = FluidTanks {
+    tanks: &[
+        FluidTank { gauge: [6.0, 16.0, 16.0, 54.0], max: 10_000 },
+        FluidTank { gauge: [29.0, 16.0, 16.0, 54.0], max: 10_000 },
+        FluidTank { gauge: [141.0, 46.0, 18.0, 26.0], max: 10_000 },
+    ],
+    inputs: &[0, 1],
+    outputs: &[2],
+};
+
+/// The Painting Machine (`GuiPaintingMachine`): paintable item (45, 35), painted item (116, 35) and
+/// the pigment gauge left (`MAX_PIGMENT`, 15 buckets).
+const PAINTING_SLOT_POS: [[f32; 2]; 2] = [[45.0, 35.0], [116.0, 35.0]];
+pub const PAINTING_TANKS: FluidTanks = FluidTanks {
+    tanks: &[FluidTank { gauge: [25.0, 13.0, 16.0, 58.0], max: 15_000 }],
+    inputs: &[0],
+    outputs: &[],
+};
+
+/// Its chemical output tank.
+pub const PRC_OUTPUT: usize = 2;
+/// `MekanismConfig.usage.pressurizedReactionBase`; each recipe adds its `energy_required`.
+const PRC_USAGE: i32 = 2;
+/// What its buffer holds: Mekanism sizes it by the recipe running (energy per tick x its duration,
+/// at least 4 ticks); this is the longest shipped one, wood or coal gasification (900 ticks at 2 FE/t).
+pub const PRC_STORAGE: i32 = 1_800;
+
+/// The Isotopic Centrifuge and the Solar Neutron Activator: input and output gauges beside the arrow.
+pub const CHEMICAL_TANKS: FluidTanks = FluidTanks {
+    tanks: &[
+        FluidTank { gauge: [26.0, 14.0, 18.0, 56.0], max: 10_000 },
+        FluidTank { gauge: [134.0, 14.0, 18.0, 56.0], max: 10_000 },
+    ],
+    inputs: &[0],
+    outputs: &[1],
+};
+
+pub const MACHINES: [Machine; 22] = [
     electric(
         "mekanism:enrichment_chamber",
         "mekanism:enriching",
@@ -500,6 +665,7 @@ pub const MACHINES: [Machine; 15] = [
         slot_pos: &infuser::SLOT_POS,
         energy_gauge: infuser::ENERGY_GAUGE,
         progress_bar: infuser::PROGRESS_BAR,
+        storage: 20,
     },
     Machine {
         output: Some(2),
@@ -688,7 +854,124 @@ pub const MACHINES: [Machine; 15] = [
             CRYSTALLIZER_SOUND_TICKS,
         )
     },
+    Machine {
+        ticks: 100,
+        output: None,
+        tanks: Some(&LIQUIFIER_TANKS),
+        slot_pos: &LIQUIFIER_SLOT_POS,
+        progress_bar: [64.0, 40.0, 48.0, 8.0],
+        ..electric(
+            "mekanism:nutritional_liquifier",
+            "mekanism:liquification",
+            "Nutritional Liquifier",
+            8,
+            "mekanism:tile.machine.nutritional_liquifier",
+            LIQUIFIER_SOUND_TICKS,
+        )
+    },
+    Machine {
+        ticks: 100,
+        output: None,
+        tanks: Some(&EXTRACTOR_TANKS),
+        slot_pos: &LIQUIFIER_SLOT_POS,
+        progress_bar: [64.0, 40.0, 48.0, 8.0],
+        ..electric(
+            "mekanism:pigment_extractor",
+            "mekanism:pigment_extracting",
+            "Pigment Extractor",
+            5,
+            "mekanism:tile.machine.pigment_extractor",
+            EXTRACTOR_SOUND_TICKS,
+        )
+    },
+    // Mixes every tick like the Chemical Infuser; no progress bar.
+    Machine {
+        ticks: 1,
+        input: None,
+        output: None,
+        op: Op::Infuse,
+        tanks: Some(&MIXER_TANKS),
+        hidden: 1,
+        slot_pos: &[],
+        progress_bar: [0.0; 4],
+        ..electric(
+            "mekanism:pigment_mixer",
+            "mekanism:pigment_mixing",
+            "Pigment Mixer",
+            5,
+            "mekanism:tile.machine.pigment_mixer",
+            MIXER_SOUND_TICKS,
+        )
+    },
+    Machine {
+        tanks: Some(&PAINTING_TANKS),
+        slot_pos: &PAINTING_SLOT_POS,
+        progress_bar: [70.0, 40.0, 32.0, 8.0],
+        ..electric(
+            "mekanism:painting_machine",
+            "mekanism:painting",
+            "Painting Machine",
+            5,
+            "mekanism:tile.machine.painting_machine",
+            PAINTING_SOUND_TICKS,
+        )
+    },
+    Machine {
+        ticks: 100,
+        output: Some(1),
+        op: Op::React,
+        tanks: Some(&PRC_TANKS),
+        slot_pos: &PRC_SLOT_POS,
+        energy_gauge: [163.0, 21.0, 6.0, 54.0],
+        progress_bar: [77.0, 43.0, 28.0, 8.0],
+        storage: PRC_STORAGE,
+        ..electric(
+            "mekanism:pressurized_reaction_chamber",
+            "mekanism:reaction",
+            "Pressurized Reaction Chamber",
+            PRC_USAGE,
+            "mekanism:tile.machine.pressurized_reaction_chamber",
+            PRC_SOUND_TICKS,
+        )
+    },
+    Machine {
+        ticks: 1,
+        input: None,
+        output: None,
+        op: Op::Transmute,
+        tanks: Some(&CHEMICAL_TANKS),
+        hidden: 1,
+        slot_pos: &[],
+        energy_gauge: [164.0, 16.0, 6.0, 54.0],
+        progress_bar: [64.0, 43.0, 48.0, 8.0],
+        ..electric(
+            "mekanism:isotopic_centrifuge",
+            "mekanism:centrifuging",
+            "Isotopic Centrifuge",
+            8,
+            "mekanism:tile.machine.isotopic_centrifuge",
+            CENTRIFUGE_SOUND_TICKS,
+        )
+    },
+    // No energy and no sound; the progress bar shows the sun's share of its best rate.
+    Machine {
+        ticks: 1,
+        input: None,
+        output: None,
+        op: Op::Activate,
+        tanks: Some(&CHEMICAL_TANKS),
+        hidden: 1,
+        slot_pos: &[],
+        energy_gauge: [0.0; 4],
+        progress_bar: [64.0, 43.0, 48.0, 8.0],
+        sound: "",
+        sound_ticks: 0,
+        ..electric("mekanism:solar_neutron_activator", "mekanism:activating", "Solar Neutron Activator", 0, "", 0)
+    },
 ];
+
+const PRC_SOUND_TICKS: i32 = 49;
+const CENTRIFUGE_SOUND_TICKS: i32 = 110;
 
 const OXIDIZER_SOUND_TICKS: i32 = 44;
 const CHEMICAL_INFUSER_SOUND_TICKS: i32 = 41;
@@ -697,6 +980,10 @@ const ROTARY_SOUND_TICKS: i32 = 71;
 const DISSOLUTION_SOUND_TICKS: i32 = 25;
 const WASHER_SOUND_TICKS: i32 = 81;
 const CRYSTALLIZER_SOUND_TICKS: i32 = 51;
+const LIQUIFIER_SOUND_TICKS: i32 = 51;
+const EXTRACTOR_SOUND_TICKS: i32 = 127;
+const MIXER_SOUND_TICKS: i32 = 83;
+const PAINTING_SOUND_TICKS: i32 = 40;
 /// Clip lengths of `tile/compressor.ogg`, `tile/combiner.ogg` and
 /// `tile/precision_sawmill.ogg`, `tile/purification_chamber.ogg` and
 /// `tile/chemical_injection_chamber.ogg` in ticks, rounded up.
@@ -757,6 +1044,17 @@ pub const fn data_mode(t: &FluidTanks) -> usize {
     DATA_BUFFER + 2 * t.count()
 }
 
+/// Where the Solar Neutron Activator's production rate is, then its best rate, both in hundredths
+/// of a mB/t.
+pub const fn data_extra(t: &FluidTanks) -> usize {
+    data_mode(t)
+}
+
+/// The sun's share of the Activator's best rate, from the two menu values, in [0, 1].
+pub fn sun_share(rate: i32, peak: i32) -> f32 {
+    if peak > 0 { (rate as f32 / peak as f32).clamp(0.0, 1.0) } else { 0.0 }
+}
+
 pub fn menu_data(energy: i32, progress: i32, facing: usize, active: bool, tank: Option<Tank>, fluids: &[Fluid]) -> Vec<i32> {
     let mut data = vec![energy, progress, facing as i32, active as i32];
     if let Some(tank) = tank {
@@ -798,6 +1096,13 @@ pub fn tooltip(machine: &Machine, data: &[i32], at: [f32; 2]) -> Vec<String> {
         ];
     }
     if inside(machine.progress_bar, at) {
+        if let Some(t) = machine.tanks.filter(|_| machine.solar()) {
+            let (rate, peak) = (d(data_extra(t)), d(data_extra(t) + 1));
+            return vec![
+                format!("Production: {:.2} mB/t", rate as f32 / 100.0),
+                format!("Peak: {:.2} mB/t", peak as f32 / 100.0),
+            ];
+        }
         return vec![format!("Progress: {}%", d(DATA_PROGRESS) * 100 / machine.ticks)];
     }
     if let Some(t) = machine.tanks {
@@ -873,12 +1178,20 @@ mod tests {
         assert_eq!(slots("mekanism:chemical_dissolution_chamber"), (Some(0), None, None, None, None, 1));
         assert_eq!(slots("mekanism:chemical_washer"), (None, None, None, None, None, 1));
         assert_eq!(slots("mekanism:chemical_crystallizer"), (None, Some(0), None, None, None, 1));
+        assert_eq!(slots("mekanism:nutritional_liquifier"), (Some(0), None, None, None, None, 1));
+        assert_eq!(slots("mekanism:pigment_extractor"), (Some(0), None, None, None, None, 1));
+        assert_eq!(slots("mekanism:pigment_mixer"), (None, None, None, None, None, 1));
+        assert_eq!(slots("mekanism:painting_machine"), (Some(0), Some(1), None, None, None, 2));
+        assert_eq!(slots("mekanism:pressurized_reaction_chamber"), (Some(0), Some(1), None, None, None, 2));
+        assert_eq!(slots("mekanism:isotopic_centrifuge"), (None, None, None, None, None, 1));
+        assert_eq!(slots("mekanism:solar_neutron_activator"), (None, None, None, None, None, 1));
     }
 
     #[test]
     fn every_machine_is_well_formed() {
         for m in &MACHINES {
-            assert!(m.usage > 0 && m.sound_ticks > 0, "{}", m.block);
+            // The Solar Neutron Activator has neither energy nor sound.
+            assert!(m.solar() || (m.usage > 0 && m.sound_ticks > 0), "{}", m.block);
             let mut used: Vec<usize> = m.input.into_iter().chain(m.output).chain(m.extra).chain(m.secondary).collect();
             used.extend(m.buffer.map(|b| b.slot));
             let n = used.len();
@@ -1253,5 +1566,215 @@ mod tests {
         let data = menu_data(60, 100, 2, true, None, &[fluid("clean_gold", 200)]);
         assert_eq!(tooltip(cry, &data, [35.0, 40.0]), vec!["Clean Gold Slurry: 200 / 10000 mB"]);
         assert_eq!(tooltip(cry, &data, [80.0, 43.0]), vec!["Progress: 50%"]);
+    }
+
+    #[test]
+    fn nutrition_and_pigment_machines_match_mekanism() {
+        let liq = machine("mekanism:nutritional_liquifier");
+        assert_eq!((liq.usage, liq.capacity(), liq.ticks, liq.op), (8, 32, 100, Op::Item));
+        assert_eq!((liq.input, liq.output, liq.chemical_tank()), (Some(0), None, None));
+        assert_eq!(liq.tanks.unwrap().tanks[0].max, 10_000);
+        assert_eq!((liq.tanks.unwrap().inputs, liq.tanks.unwrap().outputs), (&[][..], &[0][..]));
+        let ext = machine("mekanism:pigment_extractor");
+        assert_eq!((ext.usage, ext.capacity(), ext.ticks, ext.op), (5, 20, 100, Op::Item));
+        assert_eq!(ext.tanks.unwrap().tanks[0].max, 20_000);
+        assert_eq!((ext.input, ext.output), (Some(0), None));
+        let mix = machine("mekanism:pigment_mixer");
+        assert_eq!((mix.usage, mix.capacity(), mix.ticks, mix.op), (5, 20, 1, Op::Infuse));
+        let caps: Vec<i32> = mix.tanks.unwrap().tanks.iter().map(|t| t.max).collect();
+        assert_eq!(caps, [1_000, 1_000, 2_000]);
+        assert_eq!((mix.tanks.unwrap().inputs, mix.tanks.unwrap().outputs), (&[0, 1][..], &[2][..]));
+        let paint = machine("mekanism:painting_machine");
+        assert_eq!((paint.usage, paint.capacity(), paint.ticks, paint.op), (5, 20, 200, Op::Item));
+        assert_eq!((paint.input, paint.output, paint.chemical_tank()), (Some(0), Some(1), Some(0)));
+        assert_eq!(paint.tanks.unwrap().tanks[0].max, 15_000);
+        assert_eq!((paint.tanks.unwrap().inputs, paint.tanks.unwrap().outputs), (&[0][..], &[][..]));
+        assert_eq!(paint.outputs(), vec![1]);
+    }
+
+    /// A pigment amount in a tank always fits the 16-bit menu data (the biggest tank is 20 buckets).
+    #[test]
+    fn pigment_tanks_fit_menu_data_when_full() {
+        for (block, n) in [("mekanism:pigment_extractor", 1), ("mekanism:painting_machine", 1), ("mekanism:pigment_mixer", 3)] {
+            let t = machine(block).tanks.unwrap();
+            let full: Vec<Fluid> = t.tanks.iter().map(|k| fluid("red", k.max)).collect();
+            assert_eq!(full.len(), n);
+            let d = menu_data(machine(block).capacity(), 0, 5, true, None, &full);
+            assert!(d.iter().all(|v| (0..=0xFFFF).contains(v)), "{block}");
+        }
+    }
+
+    /// Red and yellow pigment make orange, 1 + 1 for 2, either way round, until the 2 bucket output is full.
+    #[test]
+    fn mixing_two_pigments_fills_the_output_then_waits() {
+        let (red, yellow, orange) = (chemicals::chemical("red"), chemicals::chemical("yellow"), chemicals::chemical("orange"));
+        let max = MIXER_TANKS.tanks[2].max;
+        for (a, b) in [(fluid("red", 1_000), fluid("yellow", 1_000)), (fluid("yellow", 1_000), fluid("red", 1_000))] {
+            let mut tanks = vec![a, b, Fluid::default()];
+            let mut ticks = 0;
+            while infuse(&mut tanks, max, (&red, 1), (&yellow, 1), (&orange, 2)) {
+                ticks += 1;
+            }
+            assert_eq!(ticks, 1_000, "one operation per tick until the inputs run out");
+            assert_eq!((tanks[0].amount, tanks[1].amount, tanks[2].amount), (0, 0, 2_000));
+        }
+        let mut full = vec![fluid("red", 10), fluid("yellow", 10), fluid("orange", 1_999)];
+        assert!(!infuse(&mut full, max, (&red, 1), (&yellow, 1), (&orange, 2)), "2 more would pass 2000");
+        assert_eq!((full[0].amount, full[1].amount, full[2].amount), (10, 10, 1_999), "nothing taken");
+    }
+
+    /// The Extractor's output tank takes a dye's 256 mB 78 times, never a partial one, and one pigment at a time.
+    #[test]
+    fn extractor_output_tank_stops_when_full_or_another_pigment() {
+        let max = EXTRACTOR_TANKS.tanks[0].max;
+        let mut t = Fluid::default();
+        let red = chemicals::chemical("red");
+        let mut n = 0;
+        while t.fits(&red, 256, max) {
+            t.add(&red, 256);
+            n += 1;
+        }
+        assert_eq!((n, t.amount), (78, 19_968));
+        assert!(!t.fits(&chemicals::chemical("blue"), 256, max));
+        t.take(19_968);
+        assert!(t.fits(&chemicals::chemical("blue"), 256, max), "an emptied tank takes any pigment");
+    }
+
+    /// The Liquifier's tank is a fluid: paste is the fluid id, a food of 8 points makes 400 mB, 25 foods fill it.
+    #[test]
+    fn liquifier_paste_tank_holds_whole_foods() {
+        let max = LIQUIFIER_TANKS.tanks[0].max;
+        let paste = chemicals::from_recipe("mekanism:nutritional_paste").unwrap();
+        assert!(!chemicals::is_chemical(&paste));
+        let mut t = Fluid::default();
+        let mut foods = 0;
+        while t.fits(&paste, 400, max) {
+            t.add(&paste, 400);
+            foods += 1;
+        }
+        assert_eq!((foods, t.amount), (25, 10_000));
+        assert!(!t.fits(&paste, 50, max), "full");
+        t.take(400);
+        assert!(t.fits(&paste, 400, max));
+    }
+
+    #[test]
+    fn pigment_tooltips() {
+        let mix = machine("mekanism:pigment_mixer");
+        let data = menu_data(20, 0, 2, true, None, &[fluid("red", 1_000), fluid("yellow", 400), fluid("orange", 1_500)]);
+        assert_eq!(tooltip(mix, &data, [30.0, 40.0]), vec!["Red Pigment: 1000 / 1000 mB"]);
+        assert_eq!(tooltip(mix, &data, [140.0, 40.0]), vec!["Yellow Pigment: 400 / 1000 mB"]);
+        assert_eq!(tooltip(mix, &data, [85.0, 40.0]), vec!["Orange Pigment: 1500 / 2000 mB"]);
+        let paint = machine("mekanism:painting_machine");
+        let data = menu_data(20, 100, 2, true, None, &[fluid("blue", 15_000)]);
+        assert_eq!(tooltip(paint, &data, [30.0, 40.0]), vec!["Blue Pigment: 15000 / 15000 mB"]);
+        assert_eq!(tooltip(paint, &data, [80.0, 43.0]), vec!["Progress: 50%"]);
+        let liq = machine("mekanism:nutritional_liquifier");
+        let paste = Fluid { id: Some("mekanism:nutritional_paste".into()), amount: 400 };
+        let data = menu_data(32, 0, 2, true, None, &[paste]);
+        assert_eq!(tooltip(liq, &data, [140.0, 40.0]), vec!["Nutritional Paste: 400 / 10000 mB"]);
+    }
+
+    #[test]
+    fn advanced_chemistry_machines_match_mekanism() {
+        let prc = machine("mekanism:pressurized_reaction_chamber");
+        assert_eq!((prc.usage, prc.op, prc.capacity(), prc.max_progress()), (2, Op::React, PRC_STORAGE, 65_535));
+        let t = prc.tanks.unwrap();
+        assert_eq!((t.inputs, t.outputs), (&[0, 1][..], &[2][..]));
+        assert!(!prc.tank_op());
+        let cen = machine("mekanism:isotopic_centrifuge");
+        assert_eq!((cen.usage, cen.capacity(), cen.ticks, cen.op), (8, 32, 1, Op::Transmute));
+        assert!(cen.tank_op() && !cen.solar());
+        let sna = machine("mekanism:solar_neutron_activator");
+        assert_eq!((sna.usage, sna.capacity(), sna.op, sna.sound), (0, 0, Op::Activate, ""));
+        assert!(sna.solar() && sna.tank_op());
+        for m in [prc, cen, sna] {
+            assert!(m.tanks.unwrap().tanks.iter().all(|t| t.max == 10_000), "{}", m.block);
+        }
+    }
+
+    fn water(amount: i32) -> Fluid {
+        Fluid { id: Some(chemicals::WATER.to_owned()), amount }
+    }
+
+    /// Fluid and chemical go in, the chemical output fits whole or nothing runs; a recipe without
+    /// a chemical output needs no room.
+    #[test]
+    fn reaction_takes_fluid_and_chemical_for_a_chemical() {
+        let (hydrogen, ethene) = (chemicals::chemical("hydrogen"), chemicals::chemical("ethene"));
+        let mut t = [water(10), fluid("hydrogen", 100), Fluid::default()];
+        let args = ((chemicals::WATER, 10), (hydrogen.as_str(), 100), Some((ethene.as_str(), 300)));
+        assert!(can_react(&t, &PRC_TANKS, args.0, args.1, args.2));
+        assert!(react(&mut t, &PRC_TANKS, args.0, args.1, args.2));
+        assert_eq!((t[0].amount, t[1].amount, t[2].amount), (0, 0, 300));
+        assert_eq!((t[0].id.as_deref(), t[1].id.as_deref(), t[2].id.as_deref()), (None, None, Some(ethene.as_str())));
+
+        let mut full = [water(10), fluid("hydrogen", 100), fluid("ethene", 9_800)];
+        assert!(!react(&mut full, &PRC_TANKS, args.0, args.1, args.2), "no room");
+        assert_eq!((full[0].amount, full[1].amount, full[2].amount), (10, 100, 9_800), "nothing taken");
+        assert!(react(&mut full, &PRC_TANKS, args.0, args.1, None), "an item-only recipe needs no room");
+        assert_eq!(full[2].amount, 9_800);
+
+        let mut short = [water(9), fluid("hydrogen", 100), Fluid::default()];
+        assert!(!react(&mut short, &PRC_TANKS, args.0, args.1, None), "water short");
+        let mut other = [water(10), fluid("hydrogen", 100), fluid("oxygen", 10)];
+        assert!(!react(&mut other, &PRC_TANKS, args.0, args.1, args.2), "another chemical in the output");
+    }
+
+    #[test]
+    fn transmuting_is_limited_by_input_room_and_operations() {
+        let (lithium, tritium) = (chemicals::chemical("lithium"), chemicals::chemical("tritium"));
+        let run = |t: &mut [Fluid], ops| transmute(t, &CHEMICAL_TANKS, (&lithium, 1), (&tritium, 1), ops);
+        let mut t = [fluid("lithium", 5), Fluid::default()];
+        assert_eq!(run(&mut t, 3), 3);
+        assert_eq!((t[0].amount, t[1].amount), (2, 3));
+        assert_eq!(run(&mut t, 64), 2, "only the input there");
+        assert_eq!((t[0].amount, t[0].id.is_none(), t[1].amount), (0, true, 5));
+        assert_eq!(run(&mut t, 1), 0, "empty");
+        let mut full = [fluid("lithium", 50), fluid("tritium", 9_990)];
+        assert_eq!(run(&mut full, 64), 10, "room for 10");
+        let mut wrong = [fluid("lithium", 50), fluid("hydrogen", 1)];
+        assert_eq!(run(&mut wrong, 64), 0, "the output tank holds another chemical");
+        let mut other = [fluid("hydrogen", 50), Fluid::default()];
+        assert_eq!(run(&mut other, 64), 0, "another input");
+        // Two in for three out.
+        let mut two = [fluid("lithium", 5), Fluid::default()];
+        assert_eq!(transmute(&mut two, &CHEMICAL_TANKS, (&lithium, 2), (&tritium, 3), 64), 2);
+        assert_eq!((two[0].amount, two[1].amount), (1, 6));
+    }
+
+    #[test]
+    fn activator_rate_follows_biome_and_sun() {
+        assert_eq!(activation_rate(1.0, 1.0, true), (64.0, 64.0));
+        assert_eq!(activation_rate(1.0, 0.5, true), (64.0, 32.0));
+        assert_eq!(activation_rate(1.25, 1.0, true), (80.0, 80.0));
+        assert_eq!(activation_rate(1.0, 1.0, false), (64.0, 0.0), "no sun");
+        assert_eq!(activation_rate(1.0, -0.2, true).1, 0.0, "never below 0");
+    }
+
+    #[test]
+    fn activator_schedule_is_a_slow_or_a_fast_rate() {
+        assert_eq!(activation_schedule(0.0), (1, 0));
+        assert_eq!(activation_schedule(-1.0), (1, 0));
+        assert_eq!(activation_schedule(0.5), (2, 1));
+        assert_eq!(activation_schedule(0.3), (4, 1));
+        assert_eq!(activation_schedule(1.0), (1, 1));
+        assert_eq!(activation_schedule(41.9), (1, 41));
+        assert_eq!(activation_schedule(64.0), (1, 64));
+    }
+
+    #[test]
+    fn advanced_chemistry_tooltips() {
+        let sna = machine("mekanism:solar_neutron_activator");
+        let mut data = menu_data(0, 0, 2, false, None, &[fluid("lithium", 40), Fluid::default()]);
+        data.extend([4_150, 6_400]);
+        assert_eq!(tooltip(sna, &data, [70.0, 46.0]), vec!["Production: 41.50 mB/t", "Peak: 64.00 mB/t"]);
+        assert!(tooltip(sna, &data, [167.0, 40.0]).is_empty(), "no energy gauge");
+        assert_eq!(sun_share(4_150, 6_400), 4_150.0 / 6_400.0);
+        assert_eq!(sun_share(1, 0), 0.0);
+        let prc = machine("mekanism:pressurized_reaction_chamber");
+        let data = menu_data(900, 25, 2, true, None, &[water(1), fluid("hydrogen", 100), Fluid::default()]);
+        assert_eq!(tooltip(prc, &data, [90.0, 46.0]), vec!["Progress: 25%"]);
+        assert_eq!(tooltip(prc, &data, [166.0, 40.0]), vec!["Energy: 900 / 1800 FE", "Usage: 2 FE/t"]);
     }
 }

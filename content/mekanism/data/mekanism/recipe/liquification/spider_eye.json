@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:liquification",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:spider_eye"
+  },
+  "output": {
+    "amount": 100,
+    "id": "mekanism:nutritional_paste"
+  }
+}

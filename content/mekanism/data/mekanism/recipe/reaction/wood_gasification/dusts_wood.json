@@ -1,0 +1,25 @@
+{
+  "type": "mekanism:reaction",
+  "category": "gasification",
+  "chemical_input": {
+    "amount": 25,
+    "ingredient": "mekanism:oxygen"
+  },
+  "duration": 37,
+  "experience": 0.005,
+  "fluid_input": {
+    "amount": 25,
+    "ingredient": "minecraft:water"
+  },
+  "group": "hydrogen",
+  "item_input": {
+    "count": 8,
+    "ingredient": "#c:dusts/wood"
+  },
+  "output": {
+    "chemical": {
+      "amount": 25,
+      "id": "mekanism:hydrogen"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "textures": {
+    "center": "mekanism:block/models/multipart/elite_thermodynamic_conductor",
+    "side": "mekanism:block/models/multipart/elite_thermodynamic_conductor_vertical",
+    "particle": "mekanism:block/models/multipart/elite_thermodynamic_conductor"
+  },
+  "elements": [
+    {
+      "from": [
+        6,
+        6,
+        6
+      ],
+      "to": [
+        10,
+        10,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#center"
+        },
+        "south": {
+          "texture": "#center"
+        },
+        "west": {
+          "texture": "#center"
+        },
+        "east": {
+          "texture": "#center"
+        },
+        "up": {
+          "texture": "#center"
+        },
+        "down": {
+          "texture": "#center"
+        }
+      }
+    }
+  ]
+}

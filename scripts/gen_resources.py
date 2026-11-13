@@ -28,7 +28,8 @@ MISC_ITEMS = ['fluorite_gem', 'salt',
               'basic_control_circuit', 'advanced_control_circuit', 'elite_control_circuit',
               'ultimate_control_circuit', 'alloy_infused', 'alloy_reinforced', 'alloy_atomic',
               'enriched_carbon', 'enriched_redstone', 'enriched_diamond', 'enriched_refined_obsidian',
-              'enriched_tin', 'enriched_gold', 'enriched_iron', 'electrolytic_core']
+              'enriched_tin', 'enriched_gold', 'enriched_iron', 'electrolytic_core',
+              'dye_base']  # dye_base: the Painting Machine's input for dyes (M06)
 
 # registry ids in declaration order, per content mod (= namespace)
 registry = {ns: {'items': [], 'blocks': []} for ns in (NS, GEN)}
@@ -137,6 +138,9 @@ item('atomic_disassembler', 'minecraft:stick', stack=1, components={
 })
 # Bio Fuel (Crusher output, Bio Generator input) and its block (MekanismBlocks: strength 0.5, grass sound).
 item('bio_fuel')
+# Pressurized Reaction Chamber products: the substrate (also the chamber's catalyst) and the HDPE pellet.
+item('substrate')
+item('hdpe_pellet')
 # Sawdust: the Precision Sawmill's secondary output from logs (`#c:dusts/wood`).
 item('sawdust')
 block('block_bio_fuel', 'minecraft:hay_block', 0.5, 0.5, requires_tool=False, sounds='minecraft:grass_block')
@@ -201,10 +205,43 @@ CHEMICAL_MENUS = {
     'chemical_dissolution_chamber': {'slots': 1, 'data_slots': 8, 'results': []},
     'chemical_washer': {'slots': 1, 'data_slots': 10, 'results': []},
     'chemical_crystallizer': {'slots': 1, 'data_slots': 6, 'results': [0]},
+    # Nutritional Liquifier and Pigment Extractor: 0 input item; output tank (data slots 4-5). Pigment Mixer: no
+    # slot; left, right, output tanks (4-9). Painting Machine: 0 paintable item, 1 painted item; pigment tank (4-5).
+    'nutritional_liquifier': {'slots': 1, 'data_slots': 6, 'results': []},
+    'pigment_extractor': {'slots': 1, 'data_slots': 6, 'results': []},
+    'pigment_mixer': {'slots': 1, 'data_slots': 10, 'results': []},
+    'painting_machine': {'slots': 2, 'data_slots': 6, 'results': [1]},
+
+    # Pressurized Reaction Chamber: 0 input item, 1 output item (results); fluid, chemical and output
+    # chemical tanks (4-9). Isotopic Centrifuge: no slot; input and output tanks (4-7), no extras.
+    # Solar Neutron Activator: no slot; its tanks (4-7), then its production and best rate (8-9).
+    'pressurized_reaction_chamber': {'slots': 2, 'data_slots': 10, 'results': [1]},
+    'isotopic_centrifuge': {'slots': 1, 'data_slots': 8, 'results': []},
+    'solar_neutron_activator': {'slots': 1, 'data_slots': 10, 'results': []},
 }
 for m, menu in CHEMICAL_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
     put(f'data/{NS}/horizon/menu/{m}.json', menu)
+
+# Nutritional Liquifier recipes (`mekanism:liquification`): Mekanism has none as data; its machine turns any
+# food into paste in code (`TileEntityNutritionalLiquifier.createDynamicRecipe`: nutrition x 50 mB,
+# `nutritionalPasteMBPerFood`). Horizon gives a native mod no way to read an item's food values, so
+# the vanilla foods are listed here (nutrition from vanilla's `Foods`); other mods' foods need their own recipe.
+FOODS = {
+    'apple': 4, 'baked_potato': 5, 'beef': 3, 'beetroot': 1, 'beetroot_soup': 6, 'bread': 5, 'carrot': 3,
+    'chicken': 2, 'chorus_fruit': 4, 'cod': 2, 'cooked_beef': 8, 'cooked_chicken': 6, 'cooked_cod': 5,
+    'cooked_mutton': 6, 'cooked_porkchop': 8, 'cooked_rabbit': 5, 'cooked_salmon': 6, 'cookie': 2,
+    'dried_kelp': 1, 'enchanted_golden_apple': 4, 'glow_berries': 2, 'golden_apple': 4, 'golden_carrot': 6,
+    'honey_bottle': 6, 'melon_slice': 2, 'mushroom_stew': 6, 'mutton': 2, 'poisonous_potato': 2,
+    'porkchop': 3, 'potato': 1, 'pufferfish': 1, 'pumpkin_pie': 8, 'rabbit': 3, 'rabbit_stew': 10,
+    'rotten_flesh': 4, 'salmon': 2, 'spider_eye': 2, 'suspicious_stew': 6, 'sweet_berries': 2, 'tropical_fish': 1,
+}
+for food, nutrition in FOODS.items():
+    put(f'data/{NS}/recipe/liquification/{food}.json', {
+        'type': f'{NS}:liquification',
+        'input': {'count': 1, 'ingredient': f'minecraft:{food}'},
+        'output': {'amount': nutrition * 50, 'id': f'{NS}:nutritional_paste'},
+    })
 
 # --- generators (M04), content mod `mekanismgenerators`: ticked, powered and drawn by
 # native/mekanism_native. BlockTile.defaultProperties (3.5, 16) as the infuser; the barrel template
@@ -307,6 +344,68 @@ block('personal_barrel', 'minecraft:barrel', 3.5, 16.0, extra={'default_state': 
 for pid in ('electric_pump', 'fluidic_plenisher'):
     block(pid, 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False)
     put(f'data/{NS}/horizon/menu/{pid}.json', {'slots': 1, 'data_slots': 6, 'results': []})
+
+# --- transmitters (M06): Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors ---
+# Block entities of native/.../transmitter.rs; the six boolean block states `down`..`east` are the arms to
+# the neighbours the block joins (set by the native mod). Mekanism's own models are OBJ models behind a
+# custom loader, so the blockstates are plain multipart ones over cuboids: a centre cube (large 6 px for
+# pipes, small 4 px for tubes and conductors) and one arm per side, textured from the upstream
+# `block/models/multipart/<id>(_vertical).png`. Selection and collision boxes are the centre cube only
+# (Horizon shapes depend on one property, not on six). Strength 3.5 / 16 as BlockTransmitter.
+TRANSMITTER_KINDS = {'mechanical_pipe': 5, 'pressurized_tube': 6, 'thermodynamic_conductor': 6}  # kind -> centre min
+TRANSMITTER_IDS = [f'{t}_{k}' for k in TRANSMITTER_KINDS for t in CUBE_TIERS[:4]]
+ARM_NAMES = ['down', 'up', 'north', 'south', 'west', 'east']
+TEX = f'{NS}:block/models/multipart'
+
+
+def cuboid(lo, hi, side_tex, end_tex):
+    """A model element; `side_tex` for the four long faces, `end_tex` for the two ends (y)."""
+    faces = {f: {'texture': side_tex} for f in ('north', 'south', 'west', 'east')}
+    faces.update({f: {'texture': end_tex} for f in ('up', 'down')})
+    return {'from': lo, 'to': hi, 'faces': faces}
+
+
+def arm(dir_, lo, hi):
+    """The arm toward `dir_`: from the centre cube (`lo`..`hi`) to the block edge."""
+    a, b = list(lo), list(hi)
+    axis, sign = {'down': (1, -1), 'up': (1, 1), 'north': (2, -1), 'south': (2, 1), 'west': (0, -1), 'east': (0, 1)}[dir_]
+    if sign < 0:
+        a[axis], b[axis] = 0, lo[axis]
+    else:
+        a[axis], b[axis] = hi[axis], 16
+    return cuboid(a, b, '#side', '#center')
+
+
+for tid in TRANSMITTER_IDS:
+    kind = next(k for k in TRANSMITTER_KINDS if tid.endswith(k))
+    lo_v = TRANSMITTER_KINDS[kind]
+    lo, hi = [lo_v] * 3, [16 - lo_v] * 3
+    box = [lo + hi]
+    block(tid, 'minecraft:iron_block', 3.5, 16.0, extra={
+        'state_properties': {d: {'type': 'boolean'} for d in ARM_NAMES},
+        'default_state': {d: 'false' for d in ARM_NAMES},
+        'shapes': {'property': 'up', 'values': {'true': box, 'false': box}, 'default': box},
+        'collision_shapes': {'property': 'up', 'values': {'true': box, 'false': box}, 'default': box},
+    }, sounds=STONE, occludes=False)
+    textures = {'center': f'{TEX}/{tid}', 'side': f'{TEX}/{tid}_vertical', 'particle': f'{TEX}/{tid}'}
+    put(f'assets/{NS}/models/block/transmitter/{tid}_center.json',
+        {'textures': textures, 'elements': [cuboid(lo, hi, '#center', '#center')]})
+    for d in ARM_NAMES:
+        put(f'assets/{NS}/models/block/transmitter/{tid}_{d}.json',
+            {'textures': textures, 'elements': [arm(d, lo, hi)]})
+    put(f'assets/{NS}/blockstates/{tid}.json', {'multipart': [
+        {'apply': {'model': f'{NS}:block/transmitter/{tid}_center'}},
+        *({'when': {d: 'true'}, 'apply': {'model': f'{NS}:block/transmitter/{tid}_{d}'}} for d in ARM_NAMES)]})
+    # Item: a straight piece (centre and the north and south arms).
+    put(f'assets/{NS}/models/item/{tid}.json', {
+        'parent': 'minecraft:block/block', 'textures': textures,
+        'elements': [cuboid(lo, hi, '#center', '#center'), arm('north', lo, hi), arm('south', lo, hi)],
+        'display': {'gui': {'rotation': [30, 225, 0], 'scale': [1.0, 1.0, 1.0]},
+                    'ground': {'translation': [0, 3, 0], 'scale': [0.5, 0.5, 0.5]},
+                    'fixed': {'scale': [1.0, 1.0, 1.0]},
+                    'thirdperson_righthand': {'rotation': [75, 45, 0], 'translation': [0, 2.5, 0], 'scale': [0.5, 0.5, 0.5]},
+                    'firstperson_righthand': {'rotation': [0, 45, 0], 'scale': [0.5, 0.5, 0.5]}}})
+    put(f'assets/{NS}/items/{tid}.json', {'model': {'type': 'minecraft:model', 'model': f'{NS}:item/{tid}'}})
 
 # Pushes hydrogen into neighbouring tanks (native `DEBUG_CHEMICAL_SOURCE`), for testing chemical
 # tanks until a machine makes chemicals.
@@ -478,7 +577,8 @@ put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
      + [f'{NS}:{t}_bin' for t in CUBE_TIERS] + [f'{NS}:personal_chest', f'{NS}:personal_barrel']
-     + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]})
+     + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]
+     + [f'{NS}:{t}' for t in TRANSMITTER_IDS]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in (
         'heat_generator', 'solar_generator', 'bio_generator', 'advanced_solar_generator', 'wind_generator',

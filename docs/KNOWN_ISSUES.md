@@ -74,9 +74,13 @@ Siehe [ADDITIONS.md](ADDITIONS.md). Kurz:
 - **Obsidian TNT** explodiert wie Vanilla-TNT (Radius 4 statt 12, feste Zündzeit). Eigene Entität/Explosion fehlt.
 - **Plastic Road** ohne Geschwindigkeitsschub. **Glow/Transparent** ohne Emissive/CTM, ohne Face-Auslassung.
 - **Kein Lava-Fluid-Logging** bei Fences, Slabs und Obsidian TNT.
-- **Fehlende Rezepte:** Plastic-Grundrezept und Glow Panels (brauchen `hdpe_sheet`, M06 Chemie), Umfärben, Painting-Machine, Pigment-Extraktion.
+- **Fehlende Rezepte:** Plastic-Grundrezept und Glow Panels (brauchen `hdpe_sheet`, M06 Chemie), Pigment-Mixer-Crafting (`hdpe_rod`).
 - **Nicht gebaut:** Baby-Mobs, Balloons, Walkie-Talkies, Spawn Eggs (Entitäten und Netzwerk fehlen in Horizon-Content).
 - Ingame offen: Crafting im Grid, Slick-Rezept in der Enrichment Chamber, Slick-Reibung, Inventar-Items, Neustart/Chunk-Unload.
+
+## Fortgeschrittene Chemie-Maschinen (M06)
+
+Pressurized Reaction Chamber, Isotopic Centrifuge und Solar Neutron Activator sind **ingame ungetestet** (Testplan in [TESTLOG.md](TESTLOG.md)). Centrifuge und Activator sind in Mekanism zwei Blöcke hoch; das zweite Bounding-Teil fehlt hier (siehe [CHEMISTRY.md](CHEMISTRY.md)). Reaction-Rezepte mit Plutonium-/Polonium-Pellets fehlen, bis das Radiation-System existiert.
 
 ## Noch nicht portiert
 
@@ -92,7 +96,7 @@ Details und Machbarkeit je Item: [ITEM_HOOKS.md](ITEM_HOOKS.md).
 
 - **Nicht registriert**: Electric Bow, Flamethrower, Jetpack, Free Runners, Scuba, Hazmat, MekaSuit, Meka-Tool, Geiger Counter, Dosimeter, Crafting Formula, Network Reader, Portable QIO Dashboard, HDPE-Elytra. Ein craftbares Item ohne Funktion wäre vorgetäuscht. Gründe: fehlende Systeme (Radiation, Module, QIO, Transmitter, Formulaic Assemblicator), fehlendes `hdpe_sheet`, oder Hooks vorhanden, aber noch nicht gebaut.
 - **Atomic Disassembler**: nur Modi Normal und Vein Mining (Sneak plus Rechtsklick); Slow, Fast und Off fehlen, das Abbautempo ist eine feste Komponente. Energie lädt nur über Cubes und Tablet-Logik von Horizon, kein Ladeslot im Item. Ohne Energie baut er nichts ab.
-- **Canteen**: Auffüllen per Rechtsklick auf einen Tank mit Nutritional Paste (1.000 mB), weil der Nutritional Liquifier fehlt.
+- **Canteen**: Auffüllen per Rechtsklick auf einen Tank mit Nutritional Paste (1.000 mB), weil der Nutritional Liquifier (M06 Gruppe 6, ingame ungetestet) nur Vanilla-Nahrung kennt und nicht in Chemical-Items füllt.
 - **Gauge Dropper**: arbeitet auf Block-Tanks und Maschinen mit Fluidtank, nicht auf GUI-Gauges.
 - **Dictionary**: prüft eine generierte Tagliste (Horizon kann Tags nicht auflisten), kennt also keine Tags außerhalb der Content-Mods und weniger Vanilla-Tags.
 - **Canteen**: gibt keine Sättigung; ein getrunkener Hungerpunkt sinkt bei Sättigung 0 wieder wie jeder andere (ob das Original Sättigung gibt, ist nicht geprüft).
@@ -100,3 +104,10 @@ Details und Machbarkeit je Item: [ITEM_HOOKS.md](ITEM_HOOKS.md).
 - **Item-Änderungen** (Energie, Füllstand, Modus) wirken mit bis zu einem Tick Verzug: Use-Hooks dürfen das Inventar nicht schreiben, die Änderung wird im nächsten `inventory_tick` angewendet. Beim Neuaufbau des Stacks gehen andere Komponenten verloren, die Items haben aber keine.
 - **Zahlenwerte** (Kapazitäten, Kosten, Schrittweiten) sind Mekanisms Standardwerte nach Kenntnis, nicht aus dem Java-Quellcode gelesen (Sparse-Checkout ohne `src/main/java`).
 
+## Pipes, Tubes, Conductors (M06, ingame ungetestet)
+
+- **Kein Netzwerk**: Kapazität und Rate eines Tiers gelten je Block, nicht je Netz. Lange Leitungen puffern mehr, als Mekanism es täte; der Durchsatz ist die Tier-Rate je Block und Tick.
+- **Keine Seitenmodi**: Pull/Push/Off und der Configurator fehlen. Pipes nehmen nur, was Nachbarn selbst hineinschieben (Tank-Auto-eject nach unten, Maschinen-Outputs, Pumpe nach oben); sie ziehen nicht aus Tanks.
+- **Modell**: Mekanisms OBJ-Modelle (eigener Loader) fehlen in Horizon, die Teile sind Quader; Auswahl- und Kollisionsbox sind nur der Mittelwürfel (Horizon-Shapes hängen an einer Property, nicht an sechs).
+- **Verbindungen** setzt der Tick (`down`..`east`) mit bis zu einem Tick Verzug und einer Prüfung je Nachbar und Tick; viele Pipes können das spürbar machen.
+- **Heat**: nur Conductor zu Conductor und zum Heat Generator; jeder Conductor rechnet für sich in Tick-Reihenfolge statt in einer Netzwerk-Runde.

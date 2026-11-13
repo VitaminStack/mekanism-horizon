@@ -290,3 +290,97 @@ Build: Native `native-fdc87ae-1c7ad4927bd3`, Content aus Branch `feat/m06-ore-pr
 | Dissolution ohne Säure: Fortschritt hält (81), läuft nach Nachfüllen weiter | ok |
 | GUIs: Titel, Gauges (Wasser blau, Schlamm gelb, Säure oliv), Item-Slot, Fortschrittsbalken, Energie (Screenshots) | ok |
 | Sounds, Tooltips, Crafting-Rezepte, Weltneustart, Chunk-Unload der neuen Maschinen | nicht geprüft |
+
+## M06 Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine: Testplan (Ergebnisse: „M06 Abnahme“ unten)
+
+Stand: umgesetzt und per Unit-Test geprüft (`cargo test --manifest-path logic/energy/Cargo.toml`: Werte, Slots, Tank-Kapazitäten, Mischen bis Output voll, Menü-Daten 16 Bit, Tooltips) und `scripts/Test-Content.ps1`. Der Native-Build (`scripts/Build-Native.ps1`) und alle Ingame-Tests stehen aus, weil `horizon-client` lokal ohne den Launcher nicht baut. TODO-Punkte bleiben offen, bis dieser Plan abgearbeitet ist.
+
+Aufbau: Kreativwelt, Energie aus Creative Energy Cubes vor der Front, Tankinhalte per `/data merge`, Tick-Rate per `/tick rate`. Pigment-IDs sind Tank-IDs `mekanism:chemical/<pigment>`, Paste ist `mekanism:nutritional_paste`.
+
+| Test | Erwartung |
+|---|---|
+| Liquifier: Gebratenes Rindfleisch (8) in den Slot | 100 Ticks, 8 FE/t, +400 mB Paste im Tank, Item verbraucht; Brot (5) gibt 250 mB |
+| Liquifier: Tank mit 9.700 mB, nächstes Steak (400 mB) | Maschine pausiert, nichts verbraucht, läuft nach Entnahme weiter |
+| Liquifier: Tank daneben (Fluid Tank unten/oben) | Paste wird ausgeworfen (bis 1.024 mB/t), Chemical Tank nimmt sie nicht |
+| Liquifier: Item ohne Nahrungsrezept (Stein) | bleibt im Slot, kein Fortschritt |
+| Extractor: Rote Farbe (Red Dye) | 100 Ticks, +256 mB Roter Pigment; Rose/Mohn 768 mB (`pigment_extracting`); anderes Pigment bei vollem/belegtem Tank wartet |
+| Extractor: 78 rote Farben | Tank 19.968 / 20.000 mB, 79. Farbe wartet (kein Teilbetrag) |
+| Mixer: 1.000 mB Rot + 1.000 mB Gelb in beide Eingänge (beide Reihenfolgen) | je Tick 1 + 1 gibt 2 mB Orange, nach 1.000 Ticks 2.000 mB Orange, Eingänge leer, Output wird in Nachbarn ausgeworfen |
+| Mixer: Output voll (2.000 mB) | pausiert, nichts verbraucht; ohne Energie hält er an |
+| Mixer: Eingang mit unpassendem Pigment (Rot + Rot) | läuft nicht |
+| Painting: 256 mB Rot im Tank, Weiße Wolle | 200 Ticks, 5 FE/t, rote Wolle, 256 mB abgezogen am Ende; Ausgabe-Slot belegt: pausiert |
+| Painting: `dye_base` + 256 mB Rot | Rote Farbe; Rezepte für Teppich, Glas, Beton usw. wie Wolle (ohne die schon rote Variante) |
+| Painting: 15.000 mB Pigment einfüllen (Kreativ-Tank daneben) | Tank 15.000 / 15.000 mB, Überfluss bleibt draußen |
+| Alle vier: Weltneustart mit halbem Fortschritt | Fortschritt, Tankinhalt, Energie bleiben (NBT `fluids`, `mekanism_progress`); GUI zeigt Füllstand sofort |
+| Alle vier: Chunk-Unload und Reload, Abbau mit Inhalt | kein Verlust des Items im Slot; beim Abbau mit gefülltem Tank beobachten und notieren, ob der Inhalt am Item bleibt (Mekanism: ja, hier nicht portiert, vermutlich verloren) |
+| GUI: Titel, Gauges (Paste rosa, Pigmente in ihrer Farbe), Fortschrittsbalken, Tooltips mit Menge/Kapazität, Sounds | Screenshots prüfen, Gauge-Positionen sind nach Mekanisms GUI geschätzt |
+| Crafting-Rezepte (Liquifier, Extractor, Painting Machine); Mixer-Rezept fehlt bis `hdpe_rod` | Rezeptbuch zeigt drei, `dye_base` aus Holzstaub + Ton |
+| Durchsatz Eject: Output-Tank mit 20.000 mB Pigment neben Chemical Tank | höchstens 1.024 mB/t |
+
+Offen, nicht testbar ohne Spiel: ob `#c:dyes/*`-Tags für die Extraktions-Rezepte in Horizon alle Farben abdecken (die Rezepte nennen die Items direkt, nur Rezepte mit unbekannten Items fehlen im Spiel).
+
+## M06 Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors (Testplan; Ergebnisse: „M06 Abnahme“ unten)
+
+Stand: nur Unit-Tests (`cargo test --manifest-path logic/energy/Cargo.toml`: Tier-Werte, `push_plan`, Wärmerechnung), `cargo check` des Native-Crates und `scripts/Test-Content.ps1`. Nichts davon lief ingame; nach dem Build (`Build-Native.ps1`, `Build-Content.ps1`) in einer Kreativwelt prüfen:
+
+| Test | Erwartung / Ergebnis |
+|---|---|
+| Alle 12 Blöcke und Items erscheinen, Namen, Rezepte (Basic Pipe: Stahl, leerer Eimer, Stahl; Tier-Upgrade `PPP/PAP/PPP`), Auswahlbox, Abbau gibt den Block | offen |
+| Basic-Pipe-Kette (3 Blöcke): Creative Fluid Tank mit Wasser (Auto-eject nach unten, Pipe darunter) zu leerem Fluid Tank; Wasser fließt mit ca. 250 mB/t, bis beide gleich voll sind | offen |
+| Arme erscheinen zu Nachbar-Pipe und Tank, verschwinden beim Abbau des Nachbarn; Pipe verbindet nicht mit Tube oder Conductor | offen |
+| Pipe nimmt keine Chemicals, Tube keine Fluids | offen |
+| Tube-Kette mit Hydrogen aus `debug_chemical_source` über Chemical Tank | offen |
+| Tier-Raten (Advanced 1.000, Elite 8.000, Ultimate 32.000 mB/t) gegen Tank-Füllstand über Zeit (`/tick rate`) | offen |
+| Separator, Oxidizer oder Pumpe geben in eine angrenzende Pipe/Tube aus, die in einen Tank weiterleitet | offen |
+| Fluss gleicht sich aus, läuft nicht in den vollen Quelltank zurück, kein Deadlock beim Einfüllen in Nachbarn | offen |
+| Neustart: Pipe-Inhalt bleibt; Chunk-Unload; Performance mit 200+ Pipes (Verbindungsprüfung je Tick) | offen |
+| Heat Generator mit Lava neben Conductor: `mekanism_heat` des Conductors steigt, Generator-Temperatur sinkt; Basic vs. Ultimate: Ultimate verliert weniger an die Luft | offen |
+| Conductor-Kette gleicht Temperaturen an (`/data get block ...`), kalter Conductor gibt nichts zurück | offen |
+| Rendering: Mittelwürfel und Arme mit Upstream-Texturen, Item-Modell (GUI, Hand), Mehrteiler-Blockstate lädt | offen |
+| Blöcke ohne Container/Menü: Rechtsklick öffnet nichts, und `block_entity_fluids` greift auch ohne `block_entity_container` | offen |
+
+## M06 Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator (13.11.2026, Branch `feat/m06-advanced-chem`)
+
+**Ergebnisse: „M06 Abnahme“ unten.** Vorher geprüft nur per `cargo test` (Maschinenwerte, `react`/`transmute`, Activator-Rate und -Takt, Tooltips), `scripts/Test-Content.ps1` und einem Typcheck des nativen Crates. Testplan (Kreativwelt, Creative Energy Cube an der Maschine, Tankinhalt per `/data merge`, `/tick rate` für lange Läufe):
+
+| Test | Erwartung |
+|---|---|
+| Alle drei Blöcke platzieren, GUI öffnen | Titel, Gauges, Slots; Centrifuge/Activator zeigen die 2-Block-Höhe (siehe Grenzen in `CHEMISTRY.md`) |
+| Reaction: Kohle + 100 mB Wasser + 100 mB Sauerstoff | nach 100 Ticks 1 Schwefelstaub und 100 mB Wasserstoff, 2 FE/t |
+| Reaction: Substrat-Rezept `water_ethene` | 400 Ticks, 2 + 2 FE/t, 8 Substrat; Fortschritt in % im Balken |
+| Reaction: voller Chemical-Ausgang oder voller Item-Slot | Maschine pausiert, nichts wird verbraucht |
+| Reaction: zu wenig Fluid/Chemical | Fortschritt wird zurückgesetzt, Energie nicht verbraucht |
+| Centrifuge: Nuclear Waste (10 mB) | 1 mB Plutonium je Tick, 8 FE/t; Tank-Auswurf in Nachbarn |
+| Centrifuge ohne Energie / voller Ausgang | hält an |
+| Activator mittags, freier Himmel, Ebene | 64 mB/t Lithium zu Tritium; Tooltip „Production 64.00“ |
+| Activator nachts, im Regen, unter Dach | Rate fällt auf 0, Balken leer; Tooltip |
+| Activator in Wüste/Dschungel | Rate nach Biom-Faktor; unter 1 mB/t ein Durchlauf alle n Ticks |
+| Sounds Reaction und Centrifuge, Neustart, Chunk-Unload | Schleife, Tanks und Fortschritt bleiben |
+
+## M06 Abnahme: Nutrition/Pigmente, Pipes/Tubes/Conductors, Advanced Chemistry (13.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Native `native-fdc87ae-e93aa89e0e57` (erster Lauf für PR 25 und 26 mit `native-fdc87ae-b0b22102ae30`), Content und Native aus dem lokalen Testbranch `test/m06-acceptance` (`main` + PR 25, 26 und 27, Stand `214186a`), Kreativwelt `M06Accept`, Energie aus Creative Energy Cubes neben der Maschine, Tankinhalte per `/data merge`.
+
+| Test | Ergebnis |
+|---|---|
+| Liquifier: 2 gebratene Rinder, je 100 Ticks, 400 mB Paste (800 mB); Stein bleibt im Slot ohne Fortschritt | ok |
+| Liquifier: Tank 9.700 mB, nächstes Steak wartet; Fluid Tank darunter bekommt die Paste, Chemical Tank nicht | ok |
+| Extractor: rote Farbe gibt 256 mB Rot; Tank 19.968 mB, weitere Farbe wartet und bleibt im Slot | ok |
+| Extractor: 2 rote Farben verschwanden einmal ohne Ausgabe (nach `/data merge` im laufenden Betrieb) | nicht reproduziert (3 Wiederholungen); beobachten |
+| Mixer: 1.000 + 1.000 mB Rot und Gelb zu 2.000 mB Orange, 2 mB je Tick; voller Output pausiert; Rot + Rot läuft nicht | ok |
+| Painting: weiße Wolle + 256 mB Rot zu roter Wolle, 256 mB abgezogen; GUI mit Gauge, Fortschritt, Energie (Screenshot) | ok |
+| Basic Pipe: Kette Creative Tank, 2 Pipes, Fluid Tank; Arme zu Pipe und Tank | ok |
+| Basic Pipe: Durchsatz in einen großen Tank etwa 125 statt 250 mB/t | war Abweichung, **behoben**: Endpunkte (Tanks, Maschinen, nicht oberhalb) nehmen die volle Rate unabhängig vom Füllanteil; nachgeprüft mit Build `native-fdc87ae-cd0f0bc7d6a2`: Creative Tank, 3 Pipes, Fluid Tank gibt 5.000 mB in 20 Ticks = 250 mB/t |
+| Tube mit Wasserstoff in einen Chemical Tank; Fluid Tank daneben bleibt leer | ok; Arm zum Fluid Tank war Abweichung, **behoben** (Arm nur zu Tanks der eigenen Familie; nachgeprüft, Tube neben Fluid Tanks ohne Arm) |
+| Heat Generator mit Lava zu Conductor 1 zu Conductor 2: etwa 323 K nach 200 Ticks | ok |
+| Neustart: Items, Tanks, Fortschritt, Energie, Wärme von Liquifier, Extractor, Mixer, Painting, Pipe, Tank, Conductor bleiben | ok |
+| Reaction Chamber: Kohle + Wasser + Sauerstoff zu Schwefelstaub + Wasserstoff (je 100 mB), 2 FE/t, 100 Ticks | ok |
+| Reaction Chamber: Rezept `water_ethene` zu 8 Substrat + 10 mB Sauerstoff (400 Ticks, 200 mB Wasser, 100 mB Ethen) | ok |
+| Reaction Chamber: voller Chemical-Ausgang (9.950 mB) pausiert, nichts verbraucht | ok |
+| Reaction Chamber: GUI mit Gauges, Slots, Fortschritt, Energie (Screenshot) | ok |
+| Centrifuge: 10 mB Nuclear Waste zu 1 mB Plutonium; Uranhexafluorid zu Fissile Fuel (1 zu 1); Tankinhalt bleibt | ok |
+| Activator: Mittag 66 mB/t Lithium zu Tritium (1.320 mB in 20 Ticks); Nacht und Dach 0 | ok |
+| Activator: GUI (Screenshot) | ok |
+| Neustart: Tankinhalte von Reaction Chamber, Centrifuge, Activator (Lithium + Tritium bleibt 7.300 mB) | ok |
+| Pipes/Tubes/Conductors Tiers Advanced bis Ultimate, Pipe aus Maschinen-Output, 200+ Pipes, Chunk-Unload, Sounds, Tooltips, Crafting-Rezepte; Reaction Chamber ohne Energie, Activator in anderen Biomen, 2-Block-Höhe | nicht geprüft |
+

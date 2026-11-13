@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "#c:dusts/wood",
+    "#c:dusts/wood",
+    "minecraft:clay_ball"
+  ],
+  "result": {
+    "count": 3,
+    "id": "mekanism:dye_base"
+  }
+}

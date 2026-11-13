@@ -1,0 +1,28 @@
+{
+  "type": "mekanism:reaction",
+  "category": "gasification",
+  "chemical_input": {
+    "amount": 10,
+    "ingredient": "mekanism:oxygen"
+  },
+  "duration": 15,
+  "experience": 0.015,
+  "fluid_input": {
+    "amount": 10,
+    "ingredient": "minecraft:water"
+  },
+  "group": "hydrogen",
+  "item_input": {
+    "count": 1,
+    "ingredient": [
+      "#minecraft:wooden_slabs",
+      "minecraft:bamboo_mosaic_slab"
+    ]
+  },
+  "output": {
+    "chemical": {
+      "amount": 10,
+      "id": "mekanism:hydrogen"
+    }
+  }
+}

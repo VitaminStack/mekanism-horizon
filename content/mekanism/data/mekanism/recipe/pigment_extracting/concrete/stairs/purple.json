@@ -1,0 +1,19 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "purple_dye",
+  "input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:intersection",
+      "children": [
+        "#mekanism:colorable/concrete/stairs",
+        "#c:dyed/purple"
+      ]
+    }
+  },
+  "output": {
+    "amount": 24,
+    "id": "mekanism:purple"
+  }
+}

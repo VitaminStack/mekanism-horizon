@@ -33,6 +33,13 @@
     "mekanism:fluidic_plenisher",
     "mekanism:chemical_dissolution_chamber",
     "mekanism:chemical_washer",
-    "mekanism:chemical_crystallizer"
+    "mekanism:chemical_crystallizer",
+    "mekanism:nutritional_liquifier",
+    "mekanism:pigment_extractor",
+    "mekanism:pigment_mixer",
+    "mekanism:painting_machine",
+    "mekanism:pressurized_reaction_chamber",
+    "mekanism:isotopic_centrifuge",
+    "mekanism:solar_neutron_activator"
   ]
 }

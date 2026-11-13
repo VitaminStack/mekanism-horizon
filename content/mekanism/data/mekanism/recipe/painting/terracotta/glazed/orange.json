@@ -1,0 +1,33 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:orange"
+  },
+  "experience": 0.1,
+  "group": "mekanism:glazed_terracotta_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:white_glazed_terracotta",
+      "minecraft:magenta_glazed_terracotta",
+      "minecraft:light_blue_glazed_terracotta",
+      "minecraft:yellow_glazed_terracotta",
+      "minecraft:lime_glazed_terracotta",
+      "minecraft:pink_glazed_terracotta",
+      "minecraft:gray_glazed_terracotta",
+      "minecraft:light_gray_glazed_terracotta",
+      "minecraft:cyan_glazed_terracotta",
+      "minecraft:purple_glazed_terracotta",
+      "minecraft:blue_glazed_terracotta",
+      "minecraft:brown_glazed_terracotta",
+      "minecraft:green_glazed_terracotta",
+      "minecraft:red_glazed_terracotta",
+      "minecraft:black_glazed_terracotta"
+    ]
+  },
+  "output": {
+    "id": "minecraft:orange_glazed_terracotta"
+  },
+  "per_tick_usage": false
+}

@@ -1,0 +1,19 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "brown_dye",
+  "input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:intersection",
+      "children": [
+        "#mekanism:colorable/candle",
+        "#c:dyed/brown"
+      ]
+    }
+  },
+  "output": {
+    "amount": 224,
+    "id": "mekanism:brown"
+  }
+}

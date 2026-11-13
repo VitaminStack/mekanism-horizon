@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:pigment_mixing",
+  "experience": 0.000100000005,
+  "group": "mekanism:orange",
+  "left_input": {
+    "amount": 1,
+    "ingredient": "mekanism:red"
+  },
+  "output": {
+    "amount": 2,
+    "id": "mekanism:orange"
+  },
+  "right_input": {
+    "amount": 1,
+    "ingredient": "mekanism:yellow"
+  }
+}

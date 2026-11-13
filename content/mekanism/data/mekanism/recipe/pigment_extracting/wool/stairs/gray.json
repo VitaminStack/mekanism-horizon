@@ -1,0 +1,19 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "gray_dye",
+  "input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:intersection",
+      "children": [
+        "#mekanism:colorable/wool_stairs",
+        "#c:dyed/gray"
+      ]
+    }
+  },
+  "output": {
+    "amount": 288,
+    "id": "mekanism:gray"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "light_gray_dye",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:azure_bluet",
+      "minecraft:oxeye_daisy",
+      "minecraft:white_tulip"
+    ]
+  },
+  "output": {
+    "amount": 768,
+    "id": "mekanism:light_gray"
+  }
+}

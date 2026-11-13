@@ -14,7 +14,7 @@ bewegen (API 54/55, `mod_fluids`).
 ## Entscheidung
 
 Beides sind Tank-IDs, Tabellen in `native/mekanism_native/api/src/chemicals_table.rs`
-(erzeugt von `scripts/gen_chemicals.py` aus dem Upstream-Checkout: 18 Fluids, 64 Chemicals).
+(erzeugt von `scripts/gen_chemicals.py` aus dem Upstream-Checkout: 18 Fluids, 67 Chemicals).
 
 | Art | Tank-ID | Beispiel |
 |---|---|---|
@@ -85,3 +85,52 @@ Schlämme (`dirty_*`, `clean_*`) sind Chemicals der Tabelle (`mekanism:chemical/
 aus Tank 0 (`Machine::chemical_tank`, per-Tick-Verbrauch) zu Schlamm in Tank 1. Washer: `machine::wash` (Wasser + Schlamm
 zu Schlamm, alles oder nichts). Crystallizer: `Op::Crystallize`, Chemical aus Tank 0 zu Item im Output-Slot. Rezept-Formen
 `dissolution`, `washing`, `crystallizing` in `recipe.rs`; Überblick und Grenzen: `docs/ORE_PROCESSING.md`.
+
+## Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine
+
+Keine neue Operation: der Liquifier und der Extractor sind wie der Oxidizer `Op::Item` mit Chemie-/Fluid-Output (`Recipe::chemical_output`; `liquification` und `pigment_extracting` haben dieselbe Form wie `oxidizing`), der Mixer ist `Op::Infuse` mit eigenem Rezept-Typ (`pigment_mixing`; `Recipes::infusing` hält die Tabelle je Rezept-Typ, damit Infuser und Mixer sich nicht verdrängen), die Painting Machine wie die Dissolution Chamber `Op::Item` mit Chemie aus einem Input-Tank (einmal am Ende, `per_tick_usage` false). Paste ist ein Fluid (`mekanism:nutritional_paste`), Pigmente sind Chemicals; `chemicals::from_recipe` liefert für Ids, die nur als Fluid existieren, die Fluid-Tank-ID.
+
+Werte (`machine.rs`, Mekanism 26.3): Liquifier 8 FE/t, 100 Ticks, Tank 10.000 mB; Extractor 5 FE/t, 100 Ticks, 20.000 mB; Mixer 5 FE/t, ein Durchlauf je Tick, Eingänge je 1.000 mB, Output 2.000 mB; Painting 5 FE/t, 200 Ticks, 15.000 mB.
+
+Grenzen: Der Liquifier kennt nur die Vanilla-Nahrung aus `gen_resources.py` (`FOODS`): Horizons Native-API liest keine Nahrungswerte eines Items, und Mekanisms dynamisches Rezept (`createDynamicRecipe`, Nahrung x 50 mB) kann deshalb nicht nachgebaut werden. Die Rückgabe-Items (Schüssel, Flasche) und der Container-Slot fehlen. Pigment-Items (Chemie-Item-Slots der Originale), Energie-Slot, Upgrades, Side-Config und Redstone sind nicht portiert. Der Pigment Mixer ist nicht craftbar, bis `hdpe_rod` (HDPE, Pressurized Reaction Chamber) existiert.
+
+## Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors (Gruppe 2)
+
+Zwölf Blöcke (je vier Tiers), Werte aus `PipeTier`, `TubeTier`, `ConductorTier` (Mekanism 26.3), Logik Horizon-frei in `transmitter.rs` (Tests in `logic/energy`), Host in `transmitters.rs`.
+
+| Tier | Pipe (Fluid) Kapazität / Rate | Tube (Chemical) Kapazität / Rate | Conductor Isolation |
+|---|---|---|---|
+| Basic | 2.000 / 250 mB/t | 4.000 / 750 mB/t | 10 |
+| Advanced | 8.000 / 1.000 | 16.000 / 2.000 | 400 |
+| Elite | 32.000 / 8.000 | 256.000 / 64.000 | 8.000 |
+| Ultimate | 128.000 / 32.000 | 1.024.000 / 256.000 | 100.000 |
+
+Horizon hat keine Transmitter-Netze, also ist jeder Block eine eigene Block-Entity:
+- **Pipe/Tube**: ein Block-Entity-Tank (`block_entity_fluids`, nur Eingang; `block_entity_accepts_fluid` trennt Fluids und Chemicals). Jeden Tick bietet der Block bis zur Rate des Tiers den Nachbarn Flüssigkeit an (`fluid_insert`), und zwar nur denen mit Platz und niedrigerem Füllstand als er selbst (`push_plan`). Eine Leitung gleicht sich so aus, nichts fließt in einen volleren Tank zurück. Quellen schieben wie bei den Tanks, Maschinen-Outputs und Pumpen selbst in die Pipe. Unterschied zu Mekanism: Kapazität und Rate gelten je Block, nicht für das ganze Netz.
+- **Conductor**: Wärme in `mekanism_heat` (wie der Heat Generator). Pro Tick `ITileHeatHandler.simulateAdjacent` zu kälteren Nachbarseiten (Conductors, Heat Generator) und `simulateEnvironment` (sechs Seiten, Luft 10.000 + Isolation + Leitung 5). Neu platzierte Conductors starten bei der Umgebungstemperatur des Bioms. Der Heat Generator gibt Wärme an einen kälteren Conductor ab und nimmt sie von einem wärmeren.
+- **Verbindungen**: Blockzustände `down`..`east` (boolean), vom Tick gesetzt: gleichartiger Transmitter beliebigen Tiers, Block mit Fluid-Tank (Pipe/Tube) oder Heat Generator (Conductor). Das Modell ist eine Multipart-Kombination aus Mittelwürfel und sechs Armen (Quader mit den Upstream-Texturen), weil Horizon Mekanisms OBJ-Loader nicht kennt.
+
+Nicht portiert: Seitenmodi Pull/Push/Off (Configurator), Netzwerk-Redstone, Upgrade per Tier-Installer, Auswahlbox je Arm (Horizon-Shapes hängen an einer Property), Wärmequellen außer dem Heat Generator (Boiler, Fission, Fusion, Resistive Heater existieren noch nicht). Grenze: `block_entity_accepts_fluid` kennt keine Position, eine Pipe kann also nicht nach Nachbar sperren.
+
+## M06 Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator (13.11.2026, Branch `feat/m06-advanced-chem`)
+
+Alle drei laufen über das gemeinsame Maschinen-Gerüst (`machine::MACHINES`, `process::tick`, `recipe.rs`); die Rezepte (`mekanism:reaction`, `mekanism:centrifuging`, `mekanism:activating`) kommen aus dem Upstream-Import. **Ingame ungetestet**, Testplan in [TESTLOG.md](TESTLOG.md).
+
+| Maschine | Werte (Quelle Mekanism 26.3) | Slots und Tanks |
+|---|---|---|
+| Pressurized Reaction Chamber | `pressurizedReactionBase` 2 FE/t plus `energy_required` des Rezepts, Dauer je Rezept (`duration`), Puffer 1.800 FE | Slot 0 Eingang, Slot 1 Ausgang; Tanks: 0 Fluid, 1 Chemical (Eingänge), 2 Chemical-Ausgang, je 10.000 mB |
+| Isotopic Centrifuge | 8 FE/t, Speicher 32 FE, ein Durchlauf je Tick | Tank 0 Eingang, Tank 1 Ausgang (10.000 mB) |
+| Solar Neutron Activator | keine Energie; `maxSolarNeutronActivatorRate` 64 mB/t mal Biom-Spitzenfaktor mal Sonnenhelligkeit | Tanks wie die Centrifuge |
+
+- **Reaction**: Energie je Tick `2 + energy_required`, der Fortschritt zählt Ticks bis `duration` (roh im NBT, als Prozent im Menü). Am Ende werden Item, Fluid und Chemical verbraucht und Item und/oder Chemical erzeugt, alles oder nichts: passt ein Ausgang nicht, läuft nichts (`machine::can_react`, `react`). Der Puffer ist auf das längste Rezept (900 Ticks bei 2 FE/t) ausgelegt statt je Rezept zu wachsen.
+- **Centrifuge**: je Tick ein Durchlauf, begrenzt durch Eingang und Platz im Ausgang (`machine::transmute`).
+- **Activator**: Rate wie `recalculateProductionRate` (Biom-Spitze über `generator::peak_multiplier`, Helligkeit aus Tageszeit und Wetter, ohne freien Himmel 0). Unter 1 mB/t ein Durchlauf alle `ceil(1/Rate)` Ticks, sonst `floor(Rate)` Durchläufe je Tick (`machine::activation_schedule`). Der Fortschrittsbalken zeigt den Anteil der Sonne an der Spitzenrate, der Tooltip „Production“ und „Peak“.
+- **Chemicals**: `gen_chemicals.py` liest jetzt auch die Generators-Chemicals (`deuterium`, `fusion_fuel`, `tritium`; 67 statt 64). `chemicals::from_recipe` löst `mekanismgenerators:`-IDs auf, damit das Tritium-Rezept des Activators läuft.
+- **Items**: `substrate` und `hdpe_pellet` neu (Reaction-Ausgänge); Importer-Anpassungen: `neoforge:or` auch bei Rezepten mit Fluid-Eingang, Chemical-Tags in `input` (Centrifuge/Activator), Chemical-Ausgang im Reaction-Rezept zählt nicht als Item.
+
+Grenzen:
+- **Zweiter Block**: Centrifuge (Modell 32 hoch) und Activator (29 hoch) sind in Mekanism zwei Blöcke hoch (`BlockBounding`). Das Bounding-System ist hier Generator-spezifisch und nicht übertragen; der obere Teil des Modells ragt ohne eigenen Block über den Würfel und kann abgeschnitten oder falsch ausgeblendet werden. Ingame prüfen.
+- **Activator**: ohne Energie und ohne Sound (Mekanism hat beides nicht); Betrieb nur mit freiem Himmel über dem Block (Helligkeitstest wie beim Solar-Generator).
+- **Reaction-Rezepte** mit Plutonium-/Polonium-Pellets (`pellet_plutonium`, `pellet_polonium`) fehlen, weil die Items (Radiation-System) nicht registriert sind; `#c:rods/wooden`-Rezept fehlt (Tag nicht vorhanden); das Deuterium-Separator-Rezept bleibt übersprungen.
+- Nicht portiert wie bei den anderen Chemie-Maschinen: Energie-Slot, Upgrades, Side-Config, Chemie-Item-Slots, Redstone, Pfeil-Animation. Das Reaction-GUI ist 176 x 166 (Mekanism 171 hoch).
+- Sound-Längen (49 und 110 Ticks) aus den importierten `.ogg`-Dateien; Schleife wie bei den anderen Maschinen.

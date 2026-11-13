@@ -11,9 +11,10 @@
 //! - item to item and chance item (`sawing`): `input`, `main_output` and/or
 //!   `secondary_output` with `secondary_chance`.
 //! - item to chemical (`chemical_conversion`): `input`, `output` {`id`, `amount`}.
-//! - item to chemical in a tank (`oxidizing`): the same, read as a `Recipe` whose
+//! - item to chemical in a tank (`oxidizing`, `pigment_extracting`; `liquification`'s fluid is a
+//!   tank id too): the same, read as a `Recipe` whose
 //!   `chemical_output` is the tank id (an `output` with an `amount` is a chemical).
-//! - two chemicals to chemical (`chemical_infusing`): `left_input`, `right_input`
+//! - two chemicals to chemical (`chemical_infusing`, `pigment_mixing`): `left_input`, `right_input`
 //!   {`ingredient`, `amount`}, `output` {`id`, `amount`}, read as an `Infusion`.
 //! - fluid to two chemicals (`separating`): `input` {`ingredient`, `amount`},
 //!   `output` {`left`, `right`} {`id`, `amount`}, read as a `Separation`. The
@@ -21,6 +22,8 @@
 //!   `mekanism:brine`).
 //! - chemical and fluid for each other (`rotary`): `chemical_input`,
 //!   `chemical_output`, `fluid_input`, `fluid_output`, read as a `Rotation`.
+//! - item and chemical to item (`painting`): `item_input`, `chemical_input` {`ingredient`, `amount`},
+//!   `output`; the chemical comes from the machine's input tank and is used once at the end.
 //! - item and chemical to chemical (`dissolution`): `item_input`, `chemical_input`
 //!   {`ingredient`, `amount`}, `output` {`id`, `amount`}, `per_tick_usage`; a `Recipe`
 //!   whose chemical comes from an input tank and goes to the output tank.
@@ -28,6 +31,12 @@
 //!   {`ingredient`, `amount`}, `output` {`id`, `amount`}, read as a `Washing`.
 //! - chemical to item (`crystallizing`): `input` {`ingredient`, `amount`}, `output` {`id`},
 //!   read as a `Crystal`.
+//! - item, fluid and chemical to item and/or chemical (`reaction`): `item_input` {`ingredient`,
+//!   `count`}, `fluid_input` {`ingredient`, `amount`}, `chemical_input` {`ingredient`, `amount`},
+//!   `output` {`item` {`id`, `count`}, `chemical` {`id`, `amount`}} (at least one), `duration`
+//!   ticks and `energy_required` FE per tick on top of the machine's own, read as a `Reaction`.
+//! - chemical to chemical (`centrifuging`, `activating`): `input` {`ingredient`, `amount`},
+//!   `output` {`id`, `amount`}, read as a `Transmutation`.
 //!
 //! A recipe that names an unknown item is skipped, as Mekanism skips recipes
 //! whose ingredients do not resolve. Chemicals stay ids here: each machine
@@ -179,6 +188,54 @@ impl Crystal {
     }
 }
 
+/// An item, a fluid and a chemical react into an item and/or a chemical (`reaction`).
+pub struct Reaction {
+    pub item: Ingredient,
+    pub count: u32,
+    /// The fluid's tank id and mB.
+    pub fluid: (String, i32),
+    pub chemical: (String, i32),
+    pub item_output: Option<ItemStack>,
+    pub chemical_output: Option<(String, i32)>,
+    /// Ticks the operation takes.
+    pub duration: i32,
+    /// FE per tick beyond the machine's base usage.
+    pub energy: i32,
+}
+
+impl Reaction {
+    fn parse(host: &dyn Host, j: &Value) -> Option<Self> {
+        let (item, count) = sized(host, &j["item_input"])?;
+        let item_output = optional(&j["output"]["item"], |o| host.recipe_result(o))?;
+        let chemical_output = optional(&j["output"]["chemical"], chemical_stack)?;
+        if item_output.is_none() && chemical_output.is_none() {
+            return None;
+        }
+        Some(Reaction {
+            item,
+            count,
+            fluid: fluid_ingredient(&j["fluid_input"])?,
+            chemical: chemical_ingredient(&j["chemical_input"])?,
+            item_output,
+            chemical_output,
+            duration: positive(&j["duration"])?,
+            energy: j["energy_required"].as_i64().map_or(Some(0), |e| i32::try_from(e).ok().filter(|&e| e >= 0))?,
+        })
+    }
+}
+
+/// A chemical turns into another (`centrifuging`, `activating`).
+pub struct Transmutation {
+    pub input: (String, i32),
+    pub output: (String, i32),
+}
+
+impl Transmutation {
+    fn parse(_: &dyn Host, j: &Value) -> Option<Self> {
+        Some(Transmutation { input: chemical_ingredient(&j["input"])?, output: chemical_stack(&j["output"])? })
+    }
+}
+
 /// A fluid splits into two chemicals (`separating`).
 pub struct Separation {
     /// The fluid's tank id and mB.
@@ -284,11 +341,15 @@ impl<T> Table<T> {
 pub struct Recipes {
     processing: HashMap<&'static str, Table<Recipe>>,
     conversion: Table<Conversion>,
-    infusion: Table<Infusion>,
+    /// By recipe type: the Chemical Infuser and the Pigment Mixer share the shape.
+    infusion: HashMap<&'static str, Table<Infusion>>,
     separation: Table<Separation>,
     rotation: Table<Rotation>,
     washing: Table<Washing>,
     crystal: Table<Crystal>,
+    reaction: Table<Reaction>,
+    /// One table per recipe type: the Centrifuge and the Activator each read their own.
+    transmutation: HashMap<&'static str, Table<Transmutation>>,
 }
 
 impl Recipes {
@@ -297,9 +358,9 @@ impl Recipes {
         self.processing.entry(kind).or_default().refresh(host, kind, Recipe::parse)
     }
 
-    /// The Chemical Infuser's recipes (`kind` is its recipe type).
+    /// The Chemical Infuser's and Pigment Mixer's recipes (`kind` is the recipe type).
     pub fn infusing(&mut self, host: &dyn Host, kind: &'static str) -> &[Infusion] {
-        self.infusion.refresh(host, kind, Infusion::parse)
+        self.infusion.entry(kind).or_default().refresh(host, kind, Infusion::parse)
     }
 
     /// The Electrolytic Separator's recipes.
@@ -320,6 +381,16 @@ impl Recipes {
     /// The Chemical Crystallizer's recipes.
     pub fn crystallizing(&mut self, host: &dyn Host, kind: &'static str) -> &[Crystal] {
         self.crystal.refresh(host, kind, Crystal::parse)
+    }
+
+    /// The Pressurized Reaction Chamber's recipes.
+    pub fn reacting(&mut self, host: &dyn Host, kind: &'static str) -> &[Reaction] {
+        self.reaction.refresh(host, kind, Reaction::parse)
+    }
+
+    /// The Isotopic Centrifuge's or the Solar Neutron Activator's recipes (`kind` is their type).
+    pub fn transmuting(&mut self, host: &dyn Host, kind: &'static str) -> &[Transmutation] {
+        self.transmutation.entry(kind).or_default().refresh(host, kind, Transmutation::parse)
     }
 
     /// The chemical conversions (item to chemical) into any buffer.

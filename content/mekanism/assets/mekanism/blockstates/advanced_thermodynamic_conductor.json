@@ -1,0 +1,57 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "mekanism:block/transmitter/advanced_thermodynamic_conductor_center"
+      }
+    },
+    {
+      "when": {
+        "down": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/advanced_thermodynamic_conductor_down"
+      }
+    },
+    {
+      "when": {
+        "up": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/advanced_thermodynamic_conductor_up"
+      }
+    },
+    {
+      "when": {
+        "north": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/advanced_thermodynamic_conductor_north"
+      }
+    },
+    {
+      "when": {
+        "south": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/advanced_thermodynamic_conductor_south"
+      }
+    },
+    {
+      "when": {
+        "west": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/advanced_thermodynamic_conductor_west"
+      }
+    },
+    {
+      "when": {
+        "east": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/advanced_thermodynamic_conductor_east"
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "brown_dye",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:crops/cocoa_bean"
+  },
+  "output": {
+    "amount": 768,
+    "id": "mekanism:brown"
+  }
+}

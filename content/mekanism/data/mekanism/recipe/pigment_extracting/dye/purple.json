@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "purple_dye",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:dyes/purple"
+  },
+  "output": {
+    "amount": 256,
+    "id": "mekanism:purple"
+  }
+}

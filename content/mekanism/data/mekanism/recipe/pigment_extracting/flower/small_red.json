@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "red_dye",
+  "input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:beetroot",
+      "minecraft:poppy",
+      "minecraft:red_tulip"
+    ]
+  },
+  "output": {
+    "amount": 768,
+    "id": "mekanism:red"
+  }
+}
