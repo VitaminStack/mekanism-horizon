@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:centrifuging",
+  "experience": 0.0009,
+  "input": {
+    "amount": 1,
+    "ingredient": "mekanism:uranium_hexafluoride"
+  },
+  "output": {
+    "amount": 1,
+    "id": "mekanism:fissile_fuel"
+  }
+}

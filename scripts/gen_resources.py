@@ -137,6 +137,9 @@ item('atomic_disassembler', 'minecraft:stick', stack=1, components={
 })
 # Bio Fuel (Crusher output, Bio Generator input) and its block (MekanismBlocks: strength 0.5, grass sound).
 item('bio_fuel')
+# Pressurized Reaction Chamber products: the substrate (also the chamber's catalyst) and the HDPE pellet.
+item('substrate')
+item('hdpe_pellet')
 # Sawdust: the Precision Sawmill's secondary output from logs (`#c:dusts/wood`).
 item('sawdust')
 block('block_bio_fuel', 'minecraft:hay_block', 0.5, 0.5, requires_tool=False, sounds='minecraft:grass_block')
@@ -201,6 +204,12 @@ CHEMICAL_MENUS = {
     'chemical_dissolution_chamber': {'slots': 1, 'data_slots': 8, 'results': []},
     'chemical_washer': {'slots': 1, 'data_slots': 10, 'results': []},
     'chemical_crystallizer': {'slots': 1, 'data_slots': 6, 'results': [0]},
+    # Pressurized Reaction Chamber: 0 input item, 1 output item (results); fluid, chemical and output
+    # chemical tanks (4-9). Isotopic Centrifuge: no slot; input and output tanks (4-7), no extras.
+    # Solar Neutron Activator: no slot; its tanks (4-7), then its production and best rate (8-9).
+    'pressurized_reaction_chamber': {'slots': 2, 'data_slots': 10, 'results': [1]},
+    'isotopic_centrifuge': {'slots': 1, 'data_slots': 8, 'results': []},
+    'solar_neutron_activator': {'slots': 1, 'data_slots': 10, 'results': []},
 }
 for m, menu in CHEMICAL_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})

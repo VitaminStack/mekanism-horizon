@@ -290,3 +290,21 @@ Build: Native `native-fdc87ae-1c7ad4927bd3`, Content aus Branch `feat/m06-ore-pr
 | Dissolution ohne Säure: Fortschritt hält (81), läuft nach Nachfüllen weiter | ok |
 | GUIs: Titel, Gauges (Wasser blau, Schlamm gelb, Säure oliv), Item-Slot, Fortschrittsbalken, Energie (Screenshots) | ok |
 | Sounds, Tooltips, Crafting-Rezepte, Weltneustart, Chunk-Unload der neuen Maschinen | nicht geprüft |
+
+## M06 Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator (13.11.2026, Branch `feat/m06-advanced-chem`)
+
+**Ingame ungetestet.** Geprüft nur per `cargo test` (Maschinenwerte, `react`/`transmute`, Activator-Rate und -Takt, Tooltips), `scripts/Test-Content.ps1` und einem Typcheck des nativen Crates. Testplan (Kreativwelt, Creative Energy Cube an der Maschine, Tankinhalt per `/data merge`, `/tick rate` für lange Läufe):
+
+| Test | Erwartung |
+|---|---|
+| Alle drei Blöcke platzieren, GUI öffnen | Titel, Gauges, Slots; Centrifuge/Activator zeigen die 2-Block-Höhe (siehe Grenzen in `CHEMISTRY.md`) |
+| Reaction: Kohle + 100 mB Wasser + 100 mB Sauerstoff | nach 100 Ticks 1 Schwefelstaub und 100 mB Wasserstoff, 2 FE/t |
+| Reaction: Substrat-Rezept `water_ethene` | 400 Ticks, 2 + 2 FE/t, 8 Substrat; Fortschritt in % im Balken |
+| Reaction: voller Chemical-Ausgang oder voller Item-Slot | Maschine pausiert, nichts wird verbraucht |
+| Reaction: zu wenig Fluid/Chemical | Fortschritt wird zurückgesetzt, Energie nicht verbraucht |
+| Centrifuge: Nuclear Waste (10 mB) | 1 mB Plutonium je Tick, 8 FE/t; Tank-Auswurf in Nachbarn |
+| Centrifuge ohne Energie / voller Ausgang | hält an |
+| Activator mittags, freier Himmel, Ebene | 64 mB/t Lithium zu Tritium; Tooltip „Production 64.00“ |
+| Activator nachts, im Regen, unter Dach | Rate fällt auf 0, Balken leer; Tooltip |
+| Activator in Wüste/Dschungel | Rate nach Biom-Faktor; unter 1 mB/t ein Durchlauf alle n Ticks |
+| Sounds Reaction und Centrifuge, Neustart, Chunk-Unload | Schleife, Tanks und Fortschritt bleiben |

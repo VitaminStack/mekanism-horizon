@@ -7,8 +7,8 @@ use horizon_client::mod_api::{
 };
 
 use super::machine::{self, Buffer, Fluid, FluidTanks, Machine, Op, Tank};
-use super::recipe::{ChemicalInput, Recipes};
-use super::{ENERGY, PROGRESS, cube, facing, gauge, infuser, key, merged, offset, read_energy, shrink, write_int};
+use super::recipe::{ChemicalInput, Reaction, Recipes};
+use super::{ENERGY, PROGRESS, cube, facing, gauge, generator, infuser, key, merged, offset, read_energy, shrink, write_int};
 use super::chemicals;
 
 /// Block entity NBT of a machine with a chemical buffer: `Buffer::types`
@@ -243,6 +243,112 @@ fn crystallize(
     active
 }
 
+/// The reaction recipe the items and tanks fit now, if any.
+fn reaction<'a>(
+    host: &dyn Host,
+    m: &Machine,
+    recipes: &'a mut Recipes,
+    items: &[Option<ItemStack>],
+    fluids: &[Fluid],
+) -> Option<&'a Reaction> {
+    let slot = m.input?;
+    recipes.reacting(host, m.recipe).iter().find(|r| {
+        items[slot].as_ref().is_some_and(|s| r.item.test(s) && s.count >= r.count)
+            && fluids[0].has(&r.fluid.0, r.fluid.1)
+            && fluids[1].has(&r.chemical.0, r.chemical.1)
+    })
+}
+
+/// One tick of the Pressurized Reaction Chamber: the first recipe whose item, fluid and chemical it
+/// holds runs over its `duration` at `usage` plus the recipe's own energy, and at the end takes
+/// them and adds its outputs (the item to the output slot, the chemical to tank 2). Progress
+/// starts over when no recipe fits and waits while the outputs have no room or energy runs out.
+/// Returns whether it is running.
+fn react(
+    host: &dyn Host,
+    m: &Machine,
+    t: &FluidTanks,
+    recipes: &mut Recipes,
+    items: &mut [Option<ItemStack>],
+    fluids: &mut [Fluid],
+    energy: &mut i32,
+    progress: &mut i32,
+) -> bool {
+    let (Some(input), Some(output)) = (m.input, m.output) else { return false };
+    let Some(r) = reaction(host, m, recipes, items, fluids) else {
+        *progress = 0;
+        return false;
+    };
+    let out = r.item_output.as_ref().map(|o| merged(host, items[output].as_ref(), o));
+    let fluid = (r.fluid.0.as_str(), r.fluid.1);
+    let gas = (r.chemical.0.as_str(), r.chemical.1);
+    let chemical = r.chemical_output.as_ref().map(|(id, n)| (id.as_str(), *n));
+    if out.as_ref().is_some_and(Option::is_none) || !machine::can_react(fluids, t, fluid, gas, chemical) {
+        return false;
+    }
+    let usage = m.usage + r.energy;
+    let active = *energy >= usage;
+    if machine::step(usage, r.duration, energy, progress) {
+        machine::react(fluids, t, fluid, gas, chemical);
+        items[input] = items[input].as_ref().and_then(|s| shrink(s, r.count));
+        if let Some(Some(o)) = out {
+            items[output] = Some(o);
+        }
+    }
+    active
+}
+
+/// One tick of the Isotopic Centrifuge: one operation of the first recipe whose chemical the input
+/// tank holds, at `usage`; without energy or room it waits. Returns whether it ran.
+fn centrifuge(host: &dyn Host, m: &Machine, t: &FluidTanks, recipes: &mut Recipes, fluids: &mut [Fluid], energy: &mut i32) -> bool {
+    if *energy < m.usage {
+        return false;
+    }
+    let ran = recipes
+        .transmuting(host, m.recipe)
+        .iter()
+        .any(|r| machine::transmute(fluids, t, (&r.input.0, r.input.1), (&r.output.0, r.output.1), 1) > 0);
+    if ran {
+        *energy -= m.usage;
+    }
+    ran
+}
+
+/// The Activator's best and current rate in mB/t at `pos` (`machine::activation_rate`), from the
+/// biome and the sky as the Solar Generator reads them.
+fn sunlight(host: &dyn Host, pos: [i32; 3]) -> (f32, f32) {
+    let dimension = host.dimension();
+    let sky_light = dimension != "minecraft:the_nether" && dimension != "minecraft:the_end";
+    let (rain, thunder) = host.weather();
+    let darkness = generator::sky_darkness(host.day_time(), rain, thunder);
+    let sees = generator::sees_sun(sky_light, darkness, host.light(offset(pos, cube::UP)).1);
+    let peak = generator::peak_multiplier(generator::climate(host.biome(pos).as_deref()));
+    machine::activation_rate(peak, 1.0 - darkness, sees)
+}
+
+/// One tick of the Solar Neutron Activator at production `rate`: every `ceil(1 / rate)` ticks one
+/// operation (`rate` below 1), else `floor(rate)` of them each tick, of the first recipe whose
+/// chemical the input tank holds. Without sun, input or room it waits. Returns whether it is running.
+fn activate(host: &dyn Host, m: &Machine, t: &FluidTanks, recipes: &mut Recipes, fluids: &mut [Fluid], rate: f32, progress: &mut i32) -> bool {
+    let (required, ops) = machine::activation_schedule(rate);
+    if ops == 0 {
+        return false;
+    }
+    let Some(r) = recipes
+        .transmuting(host, m.recipe)
+        .iter()
+        .find(|r| fluids[0].has(&r.input.0, r.input.1) && fluids[1].fits(&r.output.0, r.output.1, t.tanks[1].max))
+    else {
+        return false;
+    };
+    *progress += 1;
+    if *progress >= required {
+        *progress = 0;
+        machine::transmute(fluids, t, (&r.input.0, r.input.1), (&r.output.0, r.output.1), ops);
+    }
+    true
+}
+
 /// The machine's tanks as Horizon's fluid tanks: from every side, the inputs
 /// take and the outputs give.
 pub fn fluids(t: &FluidTanks) -> ModFluidTanks {
@@ -276,6 +382,14 @@ pub fn accepts(host: &dyn Host, m: &Machine, recipes: &mut Recipes, tank: usize,
             _ => false,
         },
         Op::Crystallize => chemical && recipes.crystallizing(host, m.recipe).iter().any(|r| r.chemical.0 == fluid),
+        Op::React => match tank {
+            0 => !chemical && recipes.reacting(host, m.recipe).iter().any(|r| r.fluid.0 == fluid),
+            1 => chemical && recipes.reacting(host, m.recipe).iter().any(|r| r.chemical.0 == fluid),
+            _ => false,
+        },
+        Op::Transmute | Op::Activate => {
+            tank == 0 && chemical && recipes.transmuting(host, m.recipe).iter().any(|r| r.input.0 == fluid)
+        }
         Op::Infuse => chemical && recipes.infusing(host, m.recipe).iter().any(|r| r.partner(fluid).is_some()),
         Op::Separate => {
             tank == machine::SEPARATOR_INPUT && !chemical && recipes.separating(host, m.recipe).iter().any(|r| r.input.0 == fluid)
@@ -304,7 +418,7 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
     let mut items: Vec<Option<ItemStack>> = entity.items.clone();
     items.resize(m.slots(), None);
     let mut energy = read_energy(&entity.nbt, ENERGY).clamp(0, m.capacity());
-    let mut progress = read_energy(&entity.nbt, PROGRESS).clamp(0, m.ticks);
+    let mut progress = read_energy(&entity.nbt, PROGRESS).clamp(0, m.max_progress());
     let mut tank = m.buffer.map(|b| read_tank(&entity.nbt, b));
     let mut fluids = m.tanks.map(|t| read_fluids(&entity.nbt, t.count())).unwrap_or_default();
     let mode = read_energy(&entity.nbt, MODE) != 0;
@@ -329,7 +443,7 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
     let extra = |n: u32, test: &dyn Fn(&ItemStack) -> bool| {
         m.extra.and_then(|e| items[e].as_ref()).is_some_and(|s| test(s) && s.count >= n)
     };
-    let recipe = m.input.and_then(|slot| items[slot].as_ref()).and_then(|input| {
+    let recipe = m.input.filter(|_| m.op == Op::Item).and_then(|slot| items[slot].as_ref()).and_then(|input| {
         recipes.processing(host, m.recipe).iter().find(|r| {
             r.input.test(input)
                 && input.count >= r.count
@@ -347,15 +461,25 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
         })
     });
     let mut active = false;
+    // The Activator's best and current rate, for its screen.
+    let mut sun = None;
     if let Some(t) = m.tanks.filter(|_| m.tank_op()) {
         active = match m.op {
             Op::Separate => separate(host, m, t, recipes, &mut fluids, &mut energy),
             Op::Rotate(_) => rotate(host, m, t, recipes, &mut fluids, &mut energy, mode),
             Op::Wash => wash(host, m, t, recipes, &mut fluids, &mut energy),
+            Op::Transmute => centrifuge(host, m, t, recipes, &mut fluids, &mut energy),
+            Op::Activate => {
+                let rates = sunlight(host, pos);
+                sun = Some(rates);
+                activate(host, m, t, recipes, &mut fluids, rates.1, &mut progress)
+            }
             _ => mix(host, m, t, recipes, &mut fluids, &mut energy),
         };
     } else if m.op == Op::Crystallize {
         active = crystallize(host, m, recipes, &mut items, &mut fluids, &mut energy, &mut progress);
+    } else if let (Op::React, Some(t)) = (m.op, m.tanks) {
+        active = react(host, m, t, recipes, &mut items, &mut fluids, &mut energy, &mut progress);
     } else {
         match recipe {
             None => progress = 0,
@@ -423,6 +547,14 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
     if host.block_property(pos, "active").is_some_and(|have| have != want) {
         host.set_block_property(pos, "active", want);
     }
+    // A reaction's progress is shown as a share of the recipe's duration, in percent of `m.ticks`.
+    let shown = match m.op {
+        Op::React if progress > 0 => {
+            reaction(host, m, recipes, &items, &fluids).map_or(0, |r| (progress * m.ticks / r.duration).clamp(0, m.ticks))
+        }
+        Op::React => 0,
+        _ => progress,
+    };
     // Write only what changed: each write marks the entity changed.
     let facing = facing(host, pos);
     let e = &mut *event.entity;
@@ -438,9 +570,13 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
     if m.tanks.is_some() {
         write_fluids(&mut e.nbt, &fluids);
     }
-    let mut data = machine::menu_data(energy, progress, facing, active, tank, &fluids);
+    let mut data = machine::menu_data(energy, shown, facing, active, tank, &fluids);
     if matches!(m.op, Op::Rotate(_)) {
         data.push(mode as i32);
+    }
+    if let Some((peak, rate)) = sun {
+        // The Activator's rates in hundredths of a mB/t, after the tanks.
+        data.extend([(rate * 100.0).round() as i32, (peak * 100.0).round() as i32]);
     }
     if e.data != data {
         e.data = data;
@@ -487,12 +623,18 @@ pub fn draw(host: &dyn Host, event: &mut ScreenDrawEvent, m: &Machine) {
     let title = host.screen_title().unwrap_or_else(|| m.name.to_owned());
     host.text(event.batch, &title, [x + 8.0, y + 6.0], 0x404040, false);
     let at = |[rx, ry, w, h]: [f32; 4]| [x + rx, y + ry, w, h];
-    gauge(host, event.batch, at(m.energy_gauge), energy as f32 / m.capacity() as f32, 0xFF50C878);
+    if !m.solar() {
+        gauge(host, event.batch, at(m.energy_gauge), energy as f32 / m.capacity() as f32, 0xFF50C878);
+    }
     let [px, py, pw, ph] = at(m.progress_bar);
     if pw > 0.0 {
         host.fill(event.batch, [px, py, pw, ph], 0xFF242A2F);
     }
-    let done = progress as f32 / m.ticks as f32;
+    // The Activator's bar is the sun's share of its best rate; the others' is the operation's progress.
+    let done = match m.tanks.filter(|_| m.solar()) {
+        Some(t) => machine::sun_share(d(machine::data_extra(t)), d(machine::data_extra(t) + 1)),
+        None => progress as f32 / m.ticks as f32,
+    };
     if done > 0.0 && pw > 0.0 {
         host.fill(event.batch, [px + 1.0, py + 1.0, (pw - 2.0) * done, ph - 2.0], 0xFF3FA9F5);
     }

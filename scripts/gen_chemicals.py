@@ -4,7 +4,8 @@
 Sources (upstream, pinned commit in TODO.md):
 - fluids: `MekanismFluids` (registration order; tint from the matching chemical for liquid
   chemicals, else from the registration), names `block.mekanism.<id>` from en_us;
-- chemicals: the datapack registry `data/mekanism/mekanism/chemical/*.json` (26.3 makes chemicals
+- chemicals: the datapack registry `data/mekanism/mekanism/chemical/*.json` and Mekanism Generators'
+  `data/mekanismgenerators/mekanism/chemical/*.json` (26.3 makes chemicals
   datapack entries), tint from `tint` (or `color_representation` for infuse types), pigments from
   `EnumColor`'s RGB, names `chemical.mekanism.<id>` from en_us.
 
@@ -55,6 +56,14 @@ def main(up):
                 color = 0xFFC8C8C8
         name = lang.get(f'chemical.mekanism.{f.stem}', f.stem.replace('_', ' ').title())
         chemicals.append((f.stem, name, color))
+    # Mekanism Generators' chemicals (deuterium, tritium, D-T fuel) come last, so the menu indices of the
+    # ones before stay put. Recipes name them `mekanismgenerators:<id>`; the tank id is `mekanism:chemical/<id>`.
+    gen_root = up / 'src/datagen/generated/mekanismgenerators'
+    gen_lang = json.loads((gen_root / 'assets/mekanismgenerators/lang/en_us.json').read_text(encoding='utf-8'))
+    for f in sorted((gen_root / 'data/mekanismgenerators/mekanism/chemical').glob('*.json')):
+        data = json.loads(f.read_text(encoding='utf-8'))
+        name = gen_lang.get(f'chemical.mekanismgenerators.{f.stem}', f.stem.replace('_', ' ').title())
+        chemicals.append((f.stem, name, argb(data.get('color_representation') or data['tint'])))
     tint = {c[0]: c[2] for c in chemicals}
 
     src = (up / 'src/main/java/mekanism/common/registries/MekanismFluids.java').read_text(encoding='utf-8')

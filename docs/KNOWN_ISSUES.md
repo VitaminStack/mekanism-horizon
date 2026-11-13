@@ -78,6 +78,10 @@ Siehe [ADDITIONS.md](ADDITIONS.md). Kurz:
 - **Nicht gebaut:** Baby-Mobs, Balloons, Walkie-Talkies, Spawn Eggs (Entitäten und Netzwerk fehlen in Horizon-Content).
 - Ingame offen: Crafting im Grid, Slick-Rezept in der Enrichment Chamber, Slick-Reibung, Inventar-Items, Neustart/Chunk-Unload.
 
+## Fortgeschrittene Chemie-Maschinen (M06)
+
+Pressurized Reaction Chamber, Isotopic Centrifuge und Solar Neutron Activator sind **ingame ungetestet** (Testplan in [TESTLOG.md](TESTLOG.md)). Centrifuge und Activator sind in Mekanism zwei Blöcke hoch; das zweite Bounding-Teil fehlt hier (siehe [CHEMISTRY.md](CHEMISTRY.md)). Reaction-Rezepte mit Plutonium-/Polonium-Pellets fehlen, bis das Radiation-System existiert.
+
 ## Noch nicht portiert
 
 Multiblocks (Thermal Evaporation, Turbine, Fission/Fusion-Reaktor, Boiler, SPS u. a.), Kabel und Transporter, Digital Miner, Teleporter, Qio-Speicher, Jetpack/Rüstung mit Modulen (Mekanism Core), Meka-Tool. Aktueller Stand: [TODO.md](../TODO.md).

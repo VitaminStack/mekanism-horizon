@@ -47,7 +47,9 @@ MACHINE_RECIPES = {'mekanism:metallurgic_infusing', 'mekanism:chemical_conversio
                    'mekanism:crushing', 'mekanism:compressing', 'mekanism:combining', 'mekanism:sawing',
                    'mekanism:purifying', 'mekanism:injecting', 'mekanism:oxidizing', 'mekanism:chemical_infusing',
                    'mekanism:separating', 'mekanism:rotary', 'mekanism:dissolution', 'mekanism:washing',
-                   'mekanism:crystallizing'}
+                   'mekanism:crystallizing', 'mekanism:reaction', 'mekanism:centrifuging', 'mekanism:activating'}
+# Recipes whose `input` and `output` are both chemicals.
+CHEMICAL_TO_CHEMICAL = {'mekanism:centrifuging', 'mekanism:activating'}
 # Chemicals with Mekanism's infuse-type attribute: what the Metallurgic Infuser takes.
 INFUSE_TYPES = {f'{NS}:{t}' for t in ('carbon', 'redstone', 'diamond', 'refined_obsidian', 'tin', 'gold',
                                       'bio', 'fungi')}
@@ -64,7 +66,8 @@ SOUNDS = {
          'tile.machine.chemical_oxidizer', 'tile.machine.chemical_infuser',
          'tile.machine.electrolytic_separator', 'tile.machine.rotary_condensentrator',
          'tile.machine.chemical_dissolution_chamber', 'tile.machine.chemical_washer',
-         'tile.machine.chemical_crystallizer'],
+         'tile.machine.chemical_crystallizer', 'tile.machine.pressurized_reaction_chamber',
+         'tile.machine.isotopic_centrifuge'],
     'mekanismgenerators': ['tile.generator.heat', 'tile.generator.solar', 'tile.generator.bio',
                            'tile.generator.wind', 'tile.generator.gas'],
 }
@@ -198,14 +201,16 @@ def main(up):
                 # Conversions only into a machine's buffer; the others feed later machines.
                 if kind == 'mekanism:chemical_conversion' and recipe['output']['id'] not in BUFFER_CHEMICALS:
                     continue
-                if 'chemical_input' in recipe:
-                    # A chemical tag becomes its one chemical; a plain id stays.
-                    tag = recipe['chemical_input']['ingredient']
+                # A chemical tag becomes its one chemical; a plain id stays. Chemical-to-chemical
+                # recipes (centrifuging, activating) have it as `input`.
+                chem = recipe.get('chemical_input') or (recipe['input'] if kind in CHEMICAL_TO_CHEMICAL else None)
+                if chem:
+                    tag = chem['ingredient']
                     if tag.startswith('#'):
                         if tag not in chem_tags:
                             print(f'  unresolved chemical {tag} in {src.name}')
                             continue
-                        recipe['chemical_input']['ingredient'] = chem_tags[tag]
+                        chem['ingredient'] = chem_tags[tag]
                 # The fluid a separating or rotary recipe takes: its tag becomes the fluid's id.
                 fluid = recipe.get('input') if kind == 'mekanism:separating' else recipe.get('fluid_input')
                 if fluid:
@@ -217,9 +222,9 @@ def main(up):
                         print(f'  unresolved fluid {fluid["ingredient"]} in {src.name}')
                         continue
                     fluid['ingredient'] = fluid_id(fluid['ingredient'])
-                else:
+                if kind == 'mekanism:reaction' or not fluid:
                     for slot in ('input', 'item_input', 'main_input', 'extra_input'):
-                        if slot in recipe:
+                        if slot in recipe and kind not in CHEMICAL_TO_CHEMICAL:
                             recipe[slot]['ingredient'] = flat_or(recipe[slot]['ingredient'])
                 text = json.dumps(recipe, indent=2)
             elif kind not in VANILLA_RECIPES:
@@ -231,8 +236,13 @@ def main(up):
                                         'mekanism:washing') else ()) + (
                 ('left_input', 'right_input', 'output') if kind == 'mekanism:chemical_infusing' else ()) + (
                 ('input', 'output') if kind == 'mekanism:separating' else ()) + (
-                ('input',) if kind == 'mekanism:crystallizing' else ())
-            scan = json.dumps({k: v for k, v in recipe.items() if k not in skip})
+                ('input',) if kind == 'mekanism:crystallizing' else ()) + (
+                ('input', 'output') if kind in CHEMICAL_TO_CHEMICAL else ())
+            scanned = {k: v for k, v in recipe.items() if k not in skip}
+            if kind == 'mekanism:reaction' and 'output' in scanned:
+                # Only the item output names an item; its chemical output is a chemical id.
+                scanned['output'] = scanned['output'].get('item', {})
+            scan = json.dumps(scanned)
             refs = {f'{m.group(2)}:{m.group(3)}' for m in REF.finditer(scan) if not m.group(1)}
             if refs <= known:
                 dst = content(ns) / 'data' / ns / 'recipe' / src.relative_to(recipe_dir)

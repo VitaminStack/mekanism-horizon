@@ -1,0 +1,28 @@
+{
+  "type": "mekanism:reaction",
+  "category": "gasification",
+  "chemical_input": {
+    "amount": 15,
+    "ingredient": "mekanism:oxygen"
+  },
+  "duration": 22,
+  "experience": 1.0,
+  "fluid_input": {
+    "amount": 15,
+    "ingredient": "minecraft:water"
+  },
+  "group": "hydrogen",
+  "item_input": {
+    "count": 1,
+    "ingredient": [
+      "#minecraft:wooden_stairs",
+      "minecraft:bamboo_mosaic_stairs"
+    ]
+  },
+  "output": {
+    "chemical": {
+      "amount": 15,
+      "id": "mekanism:hydrogen"
+    }
+  }
+}
