@@ -1,0 +1,33 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 32,
+    "ingredient": "mekanism:purple"
+  },
+  "experience": 0.1,
+  "group": "mekanism:concrete_stairs_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:white_concrete_stairs",
+      "minecraft:orange_concrete_stairs",
+      "minecraft:magenta_concrete_stairs",
+      "minecraft:light_blue_concrete_stairs",
+      "minecraft:yellow_concrete_stairs",
+      "minecraft:lime_concrete_stairs",
+      "minecraft:pink_concrete_stairs",
+      "minecraft:gray_concrete_stairs",
+      "minecraft:light_gray_concrete_stairs",
+      "minecraft:cyan_concrete_stairs",
+      "minecraft:blue_concrete_stairs",
+      "minecraft:brown_concrete_stairs",
+      "minecraft:green_concrete_stairs",
+      "minecraft:red_concrete_stairs",
+      "minecraft:black_concrete_stairs"
+    ]
+  },
+  "output": {
+    "id": "minecraft:purple_concrete_stairs"
+  },
+  "per_tick_usage": false
+}

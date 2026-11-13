@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:liquification",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:poisonous_potato"
+  },
+  "output": {
+    "amount": 100,
+    "id": "mekanism:nutritional_paste"
+  }
+}

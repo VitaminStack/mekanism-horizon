@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:liquification",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:cooked_porkchop"
+  },
+  "output": {
+    "amount": 400,
+    "id": "mekanism:nutritional_paste"
+  }
+}

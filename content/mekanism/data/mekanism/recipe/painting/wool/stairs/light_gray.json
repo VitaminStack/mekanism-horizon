@@ -1,0 +1,33 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 256,
+    "ingredient": "mekanism:light_gray"
+  },
+  "experience": 0.1,
+  "group": "mekanism:wool_stairs_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:white_wool_stairs",
+      "minecraft:orange_wool_stairs",
+      "minecraft:magenta_wool_stairs",
+      "minecraft:light_blue_wool_stairs",
+      "minecraft:yellow_wool_stairs",
+      "minecraft:lime_wool_stairs",
+      "minecraft:pink_wool_stairs",
+      "minecraft:gray_wool_stairs",
+      "minecraft:cyan_wool_stairs",
+      "minecraft:purple_wool_stairs",
+      "minecraft:blue_wool_stairs",
+      "minecraft:brown_wool_stairs",
+      "minecraft:green_wool_stairs",
+      "minecraft:red_wool_stairs",
+      "minecraft:black_wool_stairs"
+    ]
+  },
+  "output": {
+    "id": "minecraft:light_gray_wool_stairs"
+  },
+  "per_tick_usage": false
+}

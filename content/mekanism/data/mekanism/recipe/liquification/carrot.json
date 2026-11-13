@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:liquification",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:carrot"
+  },
+  "output": {
+    "amount": 150,
+    "id": "mekanism:nutritional_paste"
+  }
+}

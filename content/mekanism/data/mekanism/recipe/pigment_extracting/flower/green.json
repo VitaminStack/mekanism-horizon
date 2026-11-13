@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "green_dye",
+  "input": {
+    "count": 1,
+    "ingredient": "#c:crops/cactus"
+  },
+  "output": {
+    "amount": 768,
+    "id": "mekanism:green"
+  }
+}

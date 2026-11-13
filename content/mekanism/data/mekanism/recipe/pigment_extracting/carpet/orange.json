@@ -1,0 +1,19 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "orange_dye",
+  "input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:intersection",
+      "children": [
+        "#mekanism:colorable/carpets",
+        "#c:dyed/orange"
+      ]
+    }
+  },
+  "output": {
+    "amount": 128,
+    "id": "mekanism:orange"
+  }
+}

@@ -290,3 +290,31 @@ Build: Native `native-fdc87ae-1c7ad4927bd3`, Content aus Branch `feat/m06-ore-pr
 | Dissolution ohne Säure: Fortschritt hält (81), läuft nach Nachfüllen weiter | ok |
 | GUIs: Titel, Gauges (Wasser blau, Schlamm gelb, Säure oliv), Item-Slot, Fortschrittsbalken, Energie (Screenshots) | ok |
 | Sounds, Tooltips, Crafting-Rezepte, Weltneustart, Chunk-Unload der neuen Maschinen | nicht geprüft |
+
+## M06 Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine: Testplan (ingame ungetestet)
+
+Stand: umgesetzt und per Unit-Test geprüft (`cargo test --manifest-path logic/energy/Cargo.toml`: Werte, Slots, Tank-Kapazitäten, Mischen bis Output voll, Menü-Daten 16 Bit, Tooltips) und `scripts/Test-Content.ps1`. Der Native-Build (`scripts/Build-Native.ps1`) und alle Ingame-Tests stehen aus, weil `horizon-client` lokal ohne den Launcher nicht baut. TODO-Punkte bleiben offen, bis dieser Plan abgearbeitet ist.
+
+Aufbau: Kreativwelt, Energie aus Creative Energy Cubes vor der Front, Tankinhalte per `/data merge`, Tick-Rate per `/tick rate`. Pigment-IDs sind Tank-IDs `mekanism:chemical/<pigment>`, Paste ist `mekanism:nutritional_paste`.
+
+| Test | Erwartung |
+|---|---|
+| Liquifier: Gebratenes Rindfleisch (8) in den Slot | 100 Ticks, 8 FE/t, +400 mB Paste im Tank, Item verbraucht; Brot (5) gibt 250 mB |
+| Liquifier: Tank mit 9.700 mB, nächstes Steak (400 mB) | Maschine pausiert, nichts verbraucht, läuft nach Entnahme weiter |
+| Liquifier: Tank daneben (Fluid Tank unten/oben) | Paste wird ausgeworfen (bis 1.024 mB/t), Chemical Tank nimmt sie nicht |
+| Liquifier: Item ohne Nahrungsrezept (Stein) | bleibt im Slot, kein Fortschritt |
+| Extractor: Rote Farbe (Red Dye) | 100 Ticks, +256 mB Roter Pigment; Rose/Mohn 768 mB (`pigment_extracting`); anderes Pigment bei vollem/belegtem Tank wartet |
+| Extractor: 78 rote Farben | Tank 19.968 / 20.000 mB, 79. Farbe wartet (kein Teilbetrag) |
+| Mixer: 1.000 mB Rot + 1.000 mB Gelb in beide Eingänge (beide Reihenfolgen) | je Tick 1 + 1 gibt 2 mB Orange, nach 1.000 Ticks 2.000 mB Orange, Eingänge leer, Output wird in Nachbarn ausgeworfen |
+| Mixer: Output voll (2.000 mB) | pausiert, nichts verbraucht; ohne Energie hält er an |
+| Mixer: Eingang mit unpassendem Pigment (Rot + Rot) | läuft nicht |
+| Painting: 256 mB Rot im Tank, Weiße Wolle | 200 Ticks, 5 FE/t, rote Wolle, 256 mB abgezogen am Ende; Ausgabe-Slot belegt: pausiert |
+| Painting: `dye_base` + 256 mB Rot | Rote Farbe; Rezepte für Teppich, Glas, Beton usw. wie Wolle (ohne die schon rote Variante) |
+| Painting: 15.000 mB Pigment einfüllen (Kreativ-Tank daneben) | Tank 15.000 / 15.000 mB, Überfluss bleibt draußen |
+| Alle vier: Weltneustart mit halbem Fortschritt | Fortschritt, Tankinhalt, Energie bleiben (NBT `fluids`, `mekanism_progress`); GUI zeigt Füllstand sofort |
+| Alle vier: Chunk-Unload und Reload, Abbau mit Inhalt | kein Verlust des Items im Slot; beim Abbau mit gefülltem Tank beobachten und notieren, ob der Inhalt am Item bleibt (Mekanism: ja, hier nicht portiert, vermutlich verloren) |
+| GUI: Titel, Gauges (Paste rosa, Pigmente in ihrer Farbe), Fortschrittsbalken, Tooltips mit Menge/Kapazität, Sounds | Screenshots prüfen, Gauge-Positionen sind nach Mekanisms GUI geschätzt |
+| Crafting-Rezepte (Liquifier, Extractor, Painting Machine); Mixer-Rezept fehlt bis `hdpe_rod` | Rezeptbuch zeigt drei, `dye_base` aus Holzstaub + Ton |
+| Durchsatz Eject: Output-Tank mit 20.000 mB Pigment neben Chemical Tank | höchstens 1.024 mB/t |
+
+Offen, nicht testbar ohne Spiel: ob `#c:dyes/*`-Tags für die Extraktions-Rezepte in Horizon alle Farben abdecken (die Rezepte nennen die Items direkt, nur Rezepte mit unbekannten Items fehlen im Spiel).

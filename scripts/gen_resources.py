@@ -28,7 +28,8 @@ MISC_ITEMS = ['fluorite_gem', 'salt',
               'basic_control_circuit', 'advanced_control_circuit', 'elite_control_circuit',
               'ultimate_control_circuit', 'alloy_infused', 'alloy_reinforced', 'alloy_atomic',
               'enriched_carbon', 'enriched_redstone', 'enriched_diamond', 'enriched_refined_obsidian',
-              'enriched_tin', 'enriched_gold', 'enriched_iron', 'electrolytic_core']
+              'enriched_tin', 'enriched_gold', 'enriched_iron', 'electrolytic_core',
+              'dye_base']  # dye_base: the Painting Machine's input for dyes (M06)
 
 # registry ids in declaration order, per content mod (= namespace)
 registry = {ns: {'items': [], 'blocks': []} for ns in (NS, GEN)}
@@ -201,10 +202,36 @@ CHEMICAL_MENUS = {
     'chemical_dissolution_chamber': {'slots': 1, 'data_slots': 8, 'results': []},
     'chemical_washer': {'slots': 1, 'data_slots': 10, 'results': []},
     'chemical_crystallizer': {'slots': 1, 'data_slots': 6, 'results': [0]},
+    # Nutritional Liquifier and Pigment Extractor: 0 input item; output tank (data slots 4-5). Pigment Mixer: no
+    # slot; left, right, output tanks (4-9). Painting Machine: 0 paintable item, 1 painted item; pigment tank (4-5).
+    'nutritional_liquifier': {'slots': 1, 'data_slots': 6, 'results': []},
+    'pigment_extractor': {'slots': 1, 'data_slots': 6, 'results': []},
+    'pigment_mixer': {'slots': 1, 'data_slots': 10, 'results': []},
+    'painting_machine': {'slots': 2, 'data_slots': 6, 'results': [1]},
 }
 for m, menu in CHEMICAL_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
     put(f'data/{NS}/horizon/menu/{m}.json', menu)
+
+# Nutritional Liquifier recipes (`mekanism:liquification`): Mekanism has none as data; its machine turns any
+# food into paste in code (`TileEntityNutritionalLiquifier.createDynamicRecipe`: nutrition x 50 mB,
+# `nutritionalPasteMBPerFood`). Horizon gives a native mod no way to read an item's food values, so
+# the vanilla foods are listed here (nutrition from vanilla's `Foods`); other mods' foods need their own recipe.
+FOODS = {
+    'apple': 4, 'baked_potato': 5, 'beef': 3, 'beetroot': 1, 'beetroot_soup': 6, 'bread': 5, 'carrot': 3,
+    'chicken': 2, 'chorus_fruit': 4, 'cod': 2, 'cooked_beef': 8, 'cooked_chicken': 6, 'cooked_cod': 5,
+    'cooked_mutton': 6, 'cooked_porkchop': 8, 'cooked_rabbit': 5, 'cooked_salmon': 6, 'cookie': 2,
+    'dried_kelp': 1, 'enchanted_golden_apple': 4, 'glow_berries': 2, 'golden_apple': 4, 'golden_carrot': 6,
+    'honey_bottle': 6, 'melon_slice': 2, 'mushroom_stew': 6, 'mutton': 2, 'poisonous_potato': 2,
+    'porkchop': 3, 'potato': 1, 'pufferfish': 1, 'pumpkin_pie': 8, 'rabbit': 3, 'rabbit_stew': 10,
+    'rotten_flesh': 4, 'salmon': 2, 'spider_eye': 2, 'suspicious_stew': 6, 'sweet_berries': 2, 'tropical_fish': 1,
+}
+for food, nutrition in FOODS.items():
+    put(f'data/{NS}/recipe/liquification/{food}.json', {
+        'type': f'{NS}:liquification',
+        'input': {'count': 1, 'ingredient': f'minecraft:{food}'},
+        'output': {'amount': nutrition * 50, 'id': f'{NS}:nutritional_paste'},
+    })
 
 # --- generators (M04), content mod `mekanismgenerators`: ticked, powered and drawn by
 # native/mekanism_native. BlockTile.defaultProperties (3.5, 16) as the infuser; the barrel template

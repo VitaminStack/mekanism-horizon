@@ -1,0 +1,33 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 256,
+    "ingredient": "mekanism:cyan"
+  },
+  "experience": 0.1,
+  "group": "mekanism:harness_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": [
+      "minecraft:white_harness",
+      "minecraft:orange_harness",
+      "minecraft:magenta_harness",
+      "minecraft:light_blue_harness",
+      "minecraft:yellow_harness",
+      "minecraft:lime_harness",
+      "minecraft:pink_harness",
+      "minecraft:gray_harness",
+      "minecraft:light_gray_harness",
+      "minecraft:purple_harness",
+      "minecraft:blue_harness",
+      "minecraft:brown_harness",
+      "minecraft:green_harness",
+      "minecraft:red_harness",
+      "minecraft:black_harness"
+    ]
+  },
+  "output": {
+    "id": "minecraft:cyan_harness"
+  },
+  "per_tick_usage": false
+}

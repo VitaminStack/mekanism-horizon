@@ -85,3 +85,11 @@ Schlämme (`dirty_*`, `clean_*`) sind Chemicals der Tabelle (`mekanism:chemical/
 aus Tank 0 (`Machine::chemical_tank`, per-Tick-Verbrauch) zu Schlamm in Tank 1. Washer: `machine::wash` (Wasser + Schlamm
 zu Schlamm, alles oder nichts). Crystallizer: `Op::Crystallize`, Chemical aus Tank 0 zu Item im Output-Slot. Rezept-Formen
 `dissolution`, `washing`, `crystallizing` in `recipe.rs`; Überblick und Grenzen: `docs/ORE_PROCESSING.md`.
+
+## Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine
+
+Keine neue Operation: der Liquifier und der Extractor sind wie der Oxidizer `Op::Item` mit Chemie-/Fluid-Output (`Recipe::chemical_output`; `liquification` und `pigment_extracting` haben dieselbe Form wie `oxidizing`), der Mixer ist `Op::Infuse` mit eigenem Rezept-Typ (`pigment_mixing`; `Recipes::infusing` hält die Tabelle je Rezept-Typ, damit Infuser und Mixer sich nicht verdrängen), die Painting Machine wie die Dissolution Chamber `Op::Item` mit Chemie aus einem Input-Tank (einmal am Ende, `per_tick_usage` false). Paste ist ein Fluid (`mekanism:nutritional_paste`), Pigmente sind Chemicals; `chemicals::from_recipe` liefert für Ids, die nur als Fluid existieren, die Fluid-Tank-ID.
+
+Werte (`machine.rs`, Mekanism 26.3): Liquifier 8 FE/t, 100 Ticks, Tank 10.000 mB; Extractor 5 FE/t, 100 Ticks, 20.000 mB; Mixer 5 FE/t, ein Durchlauf je Tick, Eingänge je 1.000 mB, Output 2.000 mB; Painting 5 FE/t, 200 Ticks, 15.000 mB.
+
+Grenzen: Der Liquifier kennt nur die Vanilla-Nahrung aus `gen_resources.py` (`FOODS`): Horizons Native-API liest keine Nahrungswerte eines Items, und Mekanisms dynamisches Rezept (`createDynamicRecipe`, Nahrung x 50 mB) kann deshalb nicht nachgebaut werden. Die Rückgabe-Items (Schüssel, Flasche) und der Container-Slot fehlen. Pigment-Items (Chemie-Item-Slots der Originale), Energie-Slot, Upgrades, Side-Config und Redstone sind nicht portiert. Der Pigment Mixer ist nicht craftbar, bis `hdpe_rod` (HDPE, Pressurized Reaction Chamber) existiert.

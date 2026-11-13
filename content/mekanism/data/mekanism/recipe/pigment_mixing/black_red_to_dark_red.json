@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:pigment_mixing",
+  "experience": 0.000100000005,
+  "group": "mekanism:dark_red",
+  "left_input": {
+    "amount": 1,
+    "ingredient": "mekanism:black"
+  },
+  "output": {
+    "amount": 5,
+    "id": "mekanism:dark_red"
+  },
+  "right_input": {
+    "amount": 4,
+    "ingredient": "mekanism:red"
+  }
+}

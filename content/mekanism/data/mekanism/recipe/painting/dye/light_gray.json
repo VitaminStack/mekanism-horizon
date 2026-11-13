@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:painting",
+  "category": "dye",
+  "chemical_input": {
+    "amount": 256,
+    "ingredient": "mekanism:light_gray"
+  },
+  "experience": 0.15,
+  "group": "light_gray_dye",
+  "item_input": {
+    "count": 1,
+    "ingredient": "mekanism:dye_base"
+  },
+  "output": {
+    "id": "minecraft:light_gray_dye"
+  },
+  "per_tick_usage": false
+}

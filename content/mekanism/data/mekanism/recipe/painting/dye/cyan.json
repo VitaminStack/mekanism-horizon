@@ -1,0 +1,18 @@
+{
+  "type": "mekanism:painting",
+  "category": "dye",
+  "chemical_input": {
+    "amount": 256,
+    "ingredient": "mekanism:cyan"
+  },
+  "experience": 0.15,
+  "group": "cyan_dye",
+  "item_input": {
+    "count": 1,
+    "ingredient": "mekanism:dye_base"
+  },
+  "output": {
+    "id": "minecraft:cyan_dye"
+  },
+  "per_tick_usage": false
+}

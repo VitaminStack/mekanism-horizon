@@ -6,6 +6,9 @@ Basis: Mekanism 26.3 (Mekanism 10.8.0 alpha), Horizon Nightly 2026-11-08 `fdc87a
 
 ## [Unreleased] (Stand 11.11.2026)
 
+### M06 Nutrition und Pigmente
+- Nutritional Liquifier, Pigment Extractor, Pigment Mixer und Painting Machine (nativ, Tabelle `machine::MACHINES`) mit 40 Nahrungs-, 275 Extraktions-, 16 Misch- und 288 Painting-Rezepten, Item `dye_base`; ingame ungetestet (Testplan in `docs/TESTLOG.md`).
+
 ### M11 Ausrüstung und Spielhilfen
 - Hook-Audit und Machbarkeitsmatrix aller M11-Items in `docs/ITEM_HOOKS.md` (Horizon `fdc87ae`, API 411).
 - Atomic Disassembler (Energiepuffer, Waffenplus, Vein-Modus), Canteen, Gauge Dropper und Dictionary als native Items (`items.rs`, `gear.rs`) mit Assets, Rezepten und Namen aus Upstream. Nicht machbare Items (Radiation, Module, QIO) bleiben unregistriert, siehe `docs/KNOWN_ISSUES.md`.

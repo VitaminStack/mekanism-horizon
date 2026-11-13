@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:liquification",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:dried_kelp"
+  },
+  "output": {
+    "amount": 50,
+    "id": "mekanism:nutritional_paste"
+  }
+}

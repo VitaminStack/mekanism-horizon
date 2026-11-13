@@ -32,9 +32,12 @@ pub fn chemical(path: &str) -> String {
 }
 
 /// The tank id of a recipe's chemical (`mekanism:hydrogen` -> `mekanism:chemical/hydrogen`);
-/// none for an id of another namespace.
+/// none for an id of another namespace. An id that only a fluid has (`mekanism:nutritional_paste`,
+/// the Nutritional Liquifier's output) stays the fluid's tank id.
 pub fn from_recipe(id: &str) -> Option<String> {
-    id.strip_prefix("mekanism:").filter(|p| !p.is_empty() && !p.contains(':')).map(chemical)
+    let path = id.strip_prefix("mekanism:").filter(|p| !p.is_empty() && !p.contains(':'))?;
+    let fluid_only = FLUIDS.iter().any(|f| f.0 == path) && !CHEMICALS.iter().any(|c| c.0 == path);
+    Some(if fluid_only { format!("mekanism:{path}") } else { chemical(path) })
 }
 
 /// Index of `id` in `known()` order: water, lava, `FLUIDS`, then `CHEMICALS`.
@@ -93,6 +96,9 @@ mod tests {
     #[test]
     fn recipe_ids_become_tank_ids() {
         assert_eq!(from_recipe("mekanism:brine").as_deref(), Some("mekanism:chemical/brine"));
+        assert_eq!(from_recipe("mekanism:nutritional_paste").as_deref(), Some("mekanism:nutritional_paste"));
+        assert_eq!(from_recipe("mekanism:hydrogen").as_deref(), Some("mekanism:chemical/hydrogen"), "a chemical wins over a fluid of its name");
+        assert_eq!(from_recipe("mekanism:red").as_deref(), Some("mekanism:chemical/red"));
         assert_eq!(from_recipe("create:brine"), None);
         assert_eq!(from_recipe("mekanism:"), None);
     }

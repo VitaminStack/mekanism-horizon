@@ -11,9 +11,10 @@
 //! - item to item and chance item (`sawing`): `input`, `main_output` and/or
 //!   `secondary_output` with `secondary_chance`.
 //! - item to chemical (`chemical_conversion`): `input`, `output` {`id`, `amount`}.
-//! - item to chemical in a tank (`oxidizing`): the same, read as a `Recipe` whose
+//! - item to chemical in a tank (`oxidizing`, `pigment_extracting`; `liquification`'s fluid is a
+//!   tank id too): the same, read as a `Recipe` whose
 //!   `chemical_output` is the tank id (an `output` with an `amount` is a chemical).
-//! - two chemicals to chemical (`chemical_infusing`): `left_input`, `right_input`
+//! - two chemicals to chemical (`chemical_infusing`, `pigment_mixing`): `left_input`, `right_input`
 //!   {`ingredient`, `amount`}, `output` {`id`, `amount`}, read as an `Infusion`.
 //! - fluid to two chemicals (`separating`): `input` {`ingredient`, `amount`},
 //!   `output` {`left`, `right`} {`id`, `amount`}, read as a `Separation`. The
@@ -21,6 +22,8 @@
 //!   `mekanism:brine`).
 //! - chemical and fluid for each other (`rotary`): `chemical_input`,
 //!   `chemical_output`, `fluid_input`, `fluid_output`, read as a `Rotation`.
+//! - item and chemical to item (`painting`): `item_input`, `chemical_input` {`ingredient`, `amount`},
+//!   `output`; the chemical comes from the machine's input tank and is used once at the end.
 //! - item and chemical to chemical (`dissolution`): `item_input`, `chemical_input`
 //!   {`ingredient`, `amount`}, `output` {`id`, `amount`}, `per_tick_usage`; a `Recipe`
 //!   whose chemical comes from an input tank and goes to the output tank.
@@ -284,7 +287,8 @@ impl<T> Table<T> {
 pub struct Recipes {
     processing: HashMap<&'static str, Table<Recipe>>,
     conversion: Table<Conversion>,
-    infusion: Table<Infusion>,
+    /// By recipe type: the Chemical Infuser and the Pigment Mixer share the shape.
+    infusion: HashMap<&'static str, Table<Infusion>>,
     separation: Table<Separation>,
     rotation: Table<Rotation>,
     washing: Table<Washing>,
@@ -297,9 +301,9 @@ impl Recipes {
         self.processing.entry(kind).or_default().refresh(host, kind, Recipe::parse)
     }
 
-    /// The Chemical Infuser's recipes (`kind` is its recipe type).
+    /// The Chemical Infuser's and Pigment Mixer's recipes (`kind` is the recipe type).
     pub fn infusing(&mut self, host: &dyn Host, kind: &'static str) -> &[Infusion] {
-        self.infusion.refresh(host, kind, Infusion::parse)
+        self.infusion.entry(kind).or_default().refresh(host, kind, Infusion::parse)
     }
 
     /// The Electrolytic Separator's recipes.

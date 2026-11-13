@@ -1,0 +1,11 @@
+{
+  "type": "mekanism:liquification",
+  "input": {
+    "count": 1,
+    "ingredient": "minecraft:golden_apple"
+  },
+  "output": {
+    "amount": 200,
+    "id": "mekanism:nutritional_paste"
+  }
+}

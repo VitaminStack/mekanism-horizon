@@ -1,0 +1,17 @@
+{
+  "type": "mekanism:pigment_mixing",
+  "experience": 0.000100000005,
+  "group": "mekanism:aqua",
+  "left_input": {
+    "amount": 1,
+    "ingredient": "mekanism:cyan"
+  },
+  "output": {
+    "amount": 2,
+    "id": "mekanism:aqua"
+  },
+  "right_input": {
+    "amount": 1,
+    "ingredient": "mekanism:white"
+  }
+}

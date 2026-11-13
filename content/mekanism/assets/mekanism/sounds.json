@@ -71,6 +71,30 @@
     ],
     "subtitle": "sound_event.mekanism.tile.machine.metallurgic_infuser"
   },
+  "tile.machine.nutritional_liquifier": {
+    "sounds": [
+      "mekanism:tile/nutritional_liquifier"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.nutritional_liquifier"
+  },
+  "tile.machine.painting_machine": {
+    "sounds": [
+      "mekanism:tile/painting_machine"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.painting_machine"
+  },
+  "tile.machine.pigment_extractor": {
+    "sounds": [
+      "mekanism:tile/pigment_extractor"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.pigment_extractor"
+  },
+  "tile.machine.pigment_mixer": {
+    "sounds": [
+      "mekanism:tile/pigment_mixer"
+    ],
+    "subtitle": "sound_event.mekanism.tile.machine.pigment_mixer"
+  },
   "tile.machine.precision_sawmill": {
     "sounds": [
       "mekanism:tile/precision_sawmill"
