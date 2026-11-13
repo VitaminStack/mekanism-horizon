@@ -308,6 +308,68 @@ for pid in ('electric_pump', 'fluidic_plenisher'):
     block(pid, 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False)
     put(f'data/{NS}/horizon/menu/{pid}.json', {'slots': 1, 'data_slots': 6, 'results': []})
 
+# --- transmitters (M06): Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors ---
+# Block entities of native/.../transmitter.rs; the six boolean block states `down`..`east` are the arms to
+# the neighbours the block joins (set by the native mod). Mekanism's own models are OBJ models behind a
+# custom loader, so the blockstates are plain multipart ones over cuboids: a centre cube (large 6 px for
+# pipes, small 4 px for tubes and conductors) and one arm per side, textured from the upstream
+# `block/models/multipart/<id>(_vertical).png`. Selection and collision boxes are the centre cube only
+# (Horizon shapes depend on one property, not on six). Strength 3.5 / 16 as BlockTransmitter.
+TRANSMITTER_KINDS = {'mechanical_pipe': 5, 'pressurized_tube': 6, 'thermodynamic_conductor': 6}  # kind -> centre min
+TRANSMITTER_IDS = [f'{t}_{k}' for k in TRANSMITTER_KINDS for t in CUBE_TIERS[:4]]
+ARM_NAMES = ['down', 'up', 'north', 'south', 'west', 'east']
+TEX = f'{NS}:block/models/multipart'
+
+
+def cuboid(lo, hi, side_tex, end_tex):
+    """A model element; `side_tex` for the four long faces, `end_tex` for the two ends (y)."""
+    faces = {f: {'texture': side_tex} for f in ('north', 'south', 'west', 'east')}
+    faces.update({f: {'texture': end_tex} for f in ('up', 'down')})
+    return {'from': lo, 'to': hi, 'faces': faces}
+
+
+def arm(dir_, lo, hi):
+    """The arm toward `dir_`: from the centre cube (`lo`..`hi`) to the block edge."""
+    a, b = list(lo), list(hi)
+    axis, sign = {'down': (1, -1), 'up': (1, 1), 'north': (2, -1), 'south': (2, 1), 'west': (0, -1), 'east': (0, 1)}[dir_]
+    if sign < 0:
+        a[axis], b[axis] = 0, lo[axis]
+    else:
+        a[axis], b[axis] = hi[axis], 16
+    return cuboid(a, b, '#side', '#center')
+
+
+for tid in TRANSMITTER_IDS:
+    kind = next(k for k in TRANSMITTER_KINDS if tid.endswith(k))
+    lo_v = TRANSMITTER_KINDS[kind]
+    lo, hi = [lo_v] * 3, [16 - lo_v] * 3
+    box = [lo + hi]
+    block(tid, 'minecraft:iron_block', 3.5, 16.0, extra={
+        'state_properties': {d: {'type': 'boolean'} for d in ARM_NAMES},
+        'default_state': {d: 'false' for d in ARM_NAMES},
+        'shapes': {'property': 'up', 'values': {'true': box, 'false': box}, 'default': box},
+        'collision_shapes': {'property': 'up', 'values': {'true': box, 'false': box}, 'default': box},
+    }, sounds=STONE, occludes=False)
+    textures = {'center': f'{TEX}/{tid}', 'side': f'{TEX}/{tid}_vertical', 'particle': f'{TEX}/{tid}'}
+    put(f'assets/{NS}/models/block/transmitter/{tid}_center.json',
+        {'textures': textures, 'elements': [cuboid(lo, hi, '#center', '#center')]})
+    for d in ARM_NAMES:
+        put(f'assets/{NS}/models/block/transmitter/{tid}_{d}.json',
+            {'textures': textures, 'elements': [arm(d, lo, hi)]})
+    put(f'assets/{NS}/blockstates/{tid}.json', {'multipart': [
+        {'apply': {'model': f'{NS}:block/transmitter/{tid}_center'}},
+        *({'when': {d: 'true'}, 'apply': {'model': f'{NS}:block/transmitter/{tid}_{d}'}} for d in ARM_NAMES)]})
+    # Item: a straight piece (centre and the north and south arms).
+    put(f'assets/{NS}/models/item/{tid}.json', {
+        'parent': 'minecraft:block/block', 'textures': textures,
+        'elements': [cuboid(lo, hi, '#center', '#center'), arm('north', lo, hi), arm('south', lo, hi)],
+        'display': {'gui': {'rotation': [30, 225, 0], 'scale': [1.0, 1.0, 1.0]},
+                    'ground': {'translation': [0, 3, 0], 'scale': [0.5, 0.5, 0.5]},
+                    'fixed': {'scale': [1.0, 1.0, 1.0]},
+                    'thirdperson_righthand': {'rotation': [75, 45, 0], 'translation': [0, 2.5, 0], 'scale': [0.5, 0.5, 0.5]},
+                    'firstperson_righthand': {'rotation': [0, 45, 0], 'scale': [0.5, 0.5, 0.5]}}})
+    put(f'assets/{NS}/items/{tid}.json', {'model': {'type': 'minecraft:model', 'model': f'{NS}:item/{tid}'}})
+
 # Pushes hydrogen into neighbouring tanks (native `DEBUG_CHEMICAL_SOURCE`), for testing chemical
 # tanks until a machine makes chemicals.
 block('debug_chemical_source', 'minecraft:iron_block', 1.0, 1.0, requires_tool=False)
@@ -478,7 +540,8 @@ put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
      + [f'{NS}:{t}_bin' for t in CUBE_TIERS] + [f'{NS}:personal_chest', f'{NS}:personal_barrel']
-     + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]})
+     + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]
+     + [f'{NS}:{t}' for t in TRANSMITTER_IDS]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in (
         'heat_generator', 'solar_generator', 'bio_generator', 'advanced_solar_generator', 'wind_generator',

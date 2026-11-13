@@ -290,3 +290,23 @@ Build: Native `native-fdc87ae-1c7ad4927bd3`, Content aus Branch `feat/m06-ore-pr
 | Dissolution ohne Säure: Fortschritt hält (81), läuft nach Nachfüllen weiter | ok |
 | GUIs: Titel, Gauges (Wasser blau, Schlamm gelb, Säure oliv), Item-Slot, Fortschrittsbalken, Energie (Screenshots) | ok |
 | Sounds, Tooltips, Crafting-Rezepte, Weltneustart, Chunk-Unload der neuen Maschinen | nicht geprüft |
+
+## M06 Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors (Testplan, ingame ungetestet)
+
+Stand: nur Unit-Tests (`cargo test --manifest-path logic/energy/Cargo.toml`: Tier-Werte, `push_plan`, Wärmerechnung), `cargo check` des Native-Crates und `scripts/Test-Content.ps1`. Nichts davon lief ingame; nach dem Build (`Build-Native.ps1`, `Build-Content.ps1`) in einer Kreativwelt prüfen:
+
+| Test | Erwartung / Ergebnis |
+|---|---|
+| Alle 12 Blöcke und Items erscheinen, Namen, Rezepte (Basic Pipe: Stahl, leerer Eimer, Stahl; Tier-Upgrade `PPP/PAP/PPP`), Auswahlbox, Abbau gibt den Block | offen |
+| Basic-Pipe-Kette (3 Blöcke): Creative Fluid Tank mit Wasser (Auto-eject nach unten, Pipe darunter) zu leerem Fluid Tank; Wasser fließt mit ca. 250 mB/t, bis beide gleich voll sind | offen |
+| Arme erscheinen zu Nachbar-Pipe und Tank, verschwinden beim Abbau des Nachbarn; Pipe verbindet nicht mit Tube oder Conductor | offen |
+| Pipe nimmt keine Chemicals, Tube keine Fluids | offen |
+| Tube-Kette mit Hydrogen aus `debug_chemical_source` über Chemical Tank | offen |
+| Tier-Raten (Advanced 1.000, Elite 8.000, Ultimate 32.000 mB/t) gegen Tank-Füllstand über Zeit (`/tick rate`) | offen |
+| Separator, Oxidizer oder Pumpe geben in eine angrenzende Pipe/Tube aus, die in einen Tank weiterleitet | offen |
+| Fluss gleicht sich aus, läuft nicht in den vollen Quelltank zurück, kein Deadlock beim Einfüllen in Nachbarn | offen |
+| Neustart: Pipe-Inhalt bleibt; Chunk-Unload; Performance mit 200+ Pipes (Verbindungsprüfung je Tick) | offen |
+| Heat Generator mit Lava neben Conductor: `mekanism_heat` des Conductors steigt, Generator-Temperatur sinkt; Basic vs. Ultimate: Ultimate verliert weniger an die Luft | offen |
+| Conductor-Kette gleicht Temperaturen an (`/data get block ...`), kalter Conductor gibt nichts zurück | offen |
+| Rendering: Mittelwürfel und Arme mit Upstream-Texturen, Item-Modell (GUI, Hand), Mehrteiler-Blockstate lädt | offen |
+| Blöcke ohne Container/Menü: Rechtsklick öffnet nichts, und `block_entity_fluids` greift auch ohne `block_entity_container` | offen |

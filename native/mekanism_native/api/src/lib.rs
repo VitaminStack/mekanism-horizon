@@ -62,6 +62,8 @@ mod storage;
 mod storages;
 mod tank;
 mod tanks;
+mod transmitter;
+mod transmitters;
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
@@ -127,6 +129,8 @@ enum Kind {
     Storage(&'static str),
     /// The Electric Pump, or the Fluidic Plenisher (`pump.rs`).
     Pump { plenisher: bool },
+    /// A Mechanical Pipe, Pressurized Tube or Thermodynamic Conductor (`transmitter.rs`).
+    Transmitter(&'static transmitter::Tier),
 }
 
 fn kind(block: &str) -> Option<Kind> {
@@ -153,8 +157,12 @@ fn kind(block: &str) -> Option<Kind> {
     }
     if let Some(s) = storage::find(block) {
         return Some(Kind::Storage(s));
+    }
     if pump::is_either(block) {
         return Some(Kind::Pump { plenisher: pump::is_plenisher(block) });
+    }
+    if let Some(t) = transmitter::tier_of(block) {
+        return Some(Kind::Transmitter(t));
     }
     generators::find(block).map(Kind::Generator)
 }
@@ -444,7 +452,7 @@ impl Hooks for MekanismNative {
                 outputs: Vec::new(),
                 menu: Some(CUBE_MENU.to_owned()),
             }),
-            Kind::Debug { .. } | Kind::DebugChemical => None,
+            Kind::Debug { .. } | Kind::DebugChemical | Kind::Transmitter(_) => None,
         }
     }
 
@@ -475,7 +483,7 @@ impl Hooks for MekanismNative {
                 insert_faces: [true; 6],
                 extract_faces: [true; 6],
             }),
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) => None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) => None,
         }
     }
 
@@ -486,6 +494,7 @@ impl Hooks for MekanismNative {
             Kind::Machine(m) => m.tanks.map(process::fluids),
             Kind::Generator(generator::GAS) => Some(generators::gas_fluids()),
             Kind::Pump { plenisher } => Some(pumps::fluids(plenisher)),
+            Kind::Transmitter(t) if t.family().is_some() => Some(transmitters::fluids(t)),
             _ => None,
         }
     }
@@ -497,6 +506,8 @@ impl Hooks for MekanismNative {
             Some(Kind::Generator(generator::GAS)) if generator::gas_fuel(event.fluid).is_none() => Flow::Cancel,
             // The plenisher places only what a world holds.
             Some(Kind::Pump { plenisher: true }) if pump::Liquid::from_id(event.fluid).is_none() => Flow::Cancel,
+            // Pipes take fluids, tubes chemicals.
+            Some(Kind::Transmitter(t)) if t.family().is_some_and(|f| !tank::accepts(f, event.fluid)) => Flow::Cancel,
             Some(Kind::Machine(m)) if m.tanks.is_some()
                 && !process::accepts(host, m, &mut self.recipes.lock().unwrap(), event.tank, event.fluid) => Flow::Cancel,
             _ => Flow::Continue,
@@ -549,6 +560,7 @@ impl Hooks for MekanismNative {
             Some(Kind::Bin(t)) => bins::tick(host, event, t),
             Some(Kind::Storage(_)) => {}
             Some(Kind::Pump { plenisher }) => pumps::tick(host, event, plenisher),
+            Some(Kind::Transmitter(t)) => transmitters::tick(host, event, t),
             None => {}
         }
     }
@@ -564,7 +576,7 @@ impl Hooks for MekanismNative {
             Kind::Bin(_) => 0.0,
             Kind::Storage(block) if storage::horizontal_only(block) => 0.0,
             Kind::Storage(_) => event.context.pitch,
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical => return None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Transmitter(_) => return None,
         };
         let facing = cube::facing_from_look(event.context.yaw, pitch);
         level
@@ -592,7 +604,7 @@ impl Hooks for MekanismNative {
                 own_labels: true,
                 own_background: false,
             }),
-            Kind::Debug { .. } | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) => None,
+            Kind::Debug { .. } | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) => None,
         }
     }
 

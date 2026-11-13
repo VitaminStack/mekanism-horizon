@@ -100,3 +100,10 @@ Details und Machbarkeit je Item: [ITEM_HOOKS.md](ITEM_HOOKS.md).
 - **Item-Änderungen** (Energie, Füllstand, Modus) wirken mit bis zu einem Tick Verzug: Use-Hooks dürfen das Inventar nicht schreiben, die Änderung wird im nächsten `inventory_tick` angewendet. Beim Neuaufbau des Stacks gehen andere Komponenten verloren, die Items haben aber keine.
 - **Zahlenwerte** (Kapazitäten, Kosten, Schrittweiten) sind Mekanisms Standardwerte nach Kenntnis, nicht aus dem Java-Quellcode gelesen (Sparse-Checkout ohne `src/main/java`).
 
+## Pipes, Tubes, Conductors (M06, ingame ungetestet)
+
+- **Kein Netzwerk**: Kapazität und Rate eines Tiers gelten je Block, nicht je Netz. Lange Leitungen puffern mehr, als Mekanism es täte; der Durchsatz ist die Tier-Rate je Block und Tick.
+- **Keine Seitenmodi**: Pull/Push/Off und der Configurator fehlen. Pipes nehmen nur, was Nachbarn selbst hineinschieben (Tank-Auto-eject nach unten, Maschinen-Outputs, Pumpe nach oben); sie ziehen nicht aus Tanks.
+- **Modell**: Mekanisms OBJ-Modelle (eigener Loader) fehlen in Horizon, die Teile sind Quader; Auswahl- und Kollisionsbox sind nur der Mittelwürfel (Horizon-Shapes hängen an einer Property, nicht an sechs).
+- **Verbindungen** setzt der Tick (`down`..`east`) mit bis zu einem Tick Verzug und einer Prüfung je Nachbar und Tick; viele Pipes können das spürbar machen.
+- **Heat**: nur Conductor zu Conductor und zum Heat Generator; jeder Conductor rechnet für sich in Tick-Reihenfolge statt in einer Netzwerk-Runde.

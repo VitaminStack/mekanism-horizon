@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "group": "mekanism:pressurized_tube",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "P": "mekanism:basic_pressurized_tube"
+  },
+  "pattern": [
+    "PPP",
+    "PAP",
+    "PPP"
+  ],
+  "result": {
+    "count": 8,
+    "id": "mekanism:advanced_pressurized_tube"
+  }
+}

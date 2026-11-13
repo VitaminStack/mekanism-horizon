@@ -1,0 +1,41 @@
+{
+  "textures": {
+    "center": "mekanism:block/models/multipart/ultimate_mechanical_pipe",
+    "side": "mekanism:block/models/multipart/ultimate_mechanical_pipe_vertical",
+    "particle": "mekanism:block/models/multipart/ultimate_mechanical_pipe"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        5,
+        0
+      ],
+      "to": [
+        11,
+        11,
+        5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#side"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        },
+        "up": {
+          "texture": "#center"
+        },
+        "down": {
+          "texture": "#center"
+        }
+      }
+    }
+  ]
+}
