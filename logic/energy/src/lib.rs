@@ -31,6 +31,10 @@ pub mod tank;
 #[path = "../../../native/mekanism_native/api/src/pump.rs"]
 pub mod pump;
 
+/// Mechanical Pipes, Pressurized Tubes and Thermodynamic Conductors (M06).
+#[path = "../../../native/mekanism_native/api/src/transmitter.rs"]
+pub mod transmitter;
+
 /// Canteen, Gauge Dropper and Atomic Disassembler rules (M11).
 #[path = "../../../native/mekanism_native/api/src/gear.rs"]
 pub mod gear;

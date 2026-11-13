@@ -19,7 +19,7 @@ use super::{
 /// Block entity NBT of the Heat Generator: stored heat (Tag::Double) and lava in mB.
 /// The Bio Generator keeps its bioethanol in mB as `mekanism_bio_fuel`.
 const BIO_FUEL: &str = "mekanism_bio_fuel";
-const HEAT: &str = "mekanism_heat";
+pub(super) const HEAT: &str = "mekanism_heat";
 const LAVA: &str = "mekanism_lava";
 /// A Wind Generator turning its blades, sent to clients (1 or 0).
 pub(super) const WIND_ACTIVE: &str = "mekanism_wind_active";

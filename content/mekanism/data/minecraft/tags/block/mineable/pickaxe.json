@@ -74,6 +74,18 @@
     "mekanism:fluorite_ore",
     "mekanism:deepslate_fluorite_ore",
     "mekanism:lead_ore",
-    "mekanism:deepslate_lead_ore"
+    "mekanism:deepslate_lead_ore",
+    "mekanism:basic_mechanical_pipe",
+    "mekanism:advanced_mechanical_pipe",
+    "mekanism:elite_mechanical_pipe",
+    "mekanism:ultimate_mechanical_pipe",
+    "mekanism:basic_pressurized_tube",
+    "mekanism:advanced_pressurized_tube",
+    "mekanism:elite_pressurized_tube",
+    "mekanism:ultimate_pressurized_tube",
+    "mekanism:basic_thermodynamic_conductor",
+    "mekanism:advanced_thermodynamic_conductor",
+    "mekanism:elite_thermodynamic_conductor",
+    "mekanism:ultimate_thermodynamic_conductor"
   ]
 }

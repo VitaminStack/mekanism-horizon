@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "group": "mekanism:thermodynamic_conductor",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "P": "mekanism:basic_thermodynamic_conductor"
+  },
+  "pattern": [
+    "PPP",
+    "PAP",
+    "PPP"
+  ],
+  "result": {
+    "count": 8,
+    "id": "mekanism:advanced_thermodynamic_conductor"
+  }
+}

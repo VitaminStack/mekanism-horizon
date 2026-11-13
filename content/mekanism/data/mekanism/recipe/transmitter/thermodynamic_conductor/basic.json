@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "group": "mekanism:thermodynamic_conductor",
+  "key": {
+    "#": "#c:ingots/copper",
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    "S#S"
+  ],
+  "result": {
+    "count": 8,
+    "id": "mekanism:basic_thermodynamic_conductor"
+  }
+}
