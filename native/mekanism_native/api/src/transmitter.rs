@@ -1,10 +1,12 @@
-//! Mechanical Pipes, Pressurized Tubes and Thermodynamic Conductors (M06): the
-//! parts that need no Horizon types, so their tests run in `logic/energy`.
+//! Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors (M06) and
+//! Universal Cables (M03): the parts that need no Horizon types, so their tests
+//! run in `logic/energy`.
 //! Hooks are in `transmitters.rs`.
 //!
 //! Values from Mekanism 26.3: `PipeTier`, `TubeTier` (capacity, transfer rate
 //! per tick), `ConductorTier` (inverse conduction 5, heat capacity 1, inverse
-//! insulation 10 / 400 / 8,000 / 100,000), `ITileHeatHandler` (`simulateAdjacent`,
+//! insulation 10 / 400 / 8,000 / 100,000), `CableTier` (cable capacity 8,000 /
+//! 128,000 / 1,024,000 / 8,192,000), `ITileHeatHandler` (`simulateAdjacent`,
 //! `simulateEnvironment`) and `HeatAPI`.
 //!
 //! Horizon has no transmitter networks, so each pipe, tube and conductor is a
@@ -18,6 +20,15 @@
 //!   conductors and Heat Generators the way Mekanism's heat network does, one
 //!   block at a time instead of a network pass.
 //!
+//! - Cables hold energy in Horizon's block-entity energy buffer of the tier's
+//!   capacity and push it on every tick: first to the end points (cubes through
+//!   their input sides, machines, pumps), then to neighbouring cables, by the
+//!   share that levels the two fill ratios (`distribute`). What a neighbour
+//!   gains the cable loses, so the sum over a line never changes. Mekanism's
+//!   cable network has one shared buffer; here each cable has its own.
+//!   Foreign (other mods') blocks cannot be reached: see
+//!   docs/upstream/horizon-energy-host.md.
+//!
 //! Not ported: pull/push/off side modes and the Configurator, the network and
 //! its redstone mode, upgrading a placed transmitter, fluid leaks.
 
@@ -29,15 +40,16 @@ pub enum Kind {
     Pipe,
     Tube,
     Conductor,
+    Cable,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct Tier {
     pub block: &'static str,
     pub kind: Kind,
-    /// mB a pipe or tube holds (0 for a conductor).
+    /// mB a pipe or tube holds, or the energy a cable holds (0 for a conductor).
     pub capacity: i32,
-    /// mB a pipe or tube moves per tick (0 for a conductor).
+    /// mB a pipe or tube moves per tick; a cable moves up to its whole buffer (0 for a conductor).
     pub rate: i32,
     /// A conductor's `getInverseConductionInsulation`.
     pub insulation: f64,
@@ -51,7 +63,11 @@ const fn conductor(block: &'static str, insulation: f64) -> Tier {
     Tier { block, kind: Kind::Conductor, capacity: 0, rate: 0, insulation }
 }
 
-pub const TRANSMITTERS: [Tier; 12] = [
+const fn cable(block: &'static str, capacity: i32) -> Tier {
+    Tier { block, kind: Kind::Cable, capacity, rate: capacity, insulation: 0.0 }
+}
+
+pub const TRANSMITTERS: [Tier; 16] = [
     buffer("mekanism:basic_mechanical_pipe", Kind::Pipe, 2 * B, B / 4),
     buffer("mekanism:advanced_mechanical_pipe", Kind::Pipe, 8 * B, B),
     buffer("mekanism:elite_mechanical_pipe", Kind::Pipe, 32 * B, 8 * B),
@@ -64,6 +80,10 @@ pub const TRANSMITTERS: [Tier; 12] = [
     conductor("mekanism:advanced_thermodynamic_conductor", 400.0),
     conductor("mekanism:elite_thermodynamic_conductor", 8_000.0),
     conductor("mekanism:ultimate_thermodynamic_conductor", 100_000.0),
+    cable("mekanism:basic_universal_cable", 8_000),
+    cable("mekanism:advanced_universal_cable", 128_000),
+    cable("mekanism:elite_universal_cable", 1_024_000),
+    cable("mekanism:ultimate_universal_cable", 8_192_000),
 ];
 
 pub fn tier_of(block: &str) -> Option<&'static Tier> {
@@ -76,7 +96,7 @@ impl Tier {
         match self.kind {
             Kind::Pipe => Some(Family::Fluid),
             Kind::Tube => Some(Family::Chemical),
-            Kind::Conductor => None,
+            Kind::Conductor | Kind::Cable => None,
         }
     }
 
@@ -127,6 +147,61 @@ pub fn push_plan(amount: i32, capacity: i32, rate: i32, neighbours: &[Neighbour]
         })
         .filter(|&(_, share)| share > 0)
         .collect()
+}
+
+/// What a cable's neighbour is, for `distribute`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Link {
+    /// A cube, machine or pump: takes what its side config and rate allow.
+    Sink,
+    /// Another cable: gets the share that levels the fill ratios.
+    Cable,
+}
+
+/// One neighbour of a cable: `amount` of `capacity` held (a snapshot).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Port {
+    pub dir: usize,
+    pub link: Link,
+    pub amount: i32,
+    pub capacity: i32,
+}
+
+/// Pushes up to `rate` of a cable's `stored` energy out, and returns what left.
+/// `give(dir, budget)` hands `budget` to the neighbour at `dir` and answers how
+/// much it took (never more than `budget`); that is all this subtracts, so
+/// nothing is lost or made. End points come first, in the order given, each
+/// offered what is left of the budget. Then each cable that holds a lower
+/// fill ratio gets the share that would level the two,
+/// `(stored * theirs_capacity - theirs * capacity) / (capacity + theirs_capacity)`,
+/// so a push never overshoots into the opposite imbalance.
+pub fn distribute(stored: i32, capacity: i32, rate: i32, ports: &[Port], give: &mut dyn FnMut(usize, i32) -> i32) -> i32 {
+    let mut left = stored.max(0);
+    let mut budget = rate.min(left).max(0);
+    let mut moved_total = 0;
+    let mut offer = |dir: usize, want: i32, left: &mut i32, budget: &mut i32, moved_total: &mut i32| {
+        let want = want.min(*left).min(*budget);
+        if want <= 0 {
+            return;
+        }
+        let moved = give(dir, want).clamp(0, want);
+        *left -= moved;
+        *budget -= moved;
+        *moved_total += moved;
+    };
+    for p in ports.iter().filter(|p| p.link == Link::Sink) {
+        offer(p.dir, p.capacity.saturating_sub(p.amount), &mut left, &mut budget, &mut moved_total);
+    }
+    if capacity > 0 {
+        for p in ports.iter().filter(|p| p.link == Link::Cable && p.capacity > 0) {
+            let (a, ca, b, cb) = (left as i64, capacity as i64, p.amount as i64, p.capacity as i64);
+            let share = (a * cb - b * ca) / (ca + cb);
+            if share > 0 {
+                offer(p.dir, share as i32, &mut left, &mut budget, &mut moved_total);
+            }
+        }
+    }
+    moved_total
 }
 
 /// One heat store: a conductor, or a Heat Generator seen from its neighbour.
@@ -224,6 +299,150 @@ mod tests {
         assert_eq!(pipe("mekanism:ultimate_pressurized_tube"), (1_024_000, 256_000));
         let insulation: Vec<f64> = TRANSMITTERS.iter().filter(|t| t.kind == Kind::Conductor).map(|t| t.insulation).collect();
         assert_eq!(insulation, [10.0, 400.0, 8_000.0, 100_000.0]);
+        let cables: Vec<(&str, i32, i32)> = TRANSMITTERS
+            .iter()
+            .filter(|t| t.kind == Kind::Cable)
+            .map(|t| (t.block, t.capacity, t.rate))
+            .collect();
+        assert_eq!(
+            cables,
+            [
+                ("mekanism:basic_universal_cable", 8_000, 8_000),
+                ("mekanism:advanced_universal_cable", 128_000, 128_000),
+                ("mekanism:elite_universal_cable", 1_024_000, 1_024_000),
+                ("mekanism:ultimate_universal_cable", 8_192_000, 8_192_000),
+            ]
+        );
+    }
+
+    fn port(dir: usize, link: Link, amount: i32, capacity: i32) -> Port {
+        Port { dir, link, amount, capacity }
+    }
+
+    #[test]
+    fn cables_join_only_cables_and_hold_no_fluid() {
+        let cable = tier_of("mekanism:basic_universal_cable").unwrap();
+        assert_eq!(cable.family(), None);
+        assert!(cable.joins("mekanism:ultimate_universal_cable"));
+        assert!(!cable.joins("mekanism:basic_mechanical_pipe"));
+        assert!(!cable.joins("mekanism:basic_energy_cube"));
+    }
+
+    #[test]
+    fn distribute_feeds_end_points_first_and_counts_what_they_took() {
+        // Cable 5,000 / 8,000. The first sink takes only 1,000 of the 3,000 offered, the second the rest.
+        let ports = [port(0, Link::Sink, 0, 10_000), port(1, Link::Sink, 0, 10_000), port(2, Link::Cable, 0, 8_000)];
+        let mut asked = Vec::new();
+        let moved = distribute(5_000, 8_000, 3_000, &ports, &mut |dir, budget| {
+            asked.push((dir, budget));
+            if dir == 0 { budget.min(1_000) } else { budget }
+        });
+        // Rate 3,000: sink 0 gets offered 3,000 and takes 1,000, sink 1 the remaining 2,000; none is left for the cable.
+        assert_eq!(asked, [(0, 3_000), (1, 2_000)]);
+        assert_eq!(moved, 3_000);
+    }
+
+    #[test]
+    fn distribute_levels_cables_without_overshoot() {
+        // 8,000 / 8,000 next to an empty 8,000: half moves, both end at 50 %.
+        let mut got = 0;
+        let moved = distribute(8_000, 8_000, 8_000, &[port(3, Link::Cable, 0, 8_000)], &mut |_, b| {
+            got += b;
+            b
+        });
+        assert_eq!((moved, got), (4_000, 4_000));
+        // A fuller neighbour gets nothing; an equal one neither.
+        assert_eq!(distribute(2_000, 8_000, 8_000, &[port(3, Link::Cable, 6_000, 8_000)], &mut |_, _| panic!("no push")), 0);
+        assert_eq!(distribute(2_000, 8_000, 8_000, &[port(3, Link::Cable, 2_000, 8_000)], &mut |_, _| panic!("no push")), 0);
+        // A big neighbour of another tier: 4,000 of 8,000 beside an empty 128,000 gives 3,764 (levels at 3.1 %).
+        let moved = distribute(4_000, 8_000, 8_000, &[port(0, Link::Cable, 0, 128_000)], &mut |_, b| b);
+        assert_eq!(moved, 4_000 * 128_000 / 136_000);
+    }
+
+    #[test]
+    fn distribute_respects_rate_empty_and_refusals() {
+        assert_eq!(distribute(0, 8_000, 8_000, &[port(0, Link::Sink, 0, 100)], &mut |_, _| panic!("nothing to give")), 0);
+        let mut offered = 0;
+        distribute(8_000, 8_000, 500, &[port(0, Link::Sink, 0, 100_000)], &mut |_, b| {
+            offered += b;
+            b
+        });
+        assert_eq!(offered, 500);
+        // A full sink is not even asked; a refusal keeps the energy in the cable.
+        assert_eq!(distribute(8_000, 8_000, 8_000, &[port(0, Link::Sink, 100, 100)], &mut |_, _| panic!("full")), 0);
+        assert_eq!(distribute(8_000, 8_000, 8_000, &[port(0, Link::Sink, 0, 100)], &mut |_, _| 0), 0);
+        // A buggy taker that claims more than offered is clamped.
+        assert_eq!(distribute(1_000, 8_000, 8_000, &[port(0, Link::Sink, 0, 100_000)], &mut |_, b| b + 5), 1_000);
+    }
+
+    /// A line `cube -> cables... -> sink`: every node has (stored, capacity); the cube pushes
+    /// into the first cable at its rate, the sink takes at most `drain` a tick (a machine
+    /// using energy), and the energy in the line plus what the sink used never changes.
+    fn simulate_line(cables: &[&str], source: i32, drain: i32, sink_capacity: i32, ticks: usize) {
+        let tiers: Vec<&Tier> = cables.iter().map(|c| tier_of(c).unwrap()).collect();
+        let n = tiers.len();
+        let mut cell: Vec<i32> = vec![0; n];
+        let (mut cube, cube_rate) = (source, 4_000);
+        let (mut sink, mut used) = (0i32, 0i64);
+        let total = source as i64;
+        for tick in 0..ticks {
+            // The cube ejects into the first cable.
+            let moved = crate::cube::transfer(cube_rate, cube, cell[0], tiers[0].capacity, tiers[0].rate);
+            cube -= moved;
+            cell[0] += moved;
+            for i in 0..n {
+                let mut ports = Vec::new();
+                if i > 0 {
+                    ports.push(port(0, Link::Cable, cell[i - 1], tiers[i - 1].capacity));
+                }
+                if i + 1 < n {
+                    ports.push(port(1, Link::Cable, cell[i + 1], tiers[i + 1].capacity));
+                } else {
+                    ports.push(port(1, Link::Sink, sink, sink_capacity));
+                }
+                let stored = cell[i];
+                let sent = distribute(stored, tiers[i].capacity, tiers[i].rate, &ports, &mut |dir, budget| {
+                    // What the neighbour takes is what it gains.
+                    let taken = if dir == 0 {
+                        crate::cube::transfer(budget, stored, cell[i - 1], tiers[i - 1].capacity, tiers[i - 1].rate)
+                    } else if i + 1 < n {
+                        crate::cube::transfer(budget, stored, cell[i + 1], tiers[i + 1].capacity, tiers[i + 1].rate)
+                    } else {
+                        crate::cube::transfer(budget, stored, sink, sink_capacity, i32::MAX)
+                    };
+                    if dir == 0 {
+                        cell[i - 1] += taken;
+                    } else if i + 1 < n {
+                        cell[i + 1] += taken;
+                    } else {
+                        sink += taken;
+                    }
+                    taken
+                });
+                cell[i] -= sent;
+            }
+            let usage = drain.min(sink);
+            sink -= usage;
+            used += usage as i64;
+            let sum = cube as i64 + cell.iter().map(|&c| c as i64).sum::<i64>() + sink as i64 + used;
+            assert_eq!(sum, total, "tick {tick}");
+            for (c, t) in cell.iter().zip(&tiers) {
+                assert!(*c >= 0 && *c <= t.capacity, "tick {tick}: {c} of {}", t.capacity);
+            }
+            assert!(sink >= 0 && sink <= sink_capacity);
+        }
+    }
+
+    #[test]
+    fn a_line_of_mixed_cables_conserves_energy_every_tick() {
+        let line = ["mekanism:basic_universal_cable", "mekanism:ultimate_universal_cable", "mekanism:advanced_universal_cable", "mekanism:basic_universal_cable"];
+        simulate_line(&line, 2_000_000, 1_000, 1_000_000, 2_000);
+    }
+
+    #[test]
+    fn a_full_sink_backs_the_line_up_without_loss() {
+        let line = ["mekanism:basic_universal_cable", "mekanism:basic_universal_cable", "mekanism:elite_universal_cable"];
+        simulate_line(&line, 500_000, 0, 20_000, 3_000);
     }
 
     #[test]

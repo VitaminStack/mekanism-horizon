@@ -345,15 +345,20 @@ for pid in ('electric_pump', 'fluidic_plenisher'):
     block(pid, 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False)
     put(f'data/{NS}/horizon/menu/{pid}.json', {'slots': 1, 'data_slots': 6, 'results': []})
 
-# --- transmitters (M06): Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors ---
+# --- transmitters (M06): Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors; Universal Cables (M03);
+# Logistical, Restrictive and Diversion Transporters (M08) ---
 # Block entities of native/.../transmitter.rs; the six boolean block states `down`..`east` are the arms to
 # the neighbours the block joins (set by the native mod). Mekanism's own models are OBJ models behind a
 # custom loader, so the blockstates are plain multipart ones over cuboids: a centre cube (large 6 px for
 # pipes, small 4 px for tubes and conductors) and one arm per side, textured from the upstream
 # `block/models/multipart/<id>(_vertical).png`. Selection and collision boxes are the centre cube only
 # (Horizon shapes depend on one property, not on six). Strength 3.5 / 16 as BlockTransmitter.
-TRANSMITTER_KINDS = {'mechanical_pipe': 5, 'pressurized_tube': 6, 'thermodynamic_conductor': 6}  # kind -> centre min
-TRANSMITTER_IDS = [f'{t}_{k}' for k in TRANSMITTER_KINDS for t in CUBE_TIERS[:4]]
+# kind -> centre min: cables are small (4 px) like tubes, transporters large (6 px) like pipes.
+TRANSMITTER_KINDS = {'mechanical_pipe': 5, 'pressurized_tube': 6, 'thermodynamic_conductor': 6,
+                     'universal_cable': 6, 'logistical_transporter': 5}
+# The Restrictive and Diversion Transporters have no tier (BlockLargeTransmitter, one block each).
+TRANSMITTER_SINGLES = {'restrictive_transporter': 5, 'diversion_transporter': 5}
+TRANSMITTER_IDS = [f'{t}_{k}' for k in TRANSMITTER_KINDS for t in CUBE_TIERS[:4]] + list(TRANSMITTER_SINGLES)
 ARM_NAMES = ['down', 'up', 'north', 'south', 'west', 'east']
 TEX = f'{NS}:block/models/multipart'
 
@@ -377,8 +382,7 @@ def arm(dir_, lo, hi):
 
 
 for tid in TRANSMITTER_IDS:
-    kind = next(k for k in TRANSMITTER_KINDS if tid.endswith(k))
-    lo_v = TRANSMITTER_KINDS[kind]
+    lo_v = TRANSMITTER_SINGLES.get(tid) or TRANSMITTER_KINDS[next(k for k in TRANSMITTER_KINDS if tid.endswith(k))]
     lo, hi = [lo_v] * 3, [16 - lo_v] * 3
     box = [lo + hi]
     block(tid, 'minecraft:iron_block', 3.5, 16.0, extra={
