@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:aqua"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:plastic_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_blocks/plastic",
+      "subtracted": "mekanismadditions:aqua_plastic"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:aqua_plastic"
+  },
+  "per_tick_usage": false
+}

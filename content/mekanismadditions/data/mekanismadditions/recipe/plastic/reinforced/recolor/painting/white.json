@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:white"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:reinforced_plastic_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_blocks/reinforced",
+      "subtracted": "mekanismadditions:white_reinforced_plastic"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:white_reinforced_plastic"
+  },
+  "per_tick_usage": false
+}

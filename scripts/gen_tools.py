@@ -274,6 +274,10 @@ def import_upstream(up):
     for layer in ('horse_body', 'humanoid', 'humanoid_baby', 'humanoid_leggings', 'nautilus_body'):
         for src in (res / 'textures/entity/equipment' / layer).glob('*.png'):
             copy_json(src, assets / 'textures/entity/equipment' / layer / src.name)
+    # custom shield textures and the trim palette: not used by the vanilla-template items, kept as upstream ships them
+    for sub in ('entity/shield', 'palettes/trim'):
+        for src in (res / 'textures' / sub).glob('*.png'):
+            copy_json(src, assets / 'textures' / sub / src.name)
     for src in (gen / 'assets' / NS / 'equipment').glob('*.json'):
         eq = json.loads(src.read_text(encoding='utf-8'))
         eq.pop('trim_overrides', None)  # palettes live in Mekanism's own pack
@@ -313,8 +317,8 @@ def import_upstream(up):
         if not src.is_file():
             src = res / 'lang' / f'{lang}.json'
         up_lang = json.loads(src.read_text(encoding='utf-8'))
-        put(f'assets/{NS}/lang/{lang}.json',
-            {f'item.{NS}.{i}': up_lang[f'item.{NS}.{i}'] for i in items if f'item.{NS}.{i}' in up_lang})
+        # every upstream key (items, tooltips, tags, config), not only the registered items
+        put(f'assets/{NS}/lang/{lang}.json', dict(sorted(up_lang.items())))
     shutil.copyfile(up / 'LICENSE', OUT / 'LICENSE-MEKANISM')
     print(f'items {len(items)}, textures {len(textures)}, recipes {n}, tags {t}')
 

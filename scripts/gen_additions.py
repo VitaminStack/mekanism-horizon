@@ -145,6 +145,17 @@ def main(up):
     # shared tint-free shape models and the cube parent
     for f in (models / 'colored').glob('*.json'):
         dump(OUT / f'assets/{NS}/models/block/colored/{f.name}', strip_tint(load(f)))
+    # the grey base models (`plastic/*`, `glow_panel`) and their textures, kept as upstream ships them (the
+    # per-colour models above are what the blocks use); CTM textures are unused here but part of the asset set
+    for f in (models / 'plastic').glob('*.json'):
+        dump(OUT / f'assets/{NS}/models/block/plastic/{f.name}', strip_tint(load(f)))
+    dump(OUT / f'assets/{NS}/models/block/glow_panel.json', strip_tint(load(models / 'glow_panel.json')))
+    for f in tex_root.glob('*.png'):
+        shutil.copyfile(f, OUT / f'assets/{NS}/textures/block/{f.name}')
+    for f in (res / 'textures/ctm').glob('*.png'):
+        dst = OUT / f'assets/{NS}/textures/ctm/{f.name}'
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(f, dst)
     dump(OUT / f'assets/{NS}/models/block/colored_cube.json', {'parent': 'minecraft:block/cube_all'})
     shutil.copyfile(models / 'obsidian_tnt.json', dst := OUT / f'assets/{NS}/models/block/obsidian_tnt.json')
 
@@ -201,19 +212,19 @@ def main(up):
             data = load(src) if src.is_file() else load(res / f'{kind}/{id_}.json')
             dump(OUT / f'assets/{NS}/{kind}/{id_}.json', redirect(c, data) if c else data)
 
-    # --- recipes: crafting + enriching whose every Mekanism id is registered (HDPE is not yet) ---
+    # --- recipes: every recipe whose Mekanism item ids are registered (HDPE sheets, balloons, walkie-talkie are not) ---
+    # Recolour recipes use NeoForge's `difference` ingredient (resolved by Horizon's crafting loader);
+    # painting / pigment_extracting recipes belong to Mekanism's native machines. Chemical ids (pigments) are not items.
     skipped, n = [], 0
     for src in (gen / 'data/mekanismadditions/recipe').rglob('*.json'):
         rel = src.relative_to(gen / 'data/mekanismadditions/recipe')
-        if rel.parts[0] in ('balloon', 'pigment_extracting') or rel.name == 'walkie_talkie.json':
-            continue
         text = src.read_text(encoding='utf-8')
         recipe = json.loads(text)
-        if recipe['type'] not in ('minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 'mekanism:enriching'):
-            continue  # mekanism:painting needs the Painting Machine (M06)
-        if 'neoforge:' in text:
-            continue  # recolour recipes use NeoForge's difference ingredient
-        scan = json.dumps({k: v for k, v in recipe.items() if k not in ('type', 'group')})
+        if recipe['type'] not in ('minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 'mekanism:enriching',
+                                  'mekanism:painting', 'mekanism:pigment_extracting'):
+            continue
+        chem = {'chemical_input'} | ({'output'} if recipe['type'] == 'mekanism:pigment_extracting' else set())
+        scan = json.dumps({k: v for k, v in recipe.items() if k not in ('type', 'group') and k not in chem})
         refs = {f'{m.group(2)}:{m.group(3)}' for m in re.finditer(r'"(#?)(mekanism|mekanismadditions):([a-z0-9_/.]+)"', scan)
                 if not m.group(1)}
         if not refs <= known | ids_set:
@@ -243,16 +254,10 @@ def main(up):
                 dump(OUT / f'data/{d}/tags/{kind}' / src.relative_to(tag_dir), {'replace': False, 'values': values})
                 tags += 1
 
-    # --- names ---
+    # --- names: every upstream key (blocks, items, tags, entities, tooltips, config), also for what is not ported yet ---
     for lang, src in (('en_us', gen / 'assets/mekanismadditions/lang/en_us.json'),
                       ('de_de', res / 'lang/de_de.json')):
-        up_lang = load(src)
-        ours = {}
-        for id_ in ids:
-            k = f'block.{NS}.{id_}'
-            if k in up_lang:
-                ours[k] = up_lang[k]
-        dump(OUT / f'assets/{NS}/lang/{lang}.json', dict(sorted(ours.items())))
+        dump(OUT / f'assets/{NS}/lang/{lang}.json', dict(sorted(load(src).items())))
 
     shutil.copyfile(up / 'LICENSE', OUT / 'LICENSE-MEKANISM')
     (OUT / 'horizon-mod.toml').write_text(
@@ -260,9 +265,12 @@ def main(up):
         'description = "Unofficial experimental port of Mekanism: Additions (plastic blocks, glow panels, Obsidian TNT)."\n'
         'authors = ["VitaminStack"]\napi = "0.2"\nside = "both"\ncapabilities = ["registries"]\n', encoding='utf-8')
     print(f'blocks {len(ids)}, recipes {n}, tags {tags}, models {len(made)}')
-    for rel, missing in skipped[:3]:
+    for rel, missing in skipped[:0]:
         print('  skipped', rel, missing)
     print(f'  skipped recipes: {len(skipped)}')
+    for r in sorted({x for _, m in skipped for x in m if not x.endswith('_balloon')}):
+        print('  unregistered:', r)
+    print('  skipped balloon recipes:', sum(any(x.endswith('_balloon') for x in m) for _, m in skipped))
 
 
 if __name__ == '__main__':

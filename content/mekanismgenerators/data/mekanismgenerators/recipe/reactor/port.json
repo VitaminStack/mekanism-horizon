@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "C": "#c:circuits/ultimate",
+    "F": "mekanismgenerators:fusion_reactor_frame"
+  },
+  "pattern": [
+    " F ",
+    "FCF",
+    " F "
+  ],
+  "result": {
+    "count": 2,
+    "id": "mekanismgenerators:fusion_reactor_port"
+  }
+}

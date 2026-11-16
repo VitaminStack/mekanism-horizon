@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:plastic_fence_gates_recolor",
+  "key": {
+    "#": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_fence_gates/normal",
+      "subtracted": "mekanismadditions:light_blue_plastic_fence_gate"
+    },
+    "D": "#c:dyes/light_blue"
+  },
+  "pattern": [
+    " # ",
+    "#D#",
+    " # "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanismadditions:light_blue_plastic_fence_gate"
+  }
+}

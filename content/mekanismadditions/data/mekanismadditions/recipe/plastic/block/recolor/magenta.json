@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:plastic_recolor",
+  "key": {
+    "#": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_blocks/plastic",
+      "subtracted": "mekanismadditions:magenta_plastic"
+    },
+    "D": "#c:dyes/magenta"
+  },
+  "pattern": [
+    " # ",
+    "#D#",
+    " # "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanismadditions:magenta_plastic"
+  }
+}

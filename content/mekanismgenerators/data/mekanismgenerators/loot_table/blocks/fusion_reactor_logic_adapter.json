@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "modifier": [
+            {
+              "type": "minecraft:copy_name",
+              "source": "block_entity"
+            },
+            {
+              "type": "minecraft:copy_components",
+              "include": [
+                "mekanismgenerators:active_cooled",
+                "mekanismgenerators:fusion_logic"
+              ],
+              "source": "block_entity"
+            }
+          ],
+          "name": "mekanismgenerators:fusion_reactor_logic_adapter"
+        }
+      ],
+      "name": "main",
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "mekanismgenerators:blocks/fusion_reactor_logic_adapter"
+}

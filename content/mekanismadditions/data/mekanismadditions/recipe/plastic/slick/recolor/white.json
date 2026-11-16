@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:slick_plastic_recolor",
+  "key": {
+    "#": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_blocks/slick",
+      "subtracted": "mekanismadditions:white_slick_plastic"
+    },
+    "D": "#c:dyes/white"
+  },
+  "pattern": [
+    " # ",
+    "#D#",
+    " # "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanismadditions:white_slick_plastic"
+  }
+}

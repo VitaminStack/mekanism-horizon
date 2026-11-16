@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:slick_plastic_recolor",
+  "key": {
+    "#": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_blocks/slick",
+      "subtracted": "mekanismadditions:red_slick_plastic"
+    },
+    "D": "#c:dyes/red"
+  },
+  "pattern": [
+    " # ",
+    "#D#",
+    " # "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanismadditions:red_slick_plastic"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:cyan"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:plastic_fences_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_fences/normal",
+      "subtracted": "mekanismadditions:cyan_plastic_fence"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:cyan_plastic_fence"
+  },
+  "per_tick_usage": false
+}

@@ -3,6 +3,9 @@
   "values": [
     "mekanismgenerators:reactor_glass",
     "mekanismgenerators:fusion_reactor_frame",
-    "mekanismgenerators:laser_focus_matrix"
+    "mekanismgenerators:laser_focus_matrix",
+    "mekanismgenerators:fusion_reactor_controller",
+    "mekanismgenerators:fusion_reactor_port",
+    "mekanismgenerators:fusion_reactor_logic_adapter"
   ]
 }
