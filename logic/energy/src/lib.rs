@@ -14,6 +14,10 @@ pub mod infuser;
 #[path = "../../../native/mekanism_native/api/src/machine.rs"]
 pub mod machine;
 
+/// Factories: tier and type tables, slot layout, shared energy, upgrades.
+#[path = "../../../native/mekanism_native/api/src/factory.rs"]
+pub mod factory;
+
 /// What takes energy from a neighbouring Mekanism block, and how much.
 #[path = "../../../native/mekanism_native/api/src/energy.rs"]
 pub mod energy;
