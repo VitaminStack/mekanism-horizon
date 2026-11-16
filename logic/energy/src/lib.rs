@@ -46,6 +46,10 @@ pub mod bin;
 #[path = "../../../native/mekanism_native/api/src/storage.rs"]
 pub mod storage;
 
+/// General multiblock structure validation (M09).
+#[path = "../../../native/mekanism_native/api/src/multiblock.rs"]
+pub mod multiblock;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {
     stored: u64,
