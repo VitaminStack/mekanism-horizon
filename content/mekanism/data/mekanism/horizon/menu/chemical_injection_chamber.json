@@ -1,7 +1,8 @@
 {
-  "slots": 3,
-  "data_slots": 6,
+  "slots": 6,
+  "data_slots": 10,
   "results": [
-    2
+    2,
+    5
   ]
 }

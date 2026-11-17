@@ -47,6 +47,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::chemicals;
 use super::infuser;
+use super::upgrade;
 
 /// A chemical a buffer takes: Mekanism id, English name, bar colour.
 pub type Chemical = (&'static str, &'static str, u32);
@@ -313,6 +314,7 @@ pub enum Op {
     Activate,
 }
 
+#[derive(Clone, Copy)]
 pub struct Machine {
     pub block: &'static str,
     /// Registered by `data/mekanism/horizon/menu/<id>.json`.
@@ -358,8 +360,80 @@ impl Machine {
         self.storage
     }
 
+    /// Slots of the machine's own work (see `all_slots` for what the block entity saves).
     pub const fn slots(&self) -> usize {
         self.slot_pos.len() + self.hidden
+    }
+
+    /// Every slot the block entity saves: the machine's own, then the energy slot, the upgrade input
+    /// and the upgrade output (`EXTRA_SLOTS`; none on the Solar Neutron Activator, which uses no
+    /// energy and takes no upgrade here). Appended, so the saved order of the others does not move.
+    pub const fn all_slots(&self) -> usize {
+        self.slots() + if self.solar() { 0 } else { EXTRA_SLOTS }
+    }
+
+    /// The energy slot (`EnergyInventorySlot`): an Energy Tablet or cube charges the machine.
+    pub const fn energy_slot(&self) -> Option<usize> {
+        if self.solar() { None } else { Some(self.slots()) }
+    }
+
+    /// The upgrade input slot: an upgrade item put in is installed (`upgrade.rs`).
+    pub const fn upgrade_slot(&self) -> Option<usize> {
+        if self.solar() { None } else { Some(self.slots() + 1) }
+    }
+
+    /// The upgrade output slot, a results slot: an uninstalled upgrade lands in it.
+    pub const fn upgrade_out_slot(&self) -> Option<usize> {
+        if self.solar() { None } else { Some(self.slots() + 2) }
+    }
+
+    /// The machine as its installed upgrades make it: `UpgradeUtils.getTicks`, `getEnergyPerTick` and
+    /// `getMaxEnergy` on its table values. The Reaction Chamber's duration is its recipe's and the
+    /// Solar Neutron Activator has no upgrades, so those keep their ticks.
+    pub fn upgraded(&self, installed: &upgrade::Installed) -> Machine {
+        let [speed, energy, _] = *installed;
+        let mut m = *self;
+        if self.solar() {
+            return m;
+        }
+        if !matches!(self.op, Op::React) {
+            m.ticks = upgrade::ticks(self.ticks as u32, speed) as i32;
+        }
+        m.usage = upgrade::energy_per_tick(self.usage as u64, speed, energy).min(i32::MAX as u64) as i32;
+        m.storage = upgrade::max_energy(self.storage as u64, energy).min(i32::MAX as u64) as i32;
+        m
+    }
+
+    /// The most energy any upgrades let it store (what Horizon's static buffer is declared with).
+    pub fn max_capacity(&self) -> i32 {
+        upgrade::max_energy(self.storage as u64, upgrade::Upgrade::Energy.max()).min(i32::MAX as u64) as i32
+    }
+
+    /// Length of the menu data the machine's tanks, buffer and mode need; the redstone mode and the
+    /// installed upgrades follow (`DATA_REDSTONE`...).
+    pub fn data_len(&self) -> usize {
+        DATA_BUFFER
+            + 2 * self.buffer.is_some() as usize
+            + self.tanks.map_or(0, |t| 2 * t.count())
+            + matches!(self.op, Op::Rotate(_)) as usize
+            + 2 * self.solar() as usize
+    }
+
+    /// Index of the redstone mode in the menu data; the installed speed, energy and muffling upgrades
+    /// follow it.
+    pub fn data_redstone(&self) -> usize {
+        self.data_len()
+    }
+
+    /// Menu data entries the machine has in all (none of the extras on the Solar Neutron Activator).
+    pub fn data_slots(&self) -> usize {
+        self.data_len() + if self.solar() { 0 } else { DATA_EXTRA }
+    }
+
+    /// The upgrades a menu's data shows.
+    pub fn installed_from_data(&self, data: &[i32]) -> upgrade::Installed {
+        let at = self.data_redstone() + 1;
+        std::array::from_fn(|i| data.get(at + i).copied().unwrap_or(0).max(0) as u32)
     }
 
     /// Every output slot: the output, then the secondary one.
@@ -531,6 +605,24 @@ pub const ROTARY_FLUID: usize = 1;
 pub const ROTARY_MODE_BUTTON: [f32; 4] = [44.0, 36.0, 88.0, 16.0];
 /// Menu button id of the mode button (the dump button is 100).
 pub const BUTTON_MODE: i32 = 101;
+/// Cycles the redstone control mode.
+pub const BUTTON_REDSTONE: i32 = 102;
+/// Takes one upgrade of a kind out (`BUTTON_UNINSTALL` + `Upgrade::index`) into the upgrade output slot.
+pub const BUTTON_UNINSTALL: i32 = 110;
+/// Menu data after the machine's own: the redstone mode, then the installed speed, energy and muffling.
+pub const DATA_EXTRA: usize = 4;
+/// Energy slot, upgrade input and upgrade output.
+pub const EXTRA_SLOTS: usize = 3;
+/// Their places, in the free band under the output slot (Mekanism puts the energy slot by the input
+/// and has the upgrades in a window of their own; this layout keeps one 176 x 166 screen).
+pub const ENERGY_SLOT_POS: [f32; 2] = [98.0, 54.0];
+pub const UPGRADE_SLOT_POS: [f32; 2] = [118.0, 54.0];
+pub const UPGRADE_OUT_POS: [f32; 2] = [138.0, 54.0];
+/// The redstone button, and the three small buttons that take one upgrade of a kind out again.
+pub const REDSTONE_BUTTON: [f32; 4] = [56.0, 73.0, 40.0, 10.0];
+pub fn uninstall_button(kind: upgrade::Upgrade) -> [f32; 4] {
+    [98.0 + 22.0 * kind.index() as f32, 74.0, 20.0, 9.0]
+}
 
 /// The Chemical Dissolution Chamber: the item slot at (28, 36), the acid gauge left
 /// of it and the slurry gauge right of the progress bar (the screen is 176 x 166
@@ -1087,8 +1179,23 @@ pub fn inside(rect: [f32; 4], at: [f32; 2]) -> bool {
 }
 
 /// Tooltip lines for the gauge, bar or button under `at`, from the menu data.
-pub fn tooltip(machine: &Machine, data: &[i32], at: [f32; 2]) -> Vec<String> {
+pub fn tooltip(base: &Machine, data: &[i32], at: [f32; 2]) -> Vec<String> {
     let d = |i: usize| data.get(i).copied().unwrap_or(0);
+    let installed = base.installed_from_data(data);
+    let machine = &base.upgraded(&installed);
+    if !machine.solar() {
+        if inside(REDSTONE_BUTTON, at) {
+            return vec![format!("Redstone control: {}", upgrade::Redstone::from_index(d(machine.data_redstone())).label())];
+        }
+        for kind in upgrade::KINDS {
+            if inside(uninstall_button(kind), at) {
+                return vec![
+                    format!("{}: {} / {} installed", kind.label(), installed[kind.index()], kind.max()),
+                    "Click to take one out.".to_owned(),
+                ];
+            }
+        }
+    }
     if inside(machine.energy_gauge, at) {
         return vec![
             format!("Energy: {} / {} FE", d(DATA_ENERGY), machine.capacity()),
@@ -1103,7 +1210,7 @@ pub fn tooltip(machine: &Machine, data: &[i32], at: [f32; 2]) -> Vec<String> {
                 format!("Peak: {:.2} mB/t", peak as f32 / 100.0),
             ];
         }
-        return vec![format!("Progress: {}%", d(DATA_PROGRESS) * 100 / machine.ticks)];
+        return vec![format!("Progress: {}%", d(DATA_PROGRESS) * 100 / base.ticks)];
     }
     if let Some(t) = machine.tanks {
         if let Op::Rotate(button) = machine.op {
@@ -1776,5 +1883,48 @@ mod tests {
         let data = menu_data(900, 25, 2, true, None, &[water(1), fluid("hydrogen", 100), Fluid::default()]);
         assert_eq!(tooltip(prc, &data, [90.0, 46.0]), vec!["Progress: 25%"]);
         assert_eq!(tooltip(prc, &data, [166.0, 40.0]), vec!["Energy: 900 / 1800 FE", "Usage: 2 FE/t"]);
+    }
+
+    #[test]
+    fn extra_slots_come_after_the_saved_ones() {
+        let crusher = machine("mekanism:crusher");
+        assert_eq!((crusher.slots(), crusher.all_slots()), (2, 5));
+        assert_eq!((crusher.energy_slot(), crusher.upgrade_slot(), crusher.upgrade_out_slot()), (Some(2), Some(3), Some(4)));
+        // The Activator uses no energy and takes no upgrade.
+        let sna = machine("mekanism:solar_neutron_activator");
+        assert_eq!((sna.all_slots(), sna.energy_slot(), sna.upgrade_out_slot()), (sna.slots(), None, None));
+    }
+
+    #[test]
+    fn upgrades_change_ticks_usage_and_capacity_as_upstream() {
+        let crusher = machine("mekanism:crusher");
+        let max = crusher.upgraded(&[8, 0, 0]);
+        assert_eq!((max.ticks, max.usage), (crusher.ticks / 10, crusher.usage * 100));
+        let frugal = crusher.upgraded(&[0, 8, 0]);
+        assert_eq!((frugal.ticks, frugal.usage, frugal.storage), (crusher.ticks, 1, crusher.storage * 10));
+        assert_eq!(crusher.max_capacity(), crusher.storage * 10);
+        let none = crusher.upgraded(&[0; 3]);
+        assert_eq!((none.ticks, none.usage, none.storage), (crusher.ticks, crusher.usage, crusher.storage));
+        let sna = machine("mekanism:solar_neutron_activator");
+        assert_eq!(sna.upgraded(&[8, 8, 4]).ticks, sna.ticks);
+    }
+
+    /// The menu JSONs `scripts/gen_resources.py` writes carry the slot and data counts the hooks assume.
+    #[test]
+    fn menu_files_match_the_table() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/mekanism/data/mekanism/horizon/menu");
+        if !dir.is_dir() {
+            return; // run from the native crate, which has no content folder next to it
+        }
+        let number = |text: &str, name: &str| -> usize {
+            let at = text.find(&format!("\"{name}\": ")).unwrap() + name.len() + 4;
+            text[at..].chars().take_while(char::is_ascii_digit).collect::<String>().parse().unwrap()
+        };
+        for m in &MACHINES {
+            let id = m.menu.strip_prefix("mekanism:").unwrap();
+            let text = std::fs::read_to_string(dir.join(format!("{id}.json"))).unwrap_or_else(|e| panic!("{id}: {e}"));
+            assert_eq!(number(&text, "slots"), m.all_slots(), "{id} slots");
+            assert_eq!(number(&text, "data_slots"), m.data_slots(), "{id} data slots");
+        }
     }
 }

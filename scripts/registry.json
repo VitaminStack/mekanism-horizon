@@ -16,6 +16,7 @@
       "clump_osmium",
       "clump_tin",
       "clump_uranium",
+      "configurator",
       "crystal_copper",
       "crystal_gold",
       "crystal_iron",
@@ -96,7 +97,15 @@
       "shard_tin",
       "shard_uranium",
       "substrate",
-      "ultimate_control_circuit"
+      "ultimate_control_circuit",
+      "upgrade_anchor",
+      "upgrade_chemical",
+      "upgrade_energy",
+      "upgrade_filter",
+      "upgrade_muffling",
+      "upgrade_speed",
+      "upgrade_stone_generator",
+      "upgrade_xp_containment"
     ],
     "blocks": [
       "advanced_bin",

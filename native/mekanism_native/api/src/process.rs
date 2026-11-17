@@ -8,8 +8,71 @@ use horizon_client::mod_api::{
 
 use super::machine::{self, Buffer, Fluid, FluidTanks, Machine, Op, Tank};
 use super::recipe::{ChemicalInput, Reaction, Recipes};
-use super::{ENERGY, PROGRESS, cube, facing, gauge, generator, infuser, key, merged, offset, read_energy, shrink, write_int};
+use super::upgrade::{self, Installed, Redstone, Upgrade};
+use super::{ENERGY, ITEM_ENERGY, PROGRESS, cube, facing, gauge, generator, infuser, item_buffer, items, key, merged, offset, read_energy, shrink, write_int};
 use super::chemicals;
+
+/// Block entity NBT of the M07 machine framework: installed upgrades by `Upgrade::index`, the redstone
+/// control mode, whether the neighbours were powered the tick before (for Pulse), and a pending
+/// "take one out" request (`Upgrade::index` + 1, from the GUI button).
+const UPGRADE_KEYS: [&str; 3] = ["mekanism_upgrade_speed", "mekanism_upgrade_energy", "mekanism_upgrade_muffling"];
+const REDSTONE: &str = "mekanism_redstone";
+const POWERED: &str = "mekanism_powered";
+const UNINSTALL: &str = "mekanism_uninstall";
+
+/// The upgrades a machine's saved data holds.
+pub fn installed(nbt: &Compound) -> Installed {
+    std::array::from_fn(|i| read_energy(nbt, UPGRADE_KEYS[i]).clamp(0, Upgrade::from_index(i).max() as i32) as u32)
+}
+
+/// The upgrade input slot installs what it holds (as much as there is room for); a pending request
+/// moves one installed upgrade of a kind into the output slot, when that takes it
+/// (`TileComponentUpgrade`: the input slot installs, the output slot receives).
+fn manage_upgrades(host: &dyn Host, m: &Machine, items: &mut [Option<ItemStack>], up: &mut Installed, uninstall: i32) {
+    let (Some(input), Some(output)) = (m.upgrade_slot(), m.upgrade_out_slot()) else { return };
+    if let Some(stack) = &items[input] {
+        if let Some(kind) = Upgrade::from_item(&stack.item) {
+            let n = upgrade::room(up, kind).min(stack.count);
+            if n > 0 {
+                up[kind.index()] += n;
+                items[input] = shrink(stack, n);
+            }
+        }
+    }
+    let Some(kind) = usize::try_from(uninstall - 1).ok().and_then(|i| upgrade::KINDS.get(i)).copied() else { return };
+    if up[kind.index()] == 0 {
+        return;
+    }
+    match &items[output] {
+        None => {
+            let text = format!("{{id:\"{}\",count:1}}", kind.item());
+            if let Some(one) = host.item_from_snbt(&text) {
+                items[output] = Some(one);
+                up[kind.index()] -= 1;
+            }
+        }
+        Some(have) if &*have.item == kind.item() && have.count < host.max_stack_size(&have.item).unwrap_or(64) => {
+            items[output] = Some(ItemStack { count: have.count + 1, ..have.clone() });
+            up[kind.index()] -= 1;
+        }
+        Some(_) => {}
+    }
+}
+
+/// The energy slot: an Energy Tablet or cube gives the machine energy, at its charge rate.
+fn charge_from_slot(host: &dyn Host, m: &Machine, items: &mut [Option<ItemStack>], energy: &mut i32) {
+    let Some(slot) = m.energy_slot() else { return };
+    let Some(stack) = items[slot].as_mut() else { return };
+    let Some((_, rate)) = item_buffer(&stack.item) else { return };
+    let held = stack.custom_data().map_or(0, |d| read_energy(d, ITEM_ENERGY)).max(0);
+    let moved = upgrade::charge(*energy, m.capacity(), held, rate);
+    if moved > 0 {
+        *energy += moved;
+        items::edit_data(host, stack, |d| {
+            d.insert(key(d, ITEM_ENERGY), Tag::Int(held - moved));
+        });
+    }
+}
 
 /// Block entity NBT of a machine with a chemical buffer: `Buffer::types`
 /// index + 1 (0 while empty) and the amount in mB. The names date from the
@@ -415,10 +478,25 @@ fn chemical_kind(m: &Machine, c: &ChemicalInput) -> Option<usize> {
 pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, recipes: &mut Recipes) -> bool {
     let pos = event.pos;
     let entity = &*event.entity;
+    let base = m;
     let mut items: Vec<Option<ItemStack>> = entity.items.clone();
-    items.resize(m.slots(), None);
+    items.resize(m.all_slots(), None);
+    let mut up = installed(&entity.nbt);
+    manage_upgrades(host, m, &mut items, &mut up, read_energy(&entity.nbt, UNINSTALL));
+    // The machine as its upgrades make it: ticks, energy use and capacity.
+    let upgraded = m.upgraded(&up);
+    let m = &upgraded;
     let mut energy = read_energy(&entity.nbt, ENERGY).clamp(0, m.capacity());
+    charge_from_slot(host, m, &mut items, &mut energy);
     let mut progress = read_energy(&entity.nbt, PROGRESS).clamp(0, m.max_progress());
+    // Redstone control (`isRedstoneActivated`); the Solar Neutron Activator is not gated.
+    let powered = {
+        let dimension = host.dimension().to_owned();
+        host.neighbor_signal(&dimension, pos) > 0
+    };
+    let redstone = Redstone::from_index(read_energy(&entity.nbt, REDSTONE));
+    let was_powered = read_energy(&entity.nbt, POWERED) != 0;
+    let allowed = m.solar() || redstone.active(powered, was_powered);
     let mut tank = m.buffer.map(|b| read_tank(&entity.nbt, b));
     let mut fluids = m.tanks.map(|t| read_fluids(&entity.nbt, t.count())).unwrap_or_default();
     let mode = read_energy(&entity.nbt, MODE) != 0;
@@ -463,7 +541,9 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
     let mut active = false;
     // The Activator's best and current rate, for its screen.
     let mut sun = None;
-    if let Some(t) = m.tanks.filter(|_| m.tank_op()) {
+    if !allowed {
+        // Held by the redstone mode: the progress stays, nothing runs.
+    } else if let Some(t) = m.tanks.filter(|_| m.tank_op()) {
         active = match m.op {
             Op::Separate => separate(host, m, t, recipes, &mut fluids, &mut energy),
             Op::Rotate(_) => rotate(host, m, t, recipes, &mut fluids, &mut energy, mode),
@@ -553,7 +633,8 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
             reaction(host, m, recipes, &items, &fluids).map_or(0, |r| (progress * m.ticks / r.duration).clamp(0, m.ticks))
         }
         Op::React => 0,
-        _ => progress,
+        // The screen counts in the table's ticks, whatever the speed upgrades make of them.
+        _ => (progress as i64 * base.ticks as i64 / m.ticks as i64) as i32,
     };
     // Write only what changed: each write marks the entity changed.
     let facing = facing(host, pos);
@@ -563,6 +644,13 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
     }
     write_int(&mut e.nbt, ENERGY, energy);
     write_int(&mut e.nbt, PROGRESS, progress);
+    if !m.solar() {
+        for (key, n) in UPGRADE_KEYS.into_iter().zip(up) {
+            write_int(&mut e.nbt, key, n as i32);
+        }
+        write_int(&mut e.nbt, POWERED, powered as i32);
+        write_int(&mut e.nbt, UNINSTALL, 0);
+    }
     if let Some(t) = tank {
         write_int(&mut e.nbt, BUFFER, t.amount);
         write_int(&mut e.nbt, BUFFER_TYPE, if t.amount > 0 { t.kind as i32 + 1 } else { 0 });
@@ -577,6 +665,10 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, m: &Machine, 
     if let Some((peak, rate)) = sun {
         // The Activator's rates in hundredths of a mB/t, after the tanks.
         data.extend([(rate * 100.0).round() as i32, (peak * 100.0).round() as i32]);
+    }
+    if !m.solar() {
+        data.push(redstone.index());
+        data.extend(up.map(|n| n as i32));
     }
     if e.data != data {
         e.data = data;
@@ -593,7 +685,7 @@ pub fn container(m: &Machine) -> ModContainer {
     let mut inputs: Vec<usize> = second.into_iter().collect();
     inputs.extend(m.input);
     ModContainer {
-        slots: m.slots(),
+        slots: m.all_slots(),
         faces: [m.outputs(), m.input.into_iter().collect(), side.clone(), side.clone(), side.clone(), side],
         inputs,
         outputs: m.outputs(),
@@ -605,7 +697,13 @@ pub fn screen(m: &Machine) -> NativeScreen {
     NativeScreen {
         width: machine::WIDTH,
         height: machine::HEIGHT,
-        slots: m.slot_pos.iter().map(|&p| Some(p)).chain((0..m.hidden).map(|_| None)).collect(),
+        slots: m
+            .slot_pos
+            .iter()
+            .map(|&p| Some(p))
+            .chain((0..m.hidden).map(|_| None))
+            .chain([machine::ENERGY_SLOT_POS, machine::UPGRADE_SLOT_POS, machine::UPGRADE_OUT_POS].into_iter().take(m.all_slots() - m.slots()).map(Some))
+            .collect(),
         inventory_y: machine::INVENTORY_Y,
         inventory_x: 8.0,
         own_labels: true,
@@ -623,8 +721,10 @@ pub fn draw(host: &dyn Host, event: &mut ScreenDrawEvent, m: &Machine) {
     let title = host.screen_title().unwrap_or_else(|| m.name.to_owned());
     host.text(event.batch, &title, [x + 8.0, y + 6.0], 0x404040, false);
     let at = |[rx, ry, w, h]: [f32; 4]| [x + rx, y + ry, w, h];
+    let installed = m.installed_from_data(event.data);
     if !m.solar() {
-        gauge(host, event.batch, at(m.energy_gauge), energy as f32 / m.capacity() as f32, 0xFF50C878);
+        let capacity = m.upgraded(&installed).capacity();
+        gauge(host, event.batch, at(m.energy_gauge), energy as f32 / capacity as f32, 0xFF50C878);
     }
     let [px, py, pw, ph] = at(m.progress_bar);
     if pw > 0.0 {
@@ -664,11 +764,36 @@ pub fn draw(host: &dyn Host, event: &mut ScreenDrawEvent, m: &Machine) {
         }
     }
     host.text(event.batch, "Inventory", [x + 8.0, y + machine::INVENTORY_Y - 10.0], 0x404040, false);
+    if !m.solar() {
+        draw_controls(host, event, m, &installed, [x, y]);
+    }
+}
+
+/// The redstone button and the installed upgrades, which are also the buttons that take one out.
+fn draw_controls(host: &dyn Host, event: &mut ScreenDrawEvent, m: &Machine, installed: &Installed, [x, y]: [f32; 2]) {
+    let mode = Redstone::from_index(event.data.get(m.data_redstone()).copied().unwrap_or(0));
+    let button = |host: &dyn Host, event: &mut ScreenDrawEvent, [rx, ry, w, h]: [f32; 4], label: &str| {
+        host.fill(event.batch, [x + rx, y + ry, w, h], 0xFF262A2F);
+        host.fill(event.batch, [x + rx + 1.0, y + ry + 1.0, w - 2.0, h - 2.0], 0xFF4A6FA5);
+        host.text(event.batch, label, [x + rx + 3.0, y + ry + 1.0], 0xFFFFFF, true);
+    };
+    button(host, event, machine::REDSTONE_BUTTON, &format!("RS:{}", mode.label()));
+    for kind in upgrade::KINDS {
+        button(host, event, machine::uninstall_button(kind), &format!("{}{}", &kind.label()[..1], installed[kind.index()]));
+    }
 }
 
 /// The dump button empties (voids) the buffer, as Mekanism's; the Rotary
 /// Condensentrator's mode button turns the operation round.
 pub fn click(m: &Machine, at: [f32; 2]) -> Option<i32> {
+    if !m.solar() {
+        if machine::inside(machine::REDSTONE_BUTTON, at) {
+            return Some(machine::BUTTON_REDSTONE);
+        }
+        if let Some(kind) = upgrade::KINDS.into_iter().find(|k| machine::inside(machine::uninstall_button(*k), at)) {
+            return Some(machine::BUTTON_UNINSTALL + kind.index() as i32);
+        }
+    }
     if let Op::Rotate(button) = m.op {
         return machine::inside(button, at).then_some(machine::BUTTON_MODE);
     }
@@ -677,6 +802,15 @@ pub fn click(m: &Machine, at: [f32; 2]) -> Option<i32> {
 }
 
 pub fn button(m: &Machine, nbt: &mut Compound, id: i32) {
+    if !m.solar() {
+        if id == machine::BUTTON_REDSTONE {
+            let next = Redstone::from_index(read_energy(nbt, REDSTONE)).next();
+            write_int(nbt, REDSTONE, next.index());
+        }
+        if (machine::BUTTON_UNINSTALL..machine::BUTTON_UNINSTALL + upgrade::KINDS.len() as i32).contains(&id) {
+            write_int(nbt, UNINSTALL, id - machine::BUTTON_UNINSTALL + 1);
+        }
+    }
     if m.buffer.is_some_and(|b| b.dump.is_some()) && id == infuser::BUTTON_DUMP {
         write_int(nbt, BUFFER, 0);
         write_int(nbt, BUFFER_TYPE, 0);
