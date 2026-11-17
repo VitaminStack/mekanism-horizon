@@ -41,6 +41,50 @@ impl Cell {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Type {
+    Tank,
+    Matrix,
+    Evaporation,
+}
+
+/// The blocks one structure type is built from, and its rules.
+#[derive(Clone, Copy, Debug)]
+pub struct Def {
+    pub ty: Type,
+    pub rules: Rules,
+    pub frames: &'static [&'static str],
+    /// Frames without a block entity (Structural Glass): they join the shell but hold no state.
+    pub plain: &'static [&'static str],
+    pub valves: &'static [&'static str],
+    pub controllers: &'static [&'static str],
+    pub interior: &'static [&'static str],
+}
+
+impl Def {
+    pub fn classify(&self, block: &str) -> Cell {
+        let any = |list: &[&str]| list.contains(&block);
+        if any(self.frames) || any(self.plain) {
+            Cell::Frame
+        } else if any(self.valves) {
+            Cell::Valve
+        } else if any(self.controllers) {
+            Cell::Controller
+        } else if any(self.interior) {
+            Cell::Interior
+        } else if block == "minecraft:air" || block == "minecraft:cave_air" || block == "minecraft:void_air" {
+            Cell::Air
+        } else {
+            Cell::Foreign
+        }
+    }
+
+    /// Whether `block` is a shell block with a block entity (carries the structure's link).
+    pub fn is_member(&self, block: &str) -> bool {
+        self.frames.contains(&block) || self.valves.contains(&block) || self.controllers.contains(&block)
+    }
+}
+
 /// What a structure type demands (`CuboidStructureValidator` + the tile's constants).
 #[derive(Clone, Copy, Debug)]
 pub struct Rules {
