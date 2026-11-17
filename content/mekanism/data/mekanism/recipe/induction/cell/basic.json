@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanism:induction_cell",
+  "key": {
+    "#": "mekanism:basic_energy_cube",
+    "E": "mekanism:energy_tablet",
+    "L": "#c:dusts/lithium"
+  },
+  "pattern": [
+    "LEL",
+    "E#E",
+    "LEL"
+  ],
+  "result": {
+    "id": "mekanism:basic_induction_cell"
+  }
+}

@@ -51,6 +51,7 @@
     "#mekanism:energy_cubes",
     "#mekanism:transmitters",
     "#mekanism:factory_supported",
+    "#mekanism:structures",
     "mekanism:bounding_block",
     "mekanism:block_bronze",
     "mekanism:block_refined_obsidian",

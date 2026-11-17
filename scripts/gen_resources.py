@@ -668,6 +668,26 @@ put('data/minecraft/tags/block/mineable/pickaxe.json',
         'turbine_rotor', 'electromagnetic_coil', 'rotational_complex', 'saturating_condenser',
         'fission_fuel_assembly', 'control_rod_assembly')]}, GEN)
 
+# --- multiblocks (M09): structure formation lives in native/.../multiblock.rs and multiblocks.rs ---
+# Shell blocks use the barrel template so they open their menu; `formed` is set by the native mod while
+# the block is part of a valid structure. BlockBasicMultiblock strength 5 / 9; Structural Glass and the
+# induction cells and providers are plain BlockTile-strength blocks (3.5 / 16).
+MULTIBLOCK_STATE = {'state_properties': {'formed': {'type': 'boolean'}},
+                    'default_state': {'facing': 'north', 'formed': 'false'}}
+for mid in ('dynamic_tank', 'dynamic_valve'):
+    block(mid, 'minecraft:barrel', 5.0, 9.0, extra=MULTIBLOCK_STATE)
+    # Menu data: amount (3), capacity (3), contents kind, valve mode, formed.
+    put(f'data/{NS}/horizon/menu/{mid}.json', {'slots': 1, 'data_slots': 9, 'results': [0]})
+block('structural_glass', 'minecraft:glass', 3.5, 16.0, occludes=False)
+# Induction Matrix: casing and port are shell blocks with a menu (data: energy 3, capacity 3, transfer 3,
+# cells, providers, port mode, formed); cells and providers sit inside and need no block entity.
+for mid in ('induction_casing', 'induction_port'):
+    block(mid, 'minecraft:barrel', 5.0, 9.0, extra=MULTIBLOCK_STATE)
+    put(f'data/{NS}/horizon/menu/{mid}.json', {'slots': 1, 'data_slots': 13, 'results': [0]})
+for tier in ('basic', 'advanced', 'elite', 'ultimate'):
+    block(f'{tier}_induction_cell', 'minecraft:iron_block', 3.5, 16.0, sounds=STONE)
+    block(f'{tier}_induction_provider', 'minecraft:iron_block', 3.5, 16.0, sounds=STONE)
+
 # Hand-written content stays declared too, so the importer covers it.
 for ns, reg in registry.items():
     for kind in ('item', 'block'):

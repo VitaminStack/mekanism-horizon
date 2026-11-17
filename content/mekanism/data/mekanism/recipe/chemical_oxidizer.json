@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": "mekanism:dynamic_tank",
+    "A": "#mekanism:alloys/infused",
+    "C": "#c:circuits/basic",
+    "P": "#mekanism:personal_storage",
+    "T": "mekanism:basic_chemical_tank"
+  },
+  "pattern": [
+    "ACA",
+    "P#T",
+    "ACA"
+  ],
+  "result": {
+    "id": "mekanism:chemical_oxidizer"
+  }
+}

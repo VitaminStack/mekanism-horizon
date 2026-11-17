@@ -57,6 +57,16 @@ pub mod bin;
 #[path = "../../../native/mekanism_native/api/src/storage.rs"]
 pub mod storage;
 
+/// General multiblock structure validation (M09).
+#[path = "../../../native/mekanism_native/api/src/multiblock.rs"]
+pub mod multiblock;
+/// Dynamic Tank, Dynamic Valve and Structural Glass (M09).
+#[path = "../../../native/mekanism_native/api/src/dynamic_tank.rs"]
+pub mod dynamic_tank;
+/// Induction Matrix (M09).
+#[path = "../../../native/mekanism_native/api/src/induction.rs"]
+pub mod induction;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {
     stored: u64,
