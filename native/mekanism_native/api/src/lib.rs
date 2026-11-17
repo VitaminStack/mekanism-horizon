@@ -811,7 +811,10 @@ impl Hooks for MekanismNative {
                     event.entity.data = data;
                 }
             }
-            Some(Kind::Multiblock(_)) => multiblocks::button(host, event.pos, &mut event.entity.nbt, &mut event.entity.data, event.id),
+            Some(Kind::Multiblock(_)) => {
+                let entity = &mut **event.entity; // one DerefMut to the fields, so nbt and data borrow apart
+                multiblocks::button(host, event.pos, &mut entity.nbt, &mut entity.data, event.id)
+            }
             Some(Kind::Teleporter) => teleporters::panel_button(host, &mut event.entity.nbt, frequency::Kind::Teleporter, event.id),
             Some(Kind::Entangloporter) => teleporters::panel_button(host, &mut event.entity.nbt, frequency::Kind::Inventory, event.id),
             Some(Kind::Cube { .. }) => {

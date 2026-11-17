@@ -333,6 +333,7 @@ impl State {
         items.edit_held(host, move |_, s| set_mode(s, next));
         Flow::Cancel
     }
+}
 
 // --- flamethrower ---------------------------------------------------------------------------
 

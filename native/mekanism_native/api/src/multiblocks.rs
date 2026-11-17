@@ -313,9 +313,10 @@ fn master_tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, def: &'sta
             Outcome::Unloaded => {}
         }
     }
+    let entity = &mut **event.entity; // one DerefMut to the fields, so nbt and data borrow apart
     match def.ty {
-        Type::Tank => dynamic_tanks::master_tick(&event.entity.nbt, &mut event.entity.data),
-        Type::Matrix => inductions::master_tick(&event.entity.nbt, &mut event.entity.data, &*event.entity.id == induction::PORT),
+        Type::Tank => dynamic_tanks::master_tick(&entity.nbt, &mut entity.data),
+        Type::Matrix => inductions::master_tick(&entity.nbt, &mut entity.data, &*entity.id == induction::PORT),
         Type::Evaporation => {}
     }
 }
