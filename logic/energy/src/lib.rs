@@ -46,6 +46,13 @@ pub mod bin;
 #[path = "../../../native/mekanism_native/api/src/storage.rs"]
 pub mod storage;
 
+/// Frequency registry and shared buffers (M08).
+#[path = "../../../native/mekanism_native/api/src/frequency.rs"]
+pub mod frequency;
+/// Teleporter cost, frame and status rules (M08).
+#[path = "../../../native/mekanism_native/api/src/teleporter.rs"]
+pub mod teleporter;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {
     stored: u64,
