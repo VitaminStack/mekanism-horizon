@@ -31,6 +31,9 @@ pub fn acceptor(block: &str) -> Option<Acceptor> {
     if pump::is_either(block) {
         return Some(Acceptor { capacity: pump::CAPACITY, rate: pump::CAPACITY, sided: false });
     }
+    if let Some(f) = super::factory::find(block) {
+        return Some(Acceptor { capacity: f.capacity(), rate: f.capacity(), sided: false });
+    }
     // Machines take up to their whole buffer per call (no side config ported).
     machine::find(block).map(|m| Acceptor { capacity: m.capacity(), rate: m.capacity(), sided: false })
 }
