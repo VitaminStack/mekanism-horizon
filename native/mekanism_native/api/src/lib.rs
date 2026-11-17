@@ -47,6 +47,8 @@ mod bins;
 mod chemicals;
 mod cube;
 mod dictionary_tags;
+mod dynamic_tank;
+mod dynamic_tanks;
 mod energy;
 mod gear;
 mod generator;
@@ -54,6 +56,8 @@ mod generators;
 mod infuser;
 mod items;
 mod machine;
+mod multiblock;
+mod multiblocks;
 mod process;
 mod pump;
 mod pumps;
@@ -131,6 +135,8 @@ enum Kind {
     Pump { plenisher: bool },
     /// A Mechanical Pipe, Pressurized Tube or Thermodynamic Conductor (`transmitter.rs`).
     Transmitter(&'static transmitter::Tier),
+    /// A shell block of a multiblock structure (`multiblocks.rs`).
+    Multiblock(&'static multiblock::Def),
 }
 
 fn kind(block: &str) -> Option<Kind> {
@@ -163,6 +169,9 @@ fn kind(block: &str) -> Option<Kind> {
     }
     if let Some(t) = transmitter::tier_of(block) {
         return Some(Kind::Transmitter(t));
+    }
+    if let Some(d) = multiblocks::find(block) {
+        return Some(Kind::Multiblock(d));
     }
     generators::find(block).map(Kind::Generator)
 }
@@ -446,6 +455,7 @@ impl Hooks for MekanismNative {
             Kind::Bin(_) => Some(bins::container()),
             Kind::Storage(_) => Some(storages::container()),
             Kind::Pump { plenisher } => Some(pumps::container(plenisher)),
+            Kind::Multiblock(_) => Some(dynamic_tanks::container(event.block)),
             // One hidden placeholder slot; all interactions are buttons.
             Kind::Cube { .. } => Some(ModContainer {
                 slots: 1,
@@ -486,7 +496,7 @@ impl Hooks for MekanismNative {
                 insert_faces: [true; 6],
                 extract_faces: [true; 6],
             }),
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) => None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) | Kind::Multiblock(_) => None,
         }
     }
 
@@ -497,6 +507,7 @@ impl Hooks for MekanismNative {
             Kind::Machine(m) => m.tanks.map(process::fluids),
             Kind::Generator(generator::GAS) => Some(generators::gas_fluids()),
             Kind::Pump { plenisher } => Some(pumps::fluids(plenisher)),
+            Kind::Multiblock(_) if event.block == dynamic_tank::VALVE => Some(dynamic_tanks::fluids()),
             Kind::Transmitter(t) if t.family().is_some() => Some(transmitters::fluids(t)),
             _ => None,
         }
@@ -564,6 +575,7 @@ impl Hooks for MekanismNative {
             Some(Kind::Storage(_)) => {}
             Some(Kind::Pump { plenisher }) => pumps::tick(host, event, plenisher),
             Some(Kind::Transmitter(t)) => transmitters::tick(host, event, t),
+            Some(Kind::Multiblock(d)) => multiblocks::tick(host, event, d),
             None => {}
         }
     }
@@ -579,7 +591,7 @@ impl Hooks for MekanismNative {
             Kind::Bin(_) => 0.0,
             Kind::Storage(block) if storage::horizontal_only(block) => 0.0,
             Kind::Storage(_) => event.context.pitch,
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Transmitter(_) => return None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Transmitter(_) | Kind::Multiblock(_) => return None,
         };
         let facing = cube::facing_from_look(event.context.yaw, pitch);
         level
@@ -597,6 +609,7 @@ impl Hooks for MekanismNative {
             Kind::Bounding => Some(generators::screen(generator::WIND)),
             Kind::Tank(_) => Some(tanks::screen()),
             Kind::Pump { .. } => Some(pumps::screen()),
+            Kind::Multiblock(_) => Some(dynamic_tanks::screen()),
             // The cube's dummy container slot is hidden.
             Kind::Cube { .. } => Some(NativeScreen {
                 width: 176.0,
@@ -624,6 +637,7 @@ impl Hooks for MekanismNative {
             Some(Kind::Cube { capacity, rate }) => draw_cube(host, event, capacity, rate),
             Some(Kind::Tank(t)) => tanks::draw(host, event, t),
             Some(Kind::Pump { plenisher }) => pumps::draw(host, event, plenisher),
+            Some(Kind::Multiblock(_)) => dynamic_tanks::draw(host, event),
             _ => {}
         }
     }
@@ -635,6 +649,7 @@ impl Hooks for MekanismNative {
             Kind::Machine(m) => process::click(m, event.at),
             Kind::Cube { .. } => cube::side_button_at(event.at, event.right),
             Kind::Tank(_) => tank::button_at(event.at, event.right),
+            Kind::Multiblock(_) => dynamic_tank::button_at(event.at, event.right),
             _ => None,
         }
     }
@@ -650,6 +665,7 @@ impl Hooks for MekanismNative {
             }
             Some(Kind::Tank(t)) => event.lines.extend(tank::tooltip(t, event.data, event.at)),
             Some(Kind::Pump { .. }) => event.lines.extend(pump::tooltip(event.data, event.at)),
+            Some(Kind::Multiblock(_)) => event.lines.extend(dynamic_tank::tooltip(event.data, event.at)),
             _ => {}
         }
     }
@@ -664,6 +680,7 @@ impl Hooks for MekanismNative {
                     event.entity.data = data;
                 }
             }
+            Some(Kind::Multiblock(_)) => dynamic_tanks::button(host, event.pos, &mut event.entity.nbt, event.id),
             Some(Kind::Cube { .. }) => {
                 let Some((rel, forward)) = cube::side_button_action(event.id) else { return };
                 let mut sides = read_sides(&event.entity.nbt).unwrap_or(cube::DEFAULT_SIDES);
@@ -750,6 +767,8 @@ impl Hooks for MekanismNative {
                 generators::remove_bounding(host, event.pos, block, None);
             }
         }
+        let broken_block = host.block(event.pos);
+        multiblocks::broken(host, event.pos, &broken_block);
         if let Some(entity) = host.mod_block_entity(event.pos) {
             let place = (host.dimension().to_owned(), event.pos);
             match kind(&entity.id) {
@@ -803,6 +822,7 @@ impl Hooks for MekanismNative {
 
     /// Placing a cube or tank item restores what it carries.
     fn place_block(&self, host: &mut dyn Host, event: &mut PlaceBlockEvent) {
+        multiblocks::placed(host, event.pos, &event.stack.item);
         if generator::is_multiblock(&event.stack.item) {
             generators::place_multiblock(host, event.pos, &event.stack.item);
             return;
