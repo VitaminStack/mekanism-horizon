@@ -35,6 +35,10 @@ pub mod pump;
 #[path = "../../../native/mekanism_native/api/src/transmitter.rs"]
 pub mod transmitter;
 
+/// Logistical, Restrictive and Diversion Transporters (M08).
+#[path = "../../../native/mekanism_native/api/src/transporter.rs"]
+pub mod transporter;
+
 /// Canteen, Gauge Dropper and Atomic Disassembler rules (M11).
 #[path = "../../../native/mekanism_native/api/src/gear.rs"]
 pub mod gear;
