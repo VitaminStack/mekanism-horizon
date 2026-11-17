@@ -572,13 +572,21 @@ put('data/c/tags/block/ores.json', {'replace': False, 'values': [
     'minecraft:nether_gold_ore', 'minecraft:nether_quartz_ore', 'minecraft:ancient_debris',
     *(f'#c:ores/{o}' for o in ('tin', 'osmium', 'uranium', 'fluorite', 'lead'))]})
 
+# --- M08 special machines (native/.../special.rs): block ids and menus. ---
+SPECIAL_IDS = []
+# Oredictionificator: input + output slot; data = didProcess, scroll, 8 filters x 3 ints (oredict.rs).
+block('oredictionificator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE)
+SPECIAL_IDS.append('oredictionificator')
+put(f'data/{NS}/horizon/menu/oredictionificator.json', {'slots': 2, 'data_slots': 26, 'results': [1]})
+# --- end M08 ---
+
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
      + [f'{NS}:{t}_bin' for t in CUBE_TIERS] + [f'{NS}:personal_chest', f'{NS}:personal_barrel']
      + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]
-     + [f'{NS}:{t}' for t in TRANSMITTER_IDS]})
+     + [f'{NS}:{t}' for t in TRANSMITTER_IDS] + [f'{NS}:{i}' for i in SPECIAL_IDS]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in (
         'heat_generator', 'solar_generator', 'bio_generator', 'advanced_solar_generator', 'wind_generator',

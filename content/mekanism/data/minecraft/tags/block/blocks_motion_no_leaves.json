@@ -41,6 +41,7 @@
     "mekanism:pressurized_reaction_chamber",
     "mekanism:isotopic_centrifuge",
     "mekanism:solar_neutron_activator",
-    "#mekanism:transmitters"
+    "#mekanism:transmitters",
+    "mekanism:oredictionificator"
   ]
 }

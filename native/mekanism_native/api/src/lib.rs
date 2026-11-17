@@ -57,7 +57,11 @@ mod machine;
 mod process;
 mod pump;
 mod pumps;
+mod oredict;
+mod oredict_tags;
+mod oredicts;
 mod recipe;
+mod special;
 mod storage;
 mod storages;
 mod tank;
@@ -131,6 +135,8 @@ enum Kind {
     Pump { plenisher: bool },
     /// A Mechanical Pipe, Pressurized Tube or Thermodynamic Conductor (`transmitter.rs`).
     Transmitter(&'static transmitter::Tier),
+    /// A block of M08 (`special.rs`).
+    Special(special::Block),
 }
 
 fn kind(block: &str) -> Option<Kind> {
@@ -163,6 +169,9 @@ fn kind(block: &str) -> Option<Kind> {
     }
     if let Some(t) = transmitter::tier_of(block) {
         return Some(Kind::Transmitter(t));
+    }
+    if let Some(b) = special::find(block) {
+        return Some(Kind::Special(b));
     }
     generators::find(block).map(Kind::Generator)
 }
@@ -446,6 +455,7 @@ impl Hooks for MekanismNative {
             Kind::Bin(_) => Some(bins::container()),
             Kind::Storage(_) => Some(storages::container()),
             Kind::Pump { plenisher } => Some(pumps::container(plenisher)),
+            Kind::Special(b) => Some(special::container(b)),
             // One hidden placeholder slot; all interactions are buttons.
             Kind::Cube { .. } => Some(ModContainer {
                 slots: 1,
@@ -462,6 +472,7 @@ impl Hooks for MekanismNative {
     fn container_accepts(&self, _host: &dyn Host, event: &mut ContainerAcceptsEvent<'_>) -> Flow {
         match kind(&event.entity.id) {
             Some(Kind::Bin(t)) if !bins::accepts(t, event.entity, event.slot, event.stack) => Flow::Cancel,
+            Some(Kind::Special(b)) => special::accepts(_host, event, b),
             _ => Flow::Continue,
         }
     }
@@ -486,7 +497,7 @@ impl Hooks for MekanismNative {
                 insert_faces: [true; 6],
                 extract_faces: [true; 6],
             }),
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) => None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) | Kind::Special(_) => None,
         }
     }
 
@@ -564,6 +575,7 @@ impl Hooks for MekanismNative {
             Some(Kind::Storage(_)) => {}
             Some(Kind::Pump { plenisher }) => pumps::tick(host, event, plenisher),
             Some(Kind::Transmitter(t)) => transmitters::tick(host, event, t),
+            Some(Kind::Special(b)) => special::tick(host, event, b),
             None => {}
         }
     }
@@ -574,7 +586,7 @@ impl Hooks for MekanismNative {
     fn state_for_placement(&self, level: &dyn LevelHost, event: &mut StateForPlacementEvent) -> Option<Option<horizon_client::mod_api::BlockStateId>> {
         let pitch = match kind(&event.context.item)? {
             Kind::Cube { .. } => event.context.pitch,
-            Kind::Machine(_) | Kind::Generator(_) | Kind::Pump { .. } => 0.0,
+            Kind::Machine(_) | Kind::Generator(_) | Kind::Pump { .. } | Kind::Special(_) => 0.0,
             Kind::Tank(t) if t.family == tank::Family::Chemical => 0.0,
             Kind::Bin(_) => 0.0,
             Kind::Storage(block) if storage::horizontal_only(block) => 0.0,
@@ -597,6 +609,7 @@ impl Hooks for MekanismNative {
             Kind::Bounding => Some(generators::screen(generator::WIND)),
             Kind::Tank(_) => Some(tanks::screen()),
             Kind::Pump { .. } => Some(pumps::screen()),
+            Kind::Special(b) => Some(special::screen(b)),
             // The cube's dummy container slot is hidden.
             Kind::Cube { .. } => Some(NativeScreen {
                 width: 176.0,
@@ -624,6 +637,7 @@ impl Hooks for MekanismNative {
             Some(Kind::Cube { capacity, rate }) => draw_cube(host, event, capacity, rate),
             Some(Kind::Tank(t)) => tanks::draw(host, event, t),
             Some(Kind::Pump { plenisher }) => pumps::draw(host, event, plenisher),
+            Some(Kind::Special(b)) => special::draw(host, event, b),
             _ => {}
         }
     }
@@ -635,6 +649,7 @@ impl Hooks for MekanismNative {
             Kind::Machine(m) => process::click(m, event.at),
             Kind::Cube { .. } => cube::side_button_at(event.at, event.right),
             Kind::Tank(_) => tank::button_at(event.at, event.right),
+            Kind::Special(b) => special::click(b, event.at, event.right),
             _ => None,
         }
     }
@@ -659,6 +674,7 @@ impl Hooks for MekanismNative {
     fn menu_button(&self, host: &mut dyn Host, event: &mut MenuButtonEvent) {
         match kind(&event.entity.id) {
             Some(Kind::Machine(m)) => process::button(m, &mut event.entity.nbt, event.id),
+            Some(Kind::Special(b)) => special::button(b, event),
             Some(Kind::Tank(t)) => {
                 if let Some(data) = tanks::button(t, &mut event.entity.nbt, event.id) {
                     event.entity.data = data;

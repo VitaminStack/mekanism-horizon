@@ -42,6 +42,12 @@ pub mod gear;
 #[path = "../../../native/mekanism_native/api/src/bin.rs"]
 pub mod bin;
 
+/// Oredictionificator rules and its generated tag table (M08).
+#[path = "../../../native/mekanism_native/api/src/oredict_tags.rs"]
+pub mod oredict_tags;
+#[path = "../../../native/mekanism_native/api/src/oredict.rs"]
+pub mod oredict;
+
 /// Personal Chest and Personal Barrel (M08).
 #[path = "../../../native/mekanism_native/api/src/storage.rs"]
 pub mod storage;
