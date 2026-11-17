@@ -1,0 +1,13 @@
+{
+  "template": "minecraft:stick",
+  "rarity": "common",
+  "max_stack_size": 1,
+  "components": {
+    "minecraft:equippable": {
+      "slot": "head"
+    },
+    "minecraft:enchantable": {
+      "value": 9
+    }
+  }
+}

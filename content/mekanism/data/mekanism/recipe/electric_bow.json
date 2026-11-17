@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "#": "#c:strings",
+    "A": "#mekanism:alloys/infused",
+    "E": "mekanism:energy_tablet"
+  },
+  "pattern": [
+    "#A ",
+    "# E",
+    "#A "
+  ],
+  "result": {
+    "id": "mekanism:electric_bow"
+  }
+}

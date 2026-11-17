@@ -68,7 +68,7 @@ fn charge_from_slot(host: &dyn Host, m: &Machine, items: &mut [Option<ItemStack>
     let moved = upgrade::charge(*energy, m.capacity(), held, rate);
     if moved > 0 {
         *energy += moved;
-        items::edit_data(host, stack, |d| {
+        items::edit_data(stack, |d| {
             d.insert(key(d, ITEM_ENERGY), Tag::Int(held - moved));
         });
     }

@@ -1,0 +1,11 @@
+{
+  "template": "minecraft:bow",
+  "rarity": "common",
+  "max_stack_size": 1,
+  "components": {
+    "!minecraft:max_damage": {},
+    "minecraft:enchantable": {
+      "value": 1
+    }
+  }
+}

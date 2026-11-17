@@ -136,6 +136,35 @@ item('atomic_disassembler', 'minecraft:stick', stack=1, components={
         {'blocks': f'#minecraft:mineable/{tool}', 'correct_for_drops': True, 'speed': 20.0}
         for tool in ('pickaxe', 'axe', 'shovel', 'hoe')], 'damage_per_block': 0},
 })
+# --- worn and held powered gear (M11, `worn.rs`): jetpacks, Free Runners, Scuba, Electric Bow, Flamethrower ---
+# Armour is a stick template (no durability: their use is the stored fuel or energy) with `minecraft:equippable`; the
+# worn model needs Mekanism's Java renderers and is not ported, so no `asset_id`. Armour values are MekanismStartupConfig's.
+def _worn_armor(armor, toughness, slot):
+    mid = f'minecraft:armor.{slot}'
+    return [{'type': 'minecraft:armor', 'amount': float(armor), 'id': mid, 'operation': 'add_value', 'slot': slot},
+            {'type': 'minecraft:armor_toughness', 'amount': float(toughness), 'id': mid, 'operation': 'add_value',
+             'slot': slot}]
+
+
+def _worn(id_, slot, armor=0, toughness=0, enchantable=None):
+    comp = {'minecraft:equippable': {'slot': slot}}
+    if armor or toughness:
+        comp['minecraft:attribute_modifiers'] = _worn_armor(armor, toughness, slot)
+    if enchantable:
+        comp['minecraft:enchantable'] = {'value': enchantable}
+    item(id_, 'minecraft:stick', stack=1, components=comp)
+
+
+_worn('jetpack', 'chest')
+_worn('jetpack_armored', 'chest', 8, 2)
+_worn('free_runners', 'feet')
+_worn('free_runners_armored', 'feet', 3, 2)
+_worn('scuba_mask', 'head', enchantable=9)
+_worn('scuba_tank', 'chest')
+# Electric Bow: a bow without durability (energy instead); the native mod cancels a shot without energy.
+item('electric_bow', 'minecraft:bow', stack=1, components={'!minecraft:max_damage': {}, 'minecraft:enchantable': {'value': 1}})
+# Flamethrower: held down like a bow (`use_duration` hook), no durability.
+item('flamethrower', 'minecraft:iron_ingot', stack=1)
 # Bio Fuel (Crusher output, Bio Generator input) and its block (MekanismBlocks: strength 0.5, grass sound).
 item('bio_fuel')
 # Pressurized Reaction Chamber products: the substrate (also the chamber's catalyst) and the HDPE pellet.

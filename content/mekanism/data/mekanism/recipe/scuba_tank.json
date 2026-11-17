@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "C": "#c:circuits/basic",
+    "S": "#c:ingots/steel",
+    "T": "mekanism:basic_chemical_tank"
+  },
+  "pattern": [
+    " C ",
+    "ATA",
+    "SSS"
+  ],
+  "result": {
+    "id": "mekanism:scuba_tank"
+  }
+}

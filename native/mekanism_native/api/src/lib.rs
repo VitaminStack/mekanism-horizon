@@ -69,6 +69,7 @@ mod transmitters;
 mod upgrade;
 mod transporter;
 mod transporters;
+mod worn;
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
@@ -85,6 +86,8 @@ use horizon_client::mod_api::{
     Text, TooltipEvent, RightClickBlockEvent, CanEatEvent, InventoryTickEvent, ItemBarEvent, OnEquipEvent,
     LivingEntityUseItemFinishEvent, LivingEntityUseItemStartEvent, LivingIncomingDamageV2Event,
     UseAnimationEvent, UseDurationEvent, UseItemEvent, UseItemOnEvent, MenuSlotRulesEvent,
+    ArrowLooseEvent, ClientTickPostEvent, EntityShootBowEvent, LivingBreatheEvent, LivingFallEvent,
+    NetFromClientEvent, NetFromServerEvent, OnUseTickEvent,
 };
 use machine::Machine;
 
@@ -278,6 +281,8 @@ struct MekanismNative {
     hums: Mutex<HashMap<(String, [i32; 3]), i32>>,
     /// The hand-held gear's own state (`items.rs`).
     gear: items::State,
+    /// Worn and held powered gear: jetpack, runners, scuba, bow, flamethrower (`worn.rs`).
+    worn: worn::State,
 }
 
 impl MekanismNative {
@@ -977,7 +982,10 @@ impl Hooks for MekanismNative {
     }
     // Hand-held gear (M11), `items.rs`.
     fn use_item(&self, host: &mut dyn Host, event: &mut UseItemEvent<'_>) -> Flow {
-        self.gear.use_item(host, event.stack)
+        if matches!(self.gear.use_item(host, event.stack), Flow::Cancel) {
+            return Flow::Cancel;
+        }
+        self.worn.use_item(host, &self.gear, event.stack)
     }
 
     fn on_equip(&self, host: &mut dyn Host, event: &mut OnEquipEvent<'_>) {
@@ -986,6 +994,7 @@ impl Hooks for MekanismNative {
 
     fn inventory_tick(&self, host: &mut dyn Host, event: &mut InventoryTickEvent) {
         self.gear.inventory_tick(host, event);
+        self.worn.inventory_tick(host, event);
     }
 
     fn living_incoming_damage_v2(&self, host: &mut dyn Host, event: &mut LivingIncomingDamageV2Event<'_>) -> Flow {
@@ -994,6 +1003,9 @@ impl Hooks for MekanismNative {
     }
 
     fn living_entity_use_item_start(&self, host: &mut dyn Host, event: &mut LivingEntityUseItemStartEvent<'_>) -> Flow {
+        if !self.worn.can_start(event.stack) {
+            return Flow::Cancel;
+        }
         self.gear.use_start(host, event)
     }
 
@@ -1003,6 +1015,7 @@ impl Hooks for MekanismNative {
 
     fn use_duration(&self, _host: &dyn Host, event: &mut UseDurationEvent<'_>) {
         self.gear.use_duration(event);
+        self.worn.use_duration(event);
     }
 
     fn use_animation(&self, _host: &dyn Host, event: &mut UseAnimationEvent<'_>) {
@@ -1015,5 +1028,38 @@ impl Hooks for MekanismNative {
 
     fn item_bar(&self, _host: &dyn Host, event: &mut ItemBarEvent<'_>) {
         self.gear.bar(event);
+    }
+
+    // Worn and held powered gear (M11), `worn.rs`.
+    fn living_fall(&self, event: &mut LivingFallEvent<'_>) -> Flow {
+        self.worn.living_fall(event)
+    }
+
+    fn living_breathe(&self, event: &mut LivingBreatheEvent<'_>) {
+        self.worn.living_breathe(event);
+    }
+
+    fn arrow_loose(&self, _host: &mut dyn Host, event: &mut ArrowLooseEvent<'_>) -> Flow {
+        self.worn.arrow_loose(event)
+    }
+
+    fn entity_shoot_bow(&self, host: &mut dyn Host, event: &mut EntityShootBowEvent<'_>) {
+        self.worn.entity_shoot_bow(host, event);
+    }
+
+    fn on_use_tick(&self, host: &mut dyn Host, event: &mut OnUseTickEvent<'_>) {
+        self.worn.on_use_tick(host, event);
+    }
+
+    fn client_tick_post(&self, host: &mut dyn Host, event: &mut ClientTickPostEvent) {
+        self.worn.client_tick_post(host, event);
+    }
+
+    fn net_from_client(&self, _host: &mut dyn Host, event: &mut NetFromClientEvent<'_>) {
+        self.worn.net_from_client(event);
+    }
+
+    fn net_from_server(&self, _host: &mut dyn Host, event: &mut NetFromServerEvent<'_>) {
+        self.worn.net_from_server(event);
     }
 }

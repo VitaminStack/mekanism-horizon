@@ -60,10 +60,15 @@ pub struct State {
 
 /// The disassembler's energy buffer, for `item_energy_buffer`.
 pub fn energy_buffer(item: &str) -> Option<(i32, i32)> {
-    (item == gear::DISASSEMBLER).then_some((gear::DISASSEMBLER_CAPACITY, gear::DISASSEMBLER_RATE))
+    match item {
+        gear::DISASSEMBLER => Some((gear::DISASSEMBLER_CAPACITY, gear::DISASSEMBLER_RATE)),
+        gear::ELECTRIC_BOW => Some((gear::BOW_CAPACITY, gear::BOW_RATE)),
+        gear::FREE_RUNNERS | gear::FREE_RUNNERS_ARMORED => Some((gear::RUNNERS_CAPACITY, gear::RUNNERS_RATE)),
+        _ => None,
+    }
 }
 
-fn fluid_of(stack: &ItemStack) -> (Option<String>, i32) {
+pub(super) fn fluid_of(stack: &ItemStack) -> (Option<String>, i32) {
     let Some(data) = stack.custom_data() else { return (None, 0) };
     let amount = read_energy(data, ITEM_AMOUNT);
     let fluid = match data.get(&key(data, ITEM_FLUID)) {
@@ -73,7 +78,7 @@ fn fluid_of(stack: &ItemStack) -> (Option<String>, i32) {
     if amount <= 0 { (None, 0) } else { (fluid, amount) }
 }
 
-fn energy_of(stack: &ItemStack) -> i32 {
+pub(super) fn energy_of(stack: &ItemStack) -> i32 {
     stack.custom_data().map_or(0, |d| read_energy(d, ITEM_ENERGY)).max(0)
 }
 
@@ -106,20 +111,15 @@ fn snbt(tag: &Tag) -> Option<String> {
     })
 }
 
-/// `stack` with its custom data after `change`. `set_component` only takes a mod's own component
-/// types, so the stack is rebuilt from SNBT; its other components are dropped (the gear has none).
-pub(crate) fn edit_data(host: &dyn Host, stack: &mut ItemStack, change: impl FnOnce(&mut Compound)) {
+/// Change the stack's custom data in place: its other components (enchantments) stay.
+pub(super) fn edit_data(stack: &mut ItemStack, change: impl FnOnce(&mut Compound)) {
     let mut data = stack.custom_data().cloned().unwrap_or_default();
     change(&mut data);
-    let Some(data) = snbt(&Tag::Compound(data)) else { return };
-    let text = format!("{{id:{:?},count:{},components:{{\"minecraft:custom_data\":{data}}}}}", &*stack.item, stack.count);
-    if let Some(next) = host.item_from_snbt(&text) {
-        *stack = next;
-    }
+    stack.data_mut().set_other(CUSTOM_DATA, Some(Tag::Compound(data)));
 }
 
-fn set_fluid(host: &dyn Host, stack: &mut ItemStack, fluid: Option<&str>, amount: i32) {
-    edit_data(host, stack, |d| match fluid.filter(|_| amount > 0) {
+pub(super) fn set_fluid(stack: &mut ItemStack, fluid: Option<&str>, amount: i32) {
+    edit_data(stack, |d| match fluid.filter(|_| amount > 0) {
         Some(f) => {
             d.insert(key(d, ITEM_FLUID), Tag::String(f.into()));
             d.insert(key(d, ITEM_AMOUNT), Tag::Int(amount));
@@ -131,13 +131,14 @@ fn set_fluid(host: &dyn Host, stack: &mut ItemStack, fluid: Option<&str>, amount
     });
 }
 
-fn set_energy(host: &dyn Host, stack: &mut ItemStack, energy: i32) {
-    edit_data(host, stack, |d| {
-        d.insert(key(d, ITEM_ENERGY), Tag::Int(energy.clamp(0, gear::DISASSEMBLER_CAPACITY)));
+pub(super) fn set_energy(stack: &mut ItemStack, energy: i32) {
+    let capacity = energy_buffer(&stack.item).map_or(gear::DISASSEMBLER_CAPACITY, |b| b.0);
+    edit_data(stack, |d| {
+        d.insert(key(d, ITEM_ENERGY), Tag::Int(energy.clamp(0, capacity)));
     });
 }
 
-fn fluid_line(fluid: Option<&str>, amount: i32, capacity: i32) -> String {
+pub(super) fn fluid_line(fluid: Option<&str>, amount: i32, capacity: i32) -> String {
     match fluid {
         Some(f) if amount > 0 => format!("{}: {amount} / {capacity} mB", chemicals::name(f)),
         _ => format!("Empty: 0 / {capacity} mB"),
@@ -145,17 +146,17 @@ fn fluid_line(fluid: Option<&str>, amount: i32, capacity: i32) -> String {
 }
 
 /// The `Direction` of a face normal; up for a normal that is none of the six.
-fn dir_of(face: [i32; 3]) -> Direction {
+pub(super) fn dir_of(face: [i32; 3]) -> Direction {
     let index = super::cube::OFFSETS.iter().position(|o| *o == face).unwrap_or(1);
     Direction::ALL[index]
 }
 
-type Edit = Box<dyn FnOnce(&dyn Host, &mut ItemStack) + Send>;
+pub(super) type Edit = Box<dyn FnOnce(&dyn Host, &mut ItemStack) + Send>;
 
 impl State {
     /// Queue a change of the main-hand stack. The use hooks run with the player's state swapped in,
     /// where the inventory cannot be written, so `inventory_tick` applies it a moment later.
-    fn edit_held(&self, host: &mut dyn Host, change: impl FnOnce(&dyn Host, &mut ItemStack) + Send + 'static) -> bool {
+    pub(super) fn edit_held(&self, host: &mut dyn Host, change: impl FnOnce(&dyn Host, &mut ItemStack) + Send + 'static) -> bool {
         let Some(player) = host.acting_player() else { return false };
         self.pending.lock().unwrap().entry(player.uuid).or_default().push(Box::new(change));
         true
@@ -203,7 +204,7 @@ impl State {
     pub fn right_click_block(&self, host: &mut dyn Host, pos: [i32; 3], face: [i32; 3]) -> Flow {
         let Some(player) = host.acting_player() else { return Flow::Continue };
         let Some(held) = host.held_stack(player.uuid) else { return Flow::Continue };
-        if matches!(&*held.item, gear::DICTIONARY | gear::GAUGE_DROPPER | gear::CANTEEN) {
+        if matches!(&*held.item, gear::DICTIONARY | gear::GAUGE_DROPPER | gear::CANTEEN) || super::worn::chemical_of(&held.item).is_some() {
             self.clicked.lock().unwrap().insert(player.uuid, Instant::now());
         }
         match &*held.item {
@@ -217,7 +218,10 @@ impl State {
                 self.dropper(host, &held, pos, face, sneaking)
             }
             gear::CANTEEN => self.canteen_fill(host, &held, pos, face),
-            _ => Flow::Continue,
+            item => match super::worn::chemical_of(item) {
+                Some(chemical) => self.chemical_fill(host, &held, chemical, pos, face),
+                None => Flow::Continue,
+            },
         }
     }
 
@@ -241,14 +245,14 @@ impl State {
                 Flow::Cancel
             }
             gear::GAUGE_DROPPER if host.sneaking() => {
-                self.edit_held(host, |h, s| set_fluid(h, s, None, 0));
+                self.edit_held(host, |h, s| set_fluid(s, None, 0));
                 host.action_bar(player.uuid, Text::literal("Gauge Dropper emptied"));
                 Flow::Cancel
             }
             gear::DISASSEMBLER if host.sneaking() => {
                 let mode = mode_of(stack).next();
                 self.edit_held(host, move |h, s| {
-                    edit_data(h, s, |d| {
+                    edit_data(s, |d| {
                         d.insert(key(d, ITEM_MODE), Tag::Byte(mode.byte() as i8));
                     })
                 });
@@ -311,7 +315,7 @@ impl State {
         };
         if let Some((fluid, delta)) = moved.filter(|(_, d)| *d != 0) {
             let now = (have.1 + delta).clamp(0, gear::DROPPER_CAPACITY);
-            self.edit_held(host, move |h, s| set_fluid(h, s, Some(&fluid), now));
+            self.edit_held(host, move |h, s| set_fluid(s, Some(&fluid), now));
         }
         Flow::Cancel
     }
@@ -329,7 +333,28 @@ impl State {
         if step > 0 {
             if let Some((fluid, n)) = host.fluid_extract(host.dimension(), pos, face, step) {
                 if fluid == gear::NUTRITIONAL_PASTE && n > 0 {
-                    self.edit_held(host, move |h, s| set_fluid(h, s, Some(gear::NUTRITIONAL_PASTE), have + n));
+                    self.edit_held(host, move |h, s| set_fluid(s, Some(gear::NUTRITIONAL_PASTE), have + n));
+                }
+            }
+        }
+        Flow::Cancel
+    }
+
+    /// A jetpack, scuba tank or flamethrower on a tank holding its chemical draws a bucket of it
+    /// per click (Mekanism fills them from a Chemical Tank's item slot or a Rotary Condensentrator).
+    fn chemical_fill(&self, host: &mut dyn Host, held: &ItemStack, chemical: &'static str, pos: [i32; 3], face: [i32; 3]) -> Flow {
+        let face = dir_of(face);
+        let Some(tanks) = host.fluid_tanks(host.dimension(), pos, face) else { return Flow::Continue };
+        if !tanks.iter().any(|t| t.fluid.as_deref() == Some(chemical) && t.amount > 0) {
+            return Flow::Continue;
+        }
+        let have = fluid_of(held);
+        let step = 1_000.min(gear::CHEMICAL_CAPACITY - have.1);
+        if step > 0 && have.0.as_deref().is_none_or(|f| f == chemical) {
+            if let Some((fluid, n)) = host.fluid_extract(host.dimension(), pos, face, step) {
+                if fluid == chemical && n > 0 {
+                    let now = have.1 + n;
+                    self.edit_held(host, move |_, s| set_fluid(s, Some(chemical), now));
                 }
             }
         }
@@ -355,7 +380,7 @@ impl State {
         let Some((gain, used)) = gear::drink(stored, food) else { return };
         *self.fed.lock().unwrap().entry(player.uuid).or_insert(0) += gain;
         let mut next = event.stack.clone();
-        set_fluid(&*host, &mut next, Some(gear::NUTRITIONAL_PASTE), stored - used);
+        set_fluid(&mut next, Some(gear::NUTRITIONAL_PASTE), stored - used);
         *event.result = Some(next);
     }
 
@@ -367,7 +392,7 @@ impl State {
             return;
         }
         event.amount += gear::WEAPON_BONUS;
-        self.edit_held(host, |h, s| set_energy(h, s, energy_of(s) - gear::WEAPON_COST));
+        self.edit_held(host, |h, s| set_energy(s, energy_of(s) - gear::WEAPON_COST));
     }
 
     /// Mining costs energy; without it the block stays. In vein mode an ore takes its vein with it.
@@ -400,7 +425,7 @@ impl State {
             }
             self.veining.store(false, Ordering::Relaxed);
         }
-        self.edit_held(host, move |h, s| set_energy(h, s, energy_of(s) - spent));
+        self.edit_held(host, move |h, s| set_energy(s, energy_of(s) - spent));
         Flow::Continue
     }
 
@@ -410,6 +435,13 @@ impl State {
             gear::DISASSEMBLER => (energy_of(event.stack) as f32 / gear::DISASSEMBLER_CAPACITY as f32, ENERGY_COLOR),
             gear::CANTEEN => (fluid_of(event.stack).1 as f32 / gear::CANTEEN_CAPACITY as f32, PASTE_COLOR),
             gear::GAUGE_DROPPER => (fluid_of(event.stack).1 as f32 / gear::DROPPER_CAPACITY as f32, FLUID_COLOR),
+            gear::JETPACK | gear::JETPACK_ARMORED | gear::SCUBA_TANK | gear::FLAMETHROWER => {
+                (fluid_of(event.stack).1 as f32 / gear::CHEMICAL_CAPACITY as f32, FLUID_COLOR)
+            }
+            gear::ELECTRIC_BOW => (energy_of(event.stack) as f32 / gear::BOW_CAPACITY as f32, ENERGY_COLOR),
+            gear::FREE_RUNNERS | gear::FREE_RUNNERS_ARMORED => {
+                (energy_of(event.stack) as f32 / gear::RUNNERS_CAPACITY as f32, ENERGY_COLOR)
+            }
             _ => return,
         };
         *event.bar = Some((((fill.clamp(0.0, 1.0) * 13.0).round() as i32).max(i32::from(fill > 0.0)), color));
@@ -436,6 +468,21 @@ impl State {
             gear::GAUGE_DROPPER => {
                 let (fluid, n) = fluid_of(stack);
                 vec![(Text::literal(fluid_line(fluid.as_deref(), n, gear::DROPPER_CAPACITY)), grey)]
+            }
+            gear::JETPACK | gear::JETPACK_ARMORED | gear::SCUBA_TANK | gear::FLAMETHROWER => {
+                let (fluid, n) = fluid_of(stack);
+                vec![(Text::literal(fluid_line(fluid.as_deref(), n, gear::CHEMICAL_CAPACITY)), grey)]
+            }
+            gear::ELECTRIC_BOW | gear::FREE_RUNNERS | gear::FREE_RUNNERS_ARMORED => {
+                let capacity = energy_buffer(&stack.item).map_or(0, |b| b.0);
+                vec![(
+                    Text::literal(format!(
+                        "Stored: {} / {} FE",
+                        super::cube::si(energy_of(stack) as i64),
+                        super::cube::si(capacity as i64)
+                    )),
+                    grey,
+                )]
             }
             _ => Vec::new(),
         }
