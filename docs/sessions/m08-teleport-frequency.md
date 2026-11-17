@@ -47,7 +47,8 @@ Content: `mekanism:teleporter`, `teleporter_frame`, `quantum_entangloporter`, `p
 - Register-Flush bis 5 s Verzögerung; kein `world_saved`/`server_stopping` (Signaturen nicht verifiziert). Absturz verliert bis ~5 s Pufferänderungen.
 - Rezept `mekanism:mek_data` ist vom Importer zu `crafting_shaped` vereinfacht; Energieübertragung vom Tablet beim portablen Teleporter entfällt.
 - Teleporter-Lichtstufe 3 nicht portiert.
-- Kein Rezept-Zutat fehlt (alle Zutaten laut Content-Check auflösbar); `teleportation_core` hat ein Rezept.
+- Rezept-Zutaten geprüft (5 Rezepte): alle Items/Tags lösen auf. Der Tag `c:ender_pearls` fehlte im Content und wurde als `content/mekanism/data/c/tags/item/ender_pearls.json` (`minecraft:ender_pearl`) ergänzt. Tag `mekanism:alloys/atomic` verweist auf `#c:alloys/ultimate` (vorhanden).
+- Der Generator-Lauf hat zusätzlich `#mekanism:transmitters` (M06, Tag existiert) in `blocks_motion_no_leaves.json` und `mineable/pickaxe.json` nachgezogen und die Einträge in `pickaxe.json` umsortiert (keine Einträge verloren). `docs/parity.json` wurde nicht neu erzeugt (`parity.py --check`: 781 neu erledigt).
 
 ## Nicht kompilierverifiziert
 
