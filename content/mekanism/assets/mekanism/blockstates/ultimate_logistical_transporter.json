@@ -1,0 +1,57 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "mekanism:block/transmitter/ultimate_logistical_transporter_center"
+      }
+    },
+    {
+      "when": {
+        "down": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/ultimate_logistical_transporter_down"
+      }
+    },
+    {
+      "when": {
+        "up": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/ultimate_logistical_transporter_up"
+      }
+    },
+    {
+      "when": {
+        "north": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/ultimate_logistical_transporter_north"
+      }
+    },
+    {
+      "when": {
+        "south": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/ultimate_logistical_transporter_south"
+      }
+    },
+    {
+      "when": {
+        "west": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/ultimate_logistical_transporter_west"
+      }
+    },
+    {
+      "when": {
+        "east": "true"
+      },
+      "apply": {
+        "model": "mekanism:block/transmitter/ultimate_logistical_transporter_east"
+      }
+    }
+  ]
+}

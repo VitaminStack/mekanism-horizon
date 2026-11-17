@@ -38,8 +38,11 @@ VANILLA_RECIPES = {'minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 
 # Pipes, tubes and conductors (M06): blockstates, models and item definitions by gen_resources.py (upstream's
 # are OBJ models behind a custom loader); their textures `block/models/multipart/<id>(_vertical).png` are
 # upstream's, copied as they are.
-TRANSMITTERS = {f'{NS}:{t}_{k}' for k in ('mechanical_pipe', 'pressurized_tube', 'thermodynamic_conductor')
-                for t in ('basic', 'advanced', 'elite', 'ultimate')}
+# Universal Cables (M03) and Logistical, Restrictive and Diversion Transporters (M08) are the same kind of block.
+TRANSMITTERS = {f'{NS}:{t}_{k}' for k in ('mechanical_pipe', 'pressurized_tube', 'thermodynamic_conductor',
+                                          'universal_cable', 'logistical_transporter')
+                for t in ('basic', 'advanced', 'elite', 'ultimate')} | {
+    f'{NS}:restrictive_transporter', f'{NS}:diversion_transporter'}
 # Assets written elsewhere: the energy cubes by scripts/import_energy_cube.py (custom model loader
 # turned into plain models), the debug blocks and transmitters by gen_resources.py.
 ASSET_SKIP = {f'{NS}:{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')} | {
@@ -192,6 +195,12 @@ def main(up):
         for suffix in ('.png', '.png.mcmeta'):
             if not copy_asset(ns, f'textures/{path}{suffix}') and suffix == '.png':
                 print(f'  missing texture {tex}')
+    # The transmitters' own models are written by gen_resources.py, so nothing above follows them to
+    # their textures: copy those here (`block/models/multipart/<id>.png` and `<id>_vertical.png`).
+    for full in sorted(TRANSMITTERS):
+        for suffix in ('', '_vertical'):
+            if not copy_asset(NS, f'textures/block/models/multipart/{full.partition(":")[2]}{suffix}.png'):
+                print(f'  missing transmitter texture {full}{suffix}')
     stats['models'], stats['textures'] = len(seen_models), len(textures)
 
     # --- recipes ---

@@ -14,15 +14,12 @@ pub mod infuser;
 #[path = "../../../native/mekanism_native/api/src/machine.rs"]
 pub mod machine;
 
-<<<<<<< HEAD
 /// Upgrades, the energy slot and redstone control (M05/M07).
 #[path = "../../../native/mekanism_native/api/src/upgrade.rs"]
 pub mod upgrade;
-=======
 /// Factories: tier and type tables, slot layout, shared energy, upgrades.
 #[path = "../../../native/mekanism_native/api/src/factory.rs"]
 pub mod factory;
->>>>>>> refs/heads/claude/m07-factories-bb48a4
 
 /// What takes energy from a neighbouring Mekanism block, and how much.
 #[path = "../../../native/mekanism_native/api/src/energy.rs"]
@@ -44,6 +41,10 @@ pub mod pump;
 /// Mechanical Pipes, Pressurized Tubes and Thermodynamic Conductors (M06).
 #[path = "../../../native/mekanism_native/api/src/transmitter.rs"]
 pub mod transmitter;
+
+/// Logistical, Restrictive and Diversion Transporters (M08).
+#[path = "../../../native/mekanism_native/api/src/transporter.rs"]
+pub mod transporter;
 
 /// Canteen, Gauge Dropper and Atomic Disassembler rules (M11).
 #[path = "../../../native/mekanism_native/api/src/gear.rs"]

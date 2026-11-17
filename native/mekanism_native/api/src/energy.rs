@@ -8,10 +8,11 @@
 //! none overflows: `accept` never returns more than the room left.
 //!
 //! Horizon gives a trait mod no energy access to other mods' blocks (see
-//! docs/upstream/horizon-energy-host.md), so pushes reach only the blocks
-//! `acceptor` knows.
+//! docs/upstream/horizon-energy-host.md; re-checked at `fdc87ae` for the Universal
+//! Cables: `Host` has no energy call, `native_energy*` are `pub(in crate::game)`),
+//! so pushes reach only the blocks `acceptor` knows.
 
-use super::{cube, machine, pump};
+use super::{cube, machine, pump, transmitter};
 
 /// A block that takes energy from a neighbouring Mekanism block.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -27,6 +28,10 @@ pub struct Acceptor {
 pub fn acceptor(block: &str) -> Option<Acceptor> {
     if let Some((capacity, rate)) = cube::tier(block) {
         return Some(Acceptor { capacity, rate, sided: true });
+    }
+    // A Universal Cable takes up to its whole buffer on every side.
+    if let Some(t) = transmitter::tier_of(block).filter(|t| t.kind == transmitter::Kind::Cable) {
+        return Some(Acceptor { capacity: t.capacity, rate: t.rate, sided: false });
     }
     if pump::is_either(block) {
         return Some(Acceptor { capacity: pump::CAPACITY, rate: pump::CAPACITY, sided: false });
@@ -67,6 +72,26 @@ mod tests {
             assert_eq!(a.accept(i32::MAX, i32::MAX, 0), m.capacity());
             assert_eq!(a.accept(i32::MAX, i32::MAX, m.capacity()), 0);
         }
+    }
+
+    #[test]
+    fn cables_take_up_to_their_buffer_on_any_side() {
+        for (block, capacity) in [
+            ("mekanism:basic_universal_cable", 8_000),
+            ("mekanism:advanced_universal_cable", 128_000),
+            ("mekanism:elite_universal_cable", 1_024_000),
+            ("mekanism:ultimate_universal_cable", 8_192_000),
+        ] {
+            let a = acceptor(block).unwrap();
+            assert_eq!(a, Acceptor { capacity, rate: capacity, sided: false });
+            assert_eq!(a.accept(i32::MAX, i32::MAX, 0), capacity);
+            assert_eq!(a.accept(i32::MAX, i32::MAX, capacity - 1), 1);
+        }
+        // A generator with 100,000 behind it fills a basic cable to the brim, no more.
+        let basic = acceptor("mekanism:basic_universal_cable").unwrap();
+        assert_eq!(basic.accept(100_000, 100_000, 7_500), 500);
+        // Pipes, tubes and conductors take no energy.
+        assert!(acceptor("mekanism:basic_mechanical_pipe").is_none());
     }
 
     #[test]
