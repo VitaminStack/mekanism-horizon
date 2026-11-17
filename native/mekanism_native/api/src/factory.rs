@@ -237,6 +237,43 @@ pub fn run(usage: i32, ticks: i32, energy: &mut i32, progress: &mut i32) -> Run 
     Run { active, done: machine::step(usage, ticks, energy, progress) }
 }
 
+/// What a process does this tick, from what the host found: no recipe for its input, a recipe it
+/// cannot run (output full, chemical short), or one that can run.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase {
+    /// No recipe: the operation starts over.
+    Idle,
+    /// Output full or chemical short: it waits where it is and draws nothing.
+    Hold,
+    Run,
+}
+
+pub fn phase(has_recipe: bool, room: bool, fed: bool) -> Phase {
+    match (has_recipe, room && fed) {
+        (false, _) => Phase::Idle,
+        (true, false) => Phase::Hold,
+        (true, true) => Phase::Run,
+    }
+}
+
+/// One tick of a process in `phase`. `powered` runs first, only when `Run` finds the energy for the
+/// tick (the per-tick chemical is taken there).
+pub fn advance(phase: Phase, usage: i32, ticks: i32, energy: &mut i32, progress: &mut i32, powered: impl FnOnce()) -> Run {
+    match phase {
+        Phase::Idle => {
+            *progress = 0;
+            Run { active: false, done: false }
+        }
+        Phase::Hold => Run { active: false, done: false },
+        Phase::Run => {
+            if *energy >= usage {
+                powered();
+            }
+            run(usage, ticks, energy, progress)
+        }
+    }
+}
+
 /// Move the contents of one layout into another: input k to input k, and so on, what does not fit
 /// (a machine into a factory fits all; the shared slot goes to the shared slot) is dropped. For a
 /// machine upgraded to a factory and a factory upgraded to the next tier, whose slots keep their
@@ -422,6 +459,26 @@ mod tests {
         assert!(run(5, 200, &mut energy, &mut p[0]).active);
         assert!(!run(5, 200, &mut energy, &mut p[0]).active);
         assert_eq!(p[0], 1);
+    }
+
+    #[test]
+    fn idle_resets_hold_waits_and_run_needs_energy() {
+        let mut energy = 10;
+        let mut progress = 50;
+        let mut taken = 0;
+        let r = advance(phase(false, true, true), 5, 200, &mut energy, &mut progress, || taken += 1);
+        assert_eq!((r, progress, energy, taken), (Run { active: false, done: false }, 0, 10, 0));
+        progress = 50;
+        for (room, fed) in [(false, true), (true, false)] {
+            let r = advance(phase(true, room, fed), 5, 200, &mut energy, &mut progress, || taken += 1);
+            assert_eq!((r.active, progress, energy, taken), (false, 50, 10, 0));
+        }
+        let r = advance(phase(true, true, true), 5, 200, &mut energy, &mut progress, || taken += 1);
+        assert_eq!((r.active, progress, energy, taken), (true, 51, 5, 1));
+        // Without the energy for a tick it neither advances nor takes its chemical.
+        let mut energy = 4;
+        let r = advance(Phase::Run, 5, 200, &mut energy, &mut progress, || taken += 1);
+        assert_eq!((r.active, progress, taken), (false, 51, 1));
     }
 
     #[test]

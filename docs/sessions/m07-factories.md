@@ -41,7 +41,9 @@ Branch `claude/m07-factories-bb48a4`. Stand: Code und Content committet, **ingam
 - Hopper und Shift-Klick füllen jeden Eingabe-Slot ohne Rezeptprüfung (Mekanism filtert). Rezeptprüfung beim Tick: ein Item ohne Rezept bleibt liegen.
 - Menü-Daten sind 16-Bit; größter Wert (Tank Ultimate Infusing 9000) passt.
 - Benötigte Änderungen an fremden Dateien: keine. `process::BUFFER`, `BUFFER_TYPE` und `machine`-Felder werden nur gelesen. Falls `m07-machine-framework` `Machine`-Felder umbenennt, müssen `factory.rs`/`factories.rs` nachziehen.
-- Generator-Lauf zog fremden Altstand mit (Transmitter-Einträge in `mineable/pickaxe.json`, `blocks_motion_no_leaves.json`); harmlos, vom Importer erzeugt.
+- **Merge-Risiko**: `m07-machine-framework` (Branch `claude/m07-machine-framework-b79164`) ändert `machine.rs`, `process.rs`, `lib.rs` und ergänzt `upgrade.rs` (Energie-, Upgrade-Slots, `data_len`, `Machine::upgraded`). `factory.rs`/`factories.rs` lesen nur `Machine`-Felder, `Tank`, `BUFFER`, `Recipe`, `processing`, `conversion`; die zusätzlichen Maschinen-Slots (Energie, Upgrades) würde `Slots::of_machine` beim Installer nicht übernehmen (Rollen-Umzug), Upgrade-Items einer Maschine gingen beim Umbau verloren. Nach dem Merge den Installer darauf prüfen und `of_machine` anpassen.
+- Pausen-/Reset-Regel (`factory::phase`/`advance`) ist getestet; `factories::tick` ruft sie nur auf.
+- Generator-Lauf zog fremden Altstand mit (Commit `26f5d10`): Transmitter-Tags (`tags/{block,item}/transmitters*`), `c/tags/block/relocation_not_supported.json`, `mineable/pickaxe.json`, `blocks_motion_no_leaves.json`; die Lang-Dateien enthalten nur Factory- und Installer-Namen. Vom Importer erzeugt, harmlos.
 
 ## Ingame-Checkliste
 

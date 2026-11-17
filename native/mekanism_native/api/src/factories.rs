@@ -106,33 +106,25 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, f: &Factory, 
         let recipe = items[input_slot]
             .as_ref()
             .and_then(|input| list.iter().find(|r| matches(f, r, input, shared, tank)));
-        let Some(r) = recipe else {
-            progress[i] = 0;
-            continue;
-        };
         // Room for every output: the secondary in full, whatever its chance.
-        let out = r.output.as_ref().map(|o| merged(host, items[output_slot].as_ref(), o));
-        let second = r.secondary.as_ref().map(|(s, chance)| {
+        let out = recipe.and_then(|r| r.output.as_ref()).map(|o| merged(host, items[output_slot].as_ref(), o));
+        let second = recipe.and_then(|r| r.secondary.as_ref()).map(|(s, chance)| {
             (slots.secondary.get(i).and_then(|&slot| merged(host, items[slot].as_ref(), s)), *chance)
         });
         let room = out.as_ref().is_none_or(Option::is_some) && second.as_ref().is_none_or(|s| s.0.is_some());
-        let per_tick = r
-            .chemical
-            .as_ref()
+        let per_tick = recipe
+            .and_then(|r| r.chemical.as_ref())
             .filter(|c| c.per_tick)
             .and_then(|c| Some((base.buffer?.type_index(&c.id)?, c.amount)));
         let fed = per_tick.is_none_or(|(kind, amount)| tank.is_some_and(|t| t.has(kind, amount)));
-        if !(room && fed) {
-            // Output full or chemical short: the operation waits where it is.
-            continue;
+        let phase = factory::phase(recipe.is_some(), room, fed);
+        let mut spent = None;
+        let run = factory::advance(phase, base.usage, base.ticks, &mut energy, &mut progress[i], || spent = per_tick);
+        if let (Some((_, amount)), Some(t)) = (spent, tank.as_mut()) {
+            t.take(amount);
         }
-        if energy >= base.usage {
-            if let (Some((_, amount)), Some(t)) = (per_tick, tank.as_mut()) {
-                t.take(amount);
-            }
-        }
-        let run = factory::run(base.usage, base.ticks, &mut energy, &mut progress[i]);
         active |= run.active;
+        let Some(r) = recipe else { continue };
         if !run.done {
             continue;
         }
@@ -173,7 +165,12 @@ pub fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, f: &Factory, 
         write_int(&mut e.nbt, BUFFER_TYPE, if t.amount > 0 { t.kind as i32 + 1 } else { 0 });
     }
     let t = tank.unwrap_or_default();
-    let mut data = vec![energy, facing as i32, active as i32, t.amount, if t.amount > 0 { t.kind as i32 + 1 } else { 0 }];
+    let mut data = vec![0; factory::DATA_PROGRESS];
+    data[factory::DATA_ENERGY] = energy;
+    data[factory::DATA_FACING] = facing as i32;
+    data[factory::DATA_ACTIVE] = active as i32;
+    data[factory::DATA_TANK] = t.amount;
+    data[factory::DATA_TANK_TYPE] = if t.amount > 0 { t.kind as i32 + 1 } else { 0 };
     data.extend(&progress);
     if e.data != data {
         e.data = data;
