@@ -653,6 +653,23 @@ for m in ['metallurgic_infuser', *MACHINE_MENUS, *CHEMICAL_MENUS]:
     menu['slots'] += 3
     menu['data_slots'] += 4
     put(f'data/{NS}/horizon/menu/{m}.json', menu)
+# --- M08 frequencies: Teleporter, Teleporter Frame, Portable Teleporter, Quantum Entangloporter ---
+# Native side: native/.../teleporters.rs and entangloporter.rs. BlockTile strength 3.5 / 16 as for machines;
+# the frame is `strength(5, 6)` (TeleporterFrame). The barrel template gives `facing` and a block that opens its
+# menu: the teleporter has no facing in Mekanism (its blockstate has no variants), the entangloporter takes all six
+# directions (turned toward the placer by the native mod). Both drop themselves with no contents (the buffers
+# live on the frequency). Teleportation core: the teleporter's and the entangloporter's recipe ingredient.
+item('teleportation_core')
+item('portable_teleporter', stack=1)
+block('teleporter', 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
+block('teleporter_frame', 'minecraft:iron_block', 5.0, 6.0, sounds=STONE)
+block('quantum_entangloporter', 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
+# Teleporter data: 4 panel entries, status, energy. Entangloporter: 4 panel entries, then energy, fluid and
+# chemical as two entries each and the fluid's and the chemical's kind (see entangloporter.rs).
+put(f'data/{NS}/horizon/menu/teleporter.json', {'slots': 1, 'data_slots': 6, 'results': []})
+put(f'data/{NS}/horizon/menu/quantum_entangloporter.json', {'slots': 1, 'data_slots': 12, 'results': []})
+M08_PICKAXE = [f'{NS}:teleporter', f'{NS}:teleporter_frame', f'{NS}:quantum_entangloporter']
+# --- end M08 frequencies ---
 
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
@@ -660,7 +677,7 @@ put('data/minecraft/tags/block/mineable/pickaxe.json',
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
      + [f'{NS}:{t}_bin' for t in CUBE_TIERS] + [f'{NS}:personal_chest', f'{NS}:personal_barrel']
      + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]
-     + [f'{NS}:{t}' for t in TRANSMITTER_IDS]})
+     + [f'{NS}:{t}' for t in TRANSMITTER_IDS] + M08_PICKAXE})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in (
         'heat_generator', 'solar_generator', 'bio_generator', 'advanced_solar_generator', 'wind_generator',

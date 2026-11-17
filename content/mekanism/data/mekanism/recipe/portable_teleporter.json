@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "C": "#c:circuits/basic",
+    "E": "mekanism:energy_tablet",
+    "T": "mekanism:teleportation_core"
+  },
+  "pattern": [
+    " E ",
+    "CTC",
+    " E "
+  ],
+  "result": {
+    "id": "mekanism:portable_teleporter"
+  }
+}
