@@ -11,6 +11,8 @@
 //!   Solar, Wind and Gas-Burning Generator.
 //! - `chemicals`, `tank` (Horizon-free) and `tanks`: fluids, chemicals and the
 //!   Fluid and Chemical Tanks (M06).
+//! - `frequency`, `teleporter` (Horizon-free), `teleporters` and `entangloporter`: frequencies, the
+//!   Teleporter, the Portable Teleporter and the Quantum Entangloporter (M08).
 //! - `gear` (Horizon-free) and `items`: Dictionary, Canteen, Gauge Dropper and Atomic
 //!   Disassembler (M11; hooks in docs/ITEM_HOOKS.md).
 //!
@@ -48,6 +50,8 @@ mod chemicals;
 mod cube;
 mod dictionary_tags;
 mod energy;
+mod entangloporter;
+mod frequency;
 mod gear;
 mod generator;
 mod generators;
@@ -62,6 +66,8 @@ mod storage;
 mod storages;
 mod tank;
 mod tanks;
+mod teleporter;
+mod teleporters;
 mod transmitter;
 mod transmitters;
 
@@ -79,7 +85,7 @@ use horizon_client::mod_api::{
     ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent, StateForPlacementEvent, Tag,
     Text, TooltipEvent, RightClickBlockEvent, CanEatEvent, InventoryTickEvent, ItemBarEvent, OnEquipEvent,
     LivingEntityUseItemFinishEvent, LivingEntityUseItemStartEvent, LivingIncomingDamageV2Event,
-    UseAnimationEvent, UseDurationEvent, UseItemEvent,
+    UseAnimationEvent, UseDurationEvent, UseItemEvent, PlayerTickEvent,
 };
 use machine::Machine;
 
@@ -131,6 +137,10 @@ enum Kind {
     Pump { plenisher: bool },
     /// A Mechanical Pipe, Pressurized Tube or Thermodynamic Conductor (`transmitter.rs`).
     Transmitter(&'static transmitter::Tier),
+    /// `mekanism:teleporter` (`teleporters.rs`; the frame is a plain block).
+    Teleporter,
+    /// `mekanism:quantum_entangloporter` (`entangloporter.rs`).
+    Entangloporter,
 }
 
 fn kind(block: &str) -> Option<Kind> {
@@ -163,6 +173,12 @@ fn kind(block: &str) -> Option<Kind> {
     }
     if let Some(t) = transmitter::tier_of(block) {
         return Some(Kind::Transmitter(t));
+    }
+    if block == "mekanism:teleporter" {
+        return Some(Kind::Teleporter);
+    }
+    if block == "mekanism:quantum_entangloporter" {
+        return Some(Kind::Entangloporter);
     }
     generators::find(block).map(Kind::Generator)
 }
@@ -446,6 +462,8 @@ impl Hooks for MekanismNative {
             Kind::Bin(_) => Some(bins::container()),
             Kind::Storage(_) => Some(storages::container()),
             Kind::Pump { plenisher } => Some(pumps::container(plenisher)),
+            Kind::Teleporter => Some(teleporters::container()),
+            Kind::Entangloporter => Some(entangloporter::container()),
             // One hidden placeholder slot; all interactions are buttons.
             Kind::Cube { .. } => Some(ModContainer {
                 slots: 1,
@@ -479,6 +497,8 @@ impl Hooks for MekanismNative {
             }),
             Kind::Generator(g) => Some(generators::energy_buffer(g)),
             Kind::Pump { .. } => Some(pumps::energy_buffer()),
+            Kind::Teleporter => Some(teleporters::energy_buffer()),
+            Kind::Entangloporter => Some(entangloporter::energy_buffer()),
             Kind::Cube { capacity, rate } => Some(ModEnergyBuffer {
                 capacity,
                 max_insert: rate,
@@ -498,6 +518,7 @@ impl Hooks for MekanismNative {
             Kind::Generator(generator::GAS) => Some(generators::gas_fluids()),
             Kind::Pump { plenisher } => Some(pumps::fluids(plenisher)),
             Kind::Transmitter(t) if t.family().is_some() => Some(transmitters::fluids(t)),
+            Kind::Entangloporter => Some(entangloporter::fluids()),
             _ => None,
         }
     }
@@ -507,6 +528,7 @@ impl Hooks for MekanismNative {
         match kind(event.block) {
             Some(Kind::Tank(t)) if !tank::accepts(t.family, event.fluid) => Flow::Cancel,
             Some(Kind::Generator(generator::GAS)) if generator::gas_fuel(event.fluid).is_none() => Flow::Cancel,
+            Some(Kind::Entangloporter) if !entangloporter::accepts(event.tank as usize, event.fluid) => Flow::Cancel,
             // The plenisher places only what a world holds.
             Some(Kind::Pump { plenisher: true }) if pump::Liquid::from_id(event.fluid).is_none() => Flow::Cancel,
             // Pipes take fluids, tubes chemicals.
@@ -564,6 +586,8 @@ impl Hooks for MekanismNative {
             Some(Kind::Storage(_)) => {}
             Some(Kind::Pump { plenisher }) => pumps::tick(host, event, plenisher),
             Some(Kind::Transmitter(t)) => transmitters::tick(host, event, t),
+            Some(Kind::Teleporter) => teleporters::tick(host, event),
+            Some(Kind::Entangloporter) => entangloporter::tick(host, event),
             None => {}
         }
     }
@@ -579,7 +603,8 @@ impl Hooks for MekanismNative {
             Kind::Bin(_) => 0.0,
             Kind::Storage(block) if storage::horizontal_only(block) => 0.0,
             Kind::Storage(_) => event.context.pitch,
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Transmitter(_) => return None,
+            Kind::Entangloporter => event.context.pitch,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Transmitter(_) | Kind::Teleporter => return None,
         };
         let facing = cube::facing_from_look(event.context.yaw, pitch);
         level
@@ -597,6 +622,8 @@ impl Hooks for MekanismNative {
             Kind::Bounding => Some(generators::screen(generator::WIND)),
             Kind::Tank(_) => Some(tanks::screen()),
             Kind::Pump { .. } => Some(pumps::screen()),
+            Kind::Teleporter => Some(teleporters::screen()),
+            Kind::Entangloporter => Some(entangloporter::screen()),
             // The cube's dummy container slot is hidden.
             Kind::Cube { .. } => Some(NativeScreen {
                 width: 176.0,
@@ -624,6 +651,8 @@ impl Hooks for MekanismNative {
             Some(Kind::Cube { capacity, rate }) => draw_cube(host, event, capacity, rate),
             Some(Kind::Tank(t)) => tanks::draw(host, event, t),
             Some(Kind::Pump { plenisher }) => pumps::draw(host, event, plenisher),
+            Some(Kind::Teleporter) => teleporters::draw(host, event),
+            Some(Kind::Entangloporter) => entangloporter::draw(host, event),
             _ => {}
         }
     }
@@ -635,6 +664,7 @@ impl Hooks for MekanismNative {
             Kind::Machine(m) => process::click(m, event.at),
             Kind::Cube { .. } => cube::side_button_at(event.at, event.right),
             Kind::Tank(_) => tank::button_at(event.at, event.right),
+            Kind::Teleporter | Kind::Entangloporter => teleporters::panel_click(event.at),
             _ => None,
         }
     }
@@ -664,6 +694,8 @@ impl Hooks for MekanismNative {
                     event.entity.data = data;
                 }
             }
+            Some(Kind::Teleporter) => teleporters::panel_button(host, &mut event.entity.nbt, frequency::Kind::Teleporter, event.id),
+            Some(Kind::Entangloporter) => teleporters::panel_button(host, &mut event.entity.nbt, frequency::Kind::Inventory, event.id),
             Some(Kind::Cube { .. }) => {
                 let Some((rel, forward)) = cube::side_button_action(event.id) else { return };
                 let mut sides = read_sides(&event.entity.nbt).unwrap_or(cube::DEFAULT_SIDES);
@@ -733,6 +765,8 @@ impl Hooks for MekanismNative {
         match kind(&host.block(event.pos)) {
             Some(Kind::Storage(_)) if !storages::allowed(host, event.pos) => return Flow::Cancel,
             Some(Kind::Bin(t)) => bins::broken(host, event.pos, t),
+            Some(Kind::Teleporter) => teleporters::forget(host, event.pos),
+            Some(Kind::Entangloporter) => entangloporter::broken(host, event.pos),
             _ => {}
         }
         // Breaking a multiblock takes its bounding blocks with it; breaking a
@@ -850,6 +884,10 @@ impl Hooks for MekanismNative {
             event.lines.extend(gear);
             return;
         }
+        if &*event.stack.item == teleporters::PORTABLE {
+            event.lines.extend(teleporters::tooltip(&event.stack));
+            return;
+        }
         if let Some(t) = tank::tier_of(&event.stack.item) {
             event.lines.push(tanks::tooltip(&event.stack, t));
             return;
@@ -869,6 +907,10 @@ impl Hooks for MekanismNative {
     }
 
     fn item_energy_buffer(&self, _host: &dyn Host, event: &mut ItemEnergyBufferEvent) -> Option<ItemEnergyBuffer> {
+        if event.item == teleporters::PORTABLE {
+            let rate = teleporter::PORTABLE_CHARGE_RATE;
+            return Some(ItemEnergyBuffer { capacity: teleporter::PORTABLE_CAPACITY, max_insert: rate, max_extract: rate });
+        }
         if let Some((capacity, rate)) = items::energy_buffer(event.item) {
             return Some(ItemEnergyBuffer { capacity, max_insert: rate, max_extract: rate });
         }
@@ -879,6 +921,9 @@ impl Hooks for MekanismNative {
     }
     // Hand-held gear (M11), `items.rs`.
     fn use_item(&self, host: &mut dyn Host, event: &mut UseItemEvent<'_>) -> Flow {
+        if &*event.stack.item == teleporters::PORTABLE {
+            return teleporters::use_portable(host, event.stack);
+        }
         self.gear.use_item(host, event.stack)
     }
 
@@ -888,6 +933,12 @@ impl Hooks for MekanismNative {
 
     fn inventory_tick(&self, host: &mut dyn Host, event: &mut InventoryTickEvent) {
         self.gear.inventory_tick(host, event);
+        teleporters::inventory_tick(host, event);
+    }
+
+    /// A player standing in a ready Teleporter's frame is teleported (`teleporters.rs`).
+    fn player_tick(&self, host: &mut dyn Host, _event: &mut PlayerTickEvent) {
+        teleporters::player_tick(host);
     }
 
     fn living_incoming_damage_v2(&self, host: &mut dyn Host, event: &mut LivingIncomingDamageV2Event<'_>) -> Flow {
@@ -917,5 +968,6 @@ impl Hooks for MekanismNative {
 
     fn item_bar(&self, _host: &dyn Host, event: &mut ItemBarEvent<'_>) {
         self.gear.bar(event);
+        teleporters::bar(event);
     }
 }

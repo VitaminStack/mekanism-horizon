@@ -282,6 +282,11 @@ impl Gate {
         now >= self.ready_at && !self.arrived.contains(&player)
     }
 
+    /// `player` was refused (not enough energy): no further tries, no delay, until they leave.
+    pub fn hold(&mut self, player: u128) {
+        self.arrived.insert(player);
+    }
+
     /// `player` is not in the bounds.
     pub fn left(&mut self, player: u128) {
         self.arrived.remove(&player);
