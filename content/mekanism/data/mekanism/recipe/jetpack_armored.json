@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": "#c:dusts/diamond",
+    "I": "#c:ingots/bronze",
+    "P": "mekanism:jetpack",
+    "S": "#c:storage_blocks/steel"
+  },
+  "pattern": [
+    "# #",
+    "ISI",
+    " P "
+  ],
+  "result": {
+    "id": "mekanism:jetpack_armored"
+  }
+}

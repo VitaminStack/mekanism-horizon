@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": "#c:circuits/basic",
+    "G": "#c:glass_blocks/cheap",
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    " S ",
+    "GCG",
+    "S S"
+  ],
+  "result": {
+    "id": "mekanism:scuba_mask"
+  }
+}

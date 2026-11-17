@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": "#c:dusts/diamond",
+    "I": "#c:ingots/bronze",
+    "P": "mekanism:free_runners",
+    "S": "#c:storage_blocks/steel"
+  },
+  "pattern": [
+    " S ",
+    "#P#",
+    "I I"
+  ],
+  "result": {
+    "id": "mekanism:free_runners_armored"
+  }
+}
