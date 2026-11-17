@@ -670,6 +670,24 @@ put(f'data/{NS}/horizon/menu/teleporter.json', {'slots': 1, 'data_slots': 6, 're
 put(f'data/{NS}/horizon/menu/quantum_entangloporter.json', {'slots': 1, 'data_slots': 12, 'results': []})
 M08_PICKAXE = [f'{NS}:teleporter', f'{NS}:teleporter_frame', f'{NS}:quantum_entangloporter']
 # --- end M08 frequencies ---
+# --- M08 special machines (native/.../special.rs): block ids and menus. ---
+SPECIAL_IDS = []
+# Oredictionificator: input + output slot; data = didProcess, scroll, 8 filters x 3 ints (oredict.rs).
+block('oredictionificator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE)
+SPECIAL_IDS.append('oredictionificator')
+put(f'data/{NS}/horizon/menu/oredictionificator.json', {'slots': 2, 'data_slots': 26, 'results': [1]})
+# Digital Miner: 27 main slots + 9 filter slots; data = miner.rs DATA_LEN (12). Its 17 bounding blocks
+# are `mekanism:bounding_block`.
+block('digital_miner', 'minecraft:barrel', 3.5, 16.0, extra={'state_properties': {'active': {'type': 'boolean'}},
+                                                           'default_state': {'facing': 'north', 'active': 'false'}})
+SPECIAL_IDS.append('digital_miner')
+put(f'data/{NS}/horizon/menu/digital_miner.json', {'slots': 36, 'data_slots': 12, 'results': []})
+# Formulaic Assemblicator + Crafting Formula: registered only (docs/sessions/m08-special-machines.md:
+# Horizon gives a native mod no vanilla crafting recipes, so the crafting behaviour is not ported).
+block('formulaic_assemblicator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE)
+SPECIAL_IDS.append('formulaic_assemblicator')
+item('crafting_formula', stack=1)
+# --- end M08 ---
 
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
@@ -677,7 +695,7 @@ put('data/minecraft/tags/block/mineable/pickaxe.json',
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
      + [f'{NS}:{t}_bin' for t in CUBE_TIERS] + [f'{NS}:personal_chest', f'{NS}:personal_barrel']
      + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]
-     + [f'{NS}:{t}' for t in TRANSMITTER_IDS] + M08_PICKAXE})
+     + [f'{NS}:{t}' for t in TRANSMITTER_IDS] + M08_PICKAXE + [f'{NS}:{i}' for i in SPECIAL_IDS]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in (
         'heat_generator', 'solar_generator', 'bio_generator', 'advanced_solar_generator', 'wind_generator',

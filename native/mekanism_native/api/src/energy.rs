@@ -12,7 +12,7 @@
 //! Cables: `Host` has no energy call, `native_energy*` are `pub(in crate::game)`),
 //! so pushes reach only the blocks `acceptor` knows.
 
-use super::{cube, machine, pump, transmitter};
+use super::{cube, machine, miner, pump, transmitter};
 
 /// A block that takes energy from a neighbouring Mekanism block.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -38,6 +38,9 @@ pub fn acceptor(block: &str) -> Option<Acceptor> {
     }
     if let Some(f) = super::factory::find(block) {
         return Some(Acceptor { capacity: f.capacity(), rate: f.capacity(), sided: false });
+    }
+    if block == miner::BLOCK {
+        return Some(Acceptor { capacity: miner::CAPACITY, rate: miner::CAPACITY, sided: false });
     }
     // Machines take up to their whole buffer per call (no side config ported).
     machine::find(block).map(|m| Acceptor { capacity: m.capacity(), rate: m.capacity(), sided: false })

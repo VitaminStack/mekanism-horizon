@@ -69,7 +69,13 @@ mod multiblocks;
 mod process;
 mod pump;
 mod pumps;
+mod miner;
+mod miners;
+mod oredict;
+mod oredict_tags;
+mod oredicts;
 mod recipe;
+mod special;
 mod storage;
 mod storages;
 mod tank;
@@ -172,6 +178,8 @@ enum Kind {
     Teleporter,
     /// `mekanism:quantum_entangloporter` (`entangloporter.rs`).
     Entangloporter,
+    /// A block of M08 (`special.rs`).
+    Special(special::Block),
 }
 
 fn kind(block: &str) -> Option<Kind> {
@@ -219,6 +227,9 @@ fn kind(block: &str) -> Option<Kind> {
     }
     if block == "mekanism:quantum_entangloporter" {
         return Some(Kind::Entangloporter);
+    }
+    if let Some(b) = special::find(block) {
+        return Some(Kind::Special(b));
     }
     generators::find(block).map(Kind::Generator)
 }
@@ -525,6 +536,7 @@ impl Hooks for MekanismNative {
             Kind::Multiblock(_) => Some(multiblocks::container(event.block)),
             Kind::Teleporter => Some(teleporters::container()),
             Kind::Entangloporter => Some(entangloporter::container()),
+            Kind::Special(b) => Some(special::container(b)),
             // One hidden placeholder slot; all interactions are buttons.
             Kind::Cube { .. } => Some(ModContainer {
                 slots: 1,
@@ -542,6 +554,7 @@ impl Hooks for MekanismNative {
     fn container_accepts(&self, _host: &dyn Host, event: &mut ContainerAcceptsEvent<'_>) -> Flow {
         match kind(&event.entity.id) {
             Some(Kind::Bin(t)) if !bins::accepts(t, event.entity, event.slot, event.stack) => Flow::Cancel,
+            Some(Kind::Special(b)) => special::accepts(_host, event, b),
             _ => Flow::Continue,
         }
     }
@@ -580,6 +593,7 @@ impl Hooks for MekanismNative {
             }),
             Kind::Transmitter(t) => transmitters::energy_buffer(t),
             Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transporter(_) => None,
+            Kind::Special(b) => special::energy_buffer(b),
         }
     }
 
@@ -635,6 +649,8 @@ impl Hooks for MekanismNative {
             Some(Kind::Transporter(t)) => {
                 if transporters::right_click(host, event.pos, event.face, t) { Flow::Cancel } else { Flow::Continue }
             }
+            // A miner's bounding blocks open no screen (the generators' mirror their main block's).
+            Some(Kind::Bounding) if special::is_miner_bounding(host, event.pos) => Flow::Cancel,
             Some(Kind::Tank(t)) => {
                 let Some((item, _, _)) = host.held() else { return Flow::Continue };
                 if tanks::use_bucket(host, event.pos, event.face, &item, t) { Flow::Cancel } else { Flow::Continue }
@@ -675,6 +691,7 @@ impl Hooks for MekanismNative {
             Some(Kind::Multiblock(d)) => multiblocks::tick(host, event, d),
             Some(Kind::Teleporter) => teleporters::tick(host, event),
             Some(Kind::Entangloporter) => entangloporter::tick(host, event),
+            Some(Kind::Special(b)) => special::tick(host, event, b),
             None => {}
         }
     }
@@ -685,7 +702,7 @@ impl Hooks for MekanismNative {
     fn state_for_placement(&self, level: &dyn LevelHost, event: &mut StateForPlacementEvent) -> Option<Option<horizon_client::mod_api::BlockStateId>> {
         let pitch = match kind(&event.context.item)? {
             Kind::Cube { .. } => event.context.pitch,
-            Kind::Machine(_) | Kind::Factory(_) | Kind::Generator(_) | Kind::Pump { .. } => 0.0,
+            Kind::Machine(_) | Kind::Factory(_) | Kind::Generator(_) | Kind::Pump { .. } | Kind::Special(_) => 0.0,
             Kind::Tank(t) if t.family == tank::Family::Chemical => 0.0,
             Kind::Bin(_) => 0.0,
             Kind::Storage(block) if storage::horizontal_only(block) => 0.0,
@@ -713,6 +730,7 @@ impl Hooks for MekanismNative {
             Kind::Multiblock(_) => Some(multiblocks::screen()),
             Kind::Teleporter => Some(teleporters::screen()),
             Kind::Entangloporter => Some(entangloporter::screen()),
+            Kind::Special(b) => Some(special::screen(b)),
             // The cube's dummy container slot is hidden.
             Kind::Cube { .. } => Some(NativeScreen {
                 width: 176.0,
@@ -744,6 +762,7 @@ impl Hooks for MekanismNative {
             Some(Kind::Multiblock(_)) => multiblocks::draw(host, event),
             Some(Kind::Teleporter) => teleporters::draw(host, event),
             Some(Kind::Entangloporter) => entangloporter::draw(host, event),
+            Some(Kind::Special(b)) => special::draw(host, event, b),
             _ => {}
         }
     }
@@ -758,6 +777,7 @@ impl Hooks for MekanismNative {
             Kind::Tank(_) => tank::button_at(event.at, event.right),
             Kind::Multiblock(_) => multiblocks::click(event.block, event.at, event.right),
             Kind::Teleporter | Kind::Entangloporter => teleporters::panel_click(event.at),
+            Kind::Special(b) => special::click(b, event.at, event.right),
             _ => None,
         }
     }
@@ -785,6 +805,7 @@ impl Hooks for MekanismNative {
         match kind(&event.entity.id) {
             Some(Kind::Machine(m)) => process::button(m, &mut event.entity.nbt, event.id),
             Some(Kind::Factory(f)) => factories::button(&f, &mut event.entity.nbt, event.id),
+            Some(Kind::Special(b)) => special::button(host, event, b),
             Some(Kind::Tank(t)) => {
                 if let Some(data) = tanks::button(t, &mut event.entity.nbt, event.id) {
                     event.entity.data = data;
@@ -869,7 +890,8 @@ impl Hooks for MekanismNative {
         // Breaking a multiblock takes its bounding blocks with it; breaking a
         // bounding block breaks the main block, which drops (Mekanism's
         // BlockBounding), except for a player in creative mode.
-        if host.block(event.pos) == generator::BOUNDING {
+        if special::destroy_block(host, event.pos) {
+        } else if host.block(event.pos) == generator::BOUNDING {
             if let Some((block, main)) = generators::bounding_main(host, event.pos) {
                 generators::remove_bounding(host, main, block, Some(event.pos));
                 let creative = host.acting_player().is_some_and(|p| p.game_mode == 1);
@@ -937,6 +959,9 @@ impl Hooks for MekanismNative {
     /// Placing a cube or tank item restores what it carries.
     fn place_block(&self, host: &mut dyn Host, event: &mut PlaceBlockEvent) {
         multiblocks::placed(host, event.pos, &event.stack.item);
+        if special::place_block(host, &event.stack.item, event.pos) {
+            return;
+        }
         if generator::is_multiblock(&event.stack.item) {
             generators::place_multiblock(host, event.pos, &event.stack.item);
             return;
