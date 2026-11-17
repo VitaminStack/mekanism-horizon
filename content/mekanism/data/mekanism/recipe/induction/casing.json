@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "E": "mekanism:energy_tablet",
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    " S ",
+    "SES",
+    " S "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanism:induction_casing"
+  }
+}

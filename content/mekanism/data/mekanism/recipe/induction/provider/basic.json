@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanism:induction_provider",
+  "key": {
+    "#": "mekanism:basic_energy_cube",
+    "C": "#c:circuits/basic",
+    "L": "#c:dusts/lithium"
+  },
+  "pattern": [
+    "LCL",
+    "C#C",
+    "LCL"
+  ],
+  "result": {
+    "id": "mekanism:basic_induction_provider"
+  }
+}

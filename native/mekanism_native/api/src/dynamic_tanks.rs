@@ -23,14 +23,14 @@ const CAPACITY: &str = "mekanism_mb_capacity";
 const MODE: &str = "mekanism_mb_mode";
 const MASTER: &str = "mekanism_mb_master";
 
-fn read_long(nbt: &Compound, name: &'static str) -> i64 {
+pub(super) fn read_long(nbt: &Compound, name: &'static str) -> i64 {
     match nbt.get(&key(nbt, name)) {
         Some(Tag::Long(v)) => *v,
         _ => 0,
     }
 }
 
-fn write_long(nbt: &mut Compound, name: &'static str, v: i64) {
+pub(super) fn write_long(nbt: &mut Compound, name: &'static str, v: i64) {
     let k = key(nbt, name);
     if v == 0 {
         nbt.remove(&k);

@@ -18,16 +18,19 @@
 //! forms around it adds up the caches of all its members (`multiblock::merge_stored`).
 //! Breaking the master by hand passes its contents to a neighbouring member first.
 
-use horizon_client::mod_api::{BlockEntityTickEvent, Compound, Host, Tag};
+use horizon_client::mod_api::{
+    BlockEntityTickEvent, Compound, Host, ModContainer, ModEnergyBuffer, ModFluidTanks, NativeScreen, ScreenDrawEvent, Tag,
+};
 
 use super::multiblock::{self, Cell, Def, Outcome, Pos, Structure, Type};
-use super::{dynamic_tank, dynamic_tanks, key, offset};
+use super::induction::{self, Totals};
+use super::{dynamic_tank, dynamic_tanks, inductions, key, offset};
 
 const MASTER: &str = "mekanism_mb_master";
 const MIN: &str = "mekanism_mb_min";
 const MAX: &str = "mekanism_mb_max";
 
-const DEFS: &[&Def] = &[&dynamic_tank::DEF];
+const DEFS: &[&Def] = &[&dynamic_tank::DEF, &induction::DEF];
 
 /// The structure type `block` is a member (with a block entity) of.
 pub(super) fn find(block: &str) -> Option<&'static Def> {
@@ -84,13 +87,35 @@ fn validate(host: &mut dyn Host, def: &Def, seed: Pos) -> Outcome {
     let dimension = host.dimension().to_owned();
     let Some(level) = host.level(&dimension) else { return Outcome::Unloaded };
     let host: &dyn Host = &*host;
-    multiblock::validate(seed, &def.rules, &mut |p| {
+    let outcome = multiblock::validate(seed, &def.rules, &mut |p| {
         if !level.is_loaded(host, p) { Cell::Unloaded } else { def.classify(&host.block(p)) }
-    })
+    });
+    // `MatrixValidator.postcheck`: a matrix needs a cell and a provider.
+    match outcome {
+        Outcome::Formed(s) if def.ty == Type::Matrix => match induction::check(&matrix_totals(host, &s)) {
+            Ok(()) => Outcome::Formed(s),
+            Err(why) => Outcome::Invalid(why),
+        },
+        other => other,
+    }
+}
+
+fn matrix_totals(host: &dyn Host, s: &Structure) -> Totals {
+    let blocks: Vec<String> = s.interior.iter().map(|&p| host.block(p)).collect();
+    induction::totals(blocks.iter().map(String::as_str))
+}
+
+/// The master's derived values after (re-)validation.
+fn validated(nbt: &mut Compound, def: &Def, s: &Structure, totals: &Totals) {
+    match def.ty {
+        Type::Tank => dynamic_tanks::validated(nbt, s),
+        Type::Matrix => inductions::validated(nbt, s, totals),
+        Type::Evaporation => {}
+    }
 }
 
 /// One member's link to `master`; the master also gets the bounds and the merged contents.
-fn link(nbt: &mut Compound, def: &Def, s: &Structure, master: Pos, here: Pos, merged: &Compound) {
+fn link(nbt: &mut Compound, def: &Def, s: &Structure, master: Pos, here: Pos, merged: &Compound, totals: &Totals) {
     write_pos(nbt, MASTER, master);
     if here == master {
         write_pos(nbt, MIN, s.min);
@@ -100,14 +125,14 @@ fn link(nbt: &mut Compound, def: &Def, s: &Structure, master: Pos, here: Pos, me
                 nbt.insert(k.clone(), v.clone());
             }
         }
-        if let Type::Tank = def.ty {
-            dynamic_tanks::validated(nbt, s);
-        }
+        validated(nbt, def, s, totals);
     } else {
         remove(nbt, MIN);
         remove(nbt, MAX);
-        if let Type::Tank = def.ty {
-            dynamic_tanks::clear(nbt);
+        match def.ty {
+            Type::Tank => dynamic_tanks::clear(nbt),
+            Type::Matrix => inductions::clear(nbt),
+            Type::Evaporation => {}
         }
     }
 }
@@ -126,13 +151,15 @@ fn form(host: &mut dyn Host, def: &Def, s: &Structure, mut own: Option<(Pos, &mu
         .collect();
     let merged = match def.ty {
         Type::Tank => dynamic_tanks::merge(&parts),
-        Type::Matrix | Type::Evaporation => Compound::new(),
+        Type::Matrix => inductions::merge(&parts),
+        Type::Evaporation => Compound::new(),
     };
+    let totals = if def.ty == Type::Matrix { matrix_totals(&*host, s) } else { Totals::default() };
     for &p in &members {
         match own.as_mut() {
-            Some((at, nbt)) if *at == p => link(nbt, def, s, master, p, &merged),
+            Some((at, nbt)) if *at == p => link(nbt, def, s, master, p, &merged, &totals),
             _ => {
-                host.change_mod_block_entity(p, &mut |m| link(&mut m.nbt, def, s, master, p, &merged));
+                host.change_mod_block_entity(p, &mut |m| link(&mut m.nbt, def, s, master, p, &merged, &totals));
             }
         }
         set_formed(host, p, true);
@@ -172,7 +199,8 @@ pub(super) fn broken(host: &mut dyn Host, pos: Pos, block: &str) {
     let Some(entity) = host.mod_block_entity(pos) else { return };
     let (stored, nbt) = match def.ty {
         Type::Tank => (dynamic_tanks::has_contents(&entity.nbt), entity.nbt.clone()),
-        _ => return,
+        Type::Matrix => (inductions::has_contents(&entity.nbt), entity.nbt.clone()),
+        Type::Evaporation => return,
     };
     if !stored {
         return;
@@ -184,7 +212,11 @@ pub(super) fn broken(host: &mut dyn Host, pos: Pos, block: &str) {
         }
         host.change_mod_block_entity(at, &mut |m| {
             if def.is_member(&m.id) {
-                dynamic_tanks::inherit(&mut m.nbt, &nbt);
+                match def.ty {
+                    Type::Tank => dynamic_tanks::inherit(&mut m.nbt, &nbt),
+                    Type::Matrix => inductions::inherit(&mut m.nbt, &nbt),
+                    Type::Evaporation => {}
+                }
             }
         });
         break;
@@ -219,8 +251,10 @@ pub(super) fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, def: &
             if slot % LINK_CHECK == 0 {
                 member_check(host, event, def, master);
             }
-            if matches!(def.ty, Type::Tank) {
-                dynamic_tanks::member_tick(host, event, master);
+            match def.ty {
+                Type::Tank => dynamic_tanks::member_tick(host, event, master),
+                Type::Matrix => inductions::member_tick(host, event, master),
+                Type::Evaporation => {}
             }
         }
     }
@@ -235,11 +269,16 @@ fn member_check(host: &mut dyn Host, event: &mut BlockEntityTickEvent, def: &Def
         .is_some_and(|e| def.is_member(&e.id) && read_pos(&e.nbt, MASTER) == Some(master) && claims(&e.nbt, event.pos));
     if ok {
         if let Some(e) = host.mod_block_entity(master) {
-            if matches!(def.ty, Type::Tank) {
-                let data = dynamic_tanks::menu_data(&e.nbt, true).to_vec();
-                if event.entity.data != data {
-                    event.entity.data = data;
+            let data = match def.ty {
+                Type::Tank => Some(dynamic_tanks::menu_data(&e.nbt, true).to_vec()),
+                Type::Matrix => {
+                    let port = (&*event.entity.id == induction::PORT).then_some(&event.entity.nbt);
+                    Some(inductions::menu_data(&e.nbt, true, port).to_vec())
                 }
+                Type::Evaporation => None,
+            };
+            if let Some(data) = data.filter(|d| event.entity.data != *d) {
+                event.entity.data = data;
             }
         }
     } else {
@@ -256,9 +295,8 @@ fn master_tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, def: &'sta
             Outcome::Formed(s) if s.min == read_pos(&event.entity.nbt, MIN).unwrap_or(s.min) && s.max == read_pos(&event.entity.nbt, MAX).unwrap_or(s.max)
                 && s.master(|p| def.is_member(&host.block(p))) == Some(pos) =>
             {
-                if let Type::Tank = def.ty {
-                    dynamic_tanks::validated(&mut event.entity.nbt, &s);
-                }
+                let totals = if def.ty == Type::Matrix { matrix_totals(&*host, &s) } else { Totals::default() };
+                validated(&mut event.entity.nbt, def, &s, &totals);
             }
             // The shape changed (a block added or moved the master): dissolve; the structure forms
             // again from the block that changed, or by the members' retries.
@@ -275,7 +313,59 @@ fn master_tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, def: &'sta
             Outcome::Unloaded => {}
         }
     }
-    if let Type::Tank = def.ty {
-        dynamic_tanks::master_tick(&event.entity.nbt, &mut event.entity.data);
+    match def.ty {
+        Type::Tank => dynamic_tanks::master_tick(&event.entity.nbt, &mut event.entity.data),
+        Type::Matrix => inductions::master_tick(&event.entity.nbt, &mut event.entity.data, &*event.entity.id == induction::PORT),
+        Type::Evaporation => {}
+    }
+}
+
+// The hooks `lib.rs` forwards by block id: menus, screens, buffers.
+
+pub(super) fn container(block: &str) -> ModContainer {
+    dynamic_tanks::container(block)
+}
+
+pub(super) fn screen() -> NativeScreen {
+    dynamic_tanks::screen()
+}
+
+/// A valve's buffer tank (the Dynamic Valve).
+pub(super) fn fluids(block: &str) -> Option<ModFluidTanks> {
+    (block == dynamic_tank::VALVE).then(dynamic_tanks::fluids)
+}
+
+/// A port's energy buffer (the Induction Port).
+pub(super) fn energy(block: &str) -> Option<ModEnergyBuffer> {
+    (block == induction::PORT).then(inductions::energy_buffer)
+}
+
+pub(super) fn draw(host: &dyn Host, event: &mut ScreenDrawEvent) {
+    match find(event.block).map(|d| d.ty) {
+        Some(Type::Matrix) => inductions::draw(host, event),
+        _ => dynamic_tanks::draw(host, event),
+    }
+}
+
+pub(super) fn click(block: &str, at: [f32; 2], right: bool) -> Option<i32> {
+    match find(block)?.ty {
+        Type::Tank => dynamic_tank::button_at(at, right),
+        Type::Matrix => inductions::button_at(block, at),
+        Type::Evaporation => None,
+    }
+}
+
+pub(super) fn tooltip(block: &str, data: &[i32], at: [f32; 2]) -> Vec<String> {
+    match find(block).map(|d| d.ty) {
+        Some(Type::Tank) => dynamic_tank::tooltip(data, at),
+        _ => Vec::new(),
+    }
+}
+
+pub(super) fn button(host: &mut dyn Host, pos: Pos, nbt: &mut Compound, data: &mut Vec<i32>, id: i32) {
+    match find(&host.block(pos)).map(|d| d.ty) {
+        Some(Type::Tank) => dynamic_tanks::button(host, pos, nbt, id),
+        Some(Type::Matrix) => inductions::button(nbt, data, id),
+        _ => {}
     }
 }

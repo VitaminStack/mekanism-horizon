@@ -53,6 +53,8 @@ mod energy;
 mod gear;
 mod generator;
 mod generators;
+mod induction;
+mod inductions;
 mod infuser;
 mod items;
 mod machine;
@@ -455,7 +457,7 @@ impl Hooks for MekanismNative {
             Kind::Bin(_) => Some(bins::container()),
             Kind::Storage(_) => Some(storages::container()),
             Kind::Pump { plenisher } => Some(pumps::container(plenisher)),
-            Kind::Multiblock(_) => Some(dynamic_tanks::container(event.block)),
+            Kind::Multiblock(_) => Some(multiblocks::container(event.block)),
             // One hidden placeholder slot; all interactions are buttons.
             Kind::Cube { .. } => Some(ModContainer {
                 slots: 1,
@@ -489,6 +491,7 @@ impl Hooks for MekanismNative {
             }),
             Kind::Generator(g) => Some(generators::energy_buffer(g)),
             Kind::Pump { .. } => Some(pumps::energy_buffer()),
+            Kind::Multiblock(_) => multiblocks::energy(event.block),
             Kind::Cube { capacity, rate } => Some(ModEnergyBuffer {
                 capacity,
                 max_insert: rate,
@@ -496,7 +499,7 @@ impl Hooks for MekanismNative {
                 insert_faces: [true; 6],
                 extract_faces: [true; 6],
             }),
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) | Kind::Multiblock(_) => None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) => None,
         }
     }
 
@@ -507,7 +510,7 @@ impl Hooks for MekanismNative {
             Kind::Machine(m) => m.tanks.map(process::fluids),
             Kind::Generator(generator::GAS) => Some(generators::gas_fluids()),
             Kind::Pump { plenisher } => Some(pumps::fluids(plenisher)),
-            Kind::Multiblock(_) if event.block == dynamic_tank::VALVE => Some(dynamic_tanks::fluids()),
+            Kind::Multiblock(_) => multiblocks::fluids(event.block),
             Kind::Transmitter(t) if t.family().is_some() => Some(transmitters::fluids(t)),
             _ => None,
         }
@@ -609,7 +612,7 @@ impl Hooks for MekanismNative {
             Kind::Bounding => Some(generators::screen(generator::WIND)),
             Kind::Tank(_) => Some(tanks::screen()),
             Kind::Pump { .. } => Some(pumps::screen()),
-            Kind::Multiblock(_) => Some(dynamic_tanks::screen()),
+            Kind::Multiblock(_) => Some(multiblocks::screen()),
             // The cube's dummy container slot is hidden.
             Kind::Cube { .. } => Some(NativeScreen {
                 width: 176.0,
@@ -637,7 +640,7 @@ impl Hooks for MekanismNative {
             Some(Kind::Cube { capacity, rate }) => draw_cube(host, event, capacity, rate),
             Some(Kind::Tank(t)) => tanks::draw(host, event, t),
             Some(Kind::Pump { plenisher }) => pumps::draw(host, event, plenisher),
-            Some(Kind::Multiblock(_)) => dynamic_tanks::draw(host, event),
+            Some(Kind::Multiblock(_)) => multiblocks::draw(host, event),
             _ => {}
         }
     }
@@ -649,7 +652,7 @@ impl Hooks for MekanismNative {
             Kind::Machine(m) => process::click(m, event.at),
             Kind::Cube { .. } => cube::side_button_at(event.at, event.right),
             Kind::Tank(_) => tank::button_at(event.at, event.right),
-            Kind::Multiblock(_) => dynamic_tank::button_at(event.at, event.right),
+            Kind::Multiblock(_) => multiblocks::click(event.block, event.at, event.right),
             _ => None,
         }
     }
@@ -665,7 +668,7 @@ impl Hooks for MekanismNative {
             }
             Some(Kind::Tank(t)) => event.lines.extend(tank::tooltip(t, event.data, event.at)),
             Some(Kind::Pump { .. }) => event.lines.extend(pump::tooltip(event.data, event.at)),
-            Some(Kind::Multiblock(_)) => event.lines.extend(dynamic_tank::tooltip(event.data, event.at)),
+            Some(Kind::Multiblock(_)) => event.lines.extend(multiblocks::tooltip(event.block, event.data, event.at)),
             _ => {}
         }
     }
@@ -680,7 +683,7 @@ impl Hooks for MekanismNative {
                     event.entity.data = data;
                 }
             }
-            Some(Kind::Multiblock(_)) => dynamic_tanks::button(host, event.pos, &mut event.entity.nbt, event.id),
+            Some(Kind::Multiblock(_)) => multiblocks::button(host, event.pos, &mut event.entity.nbt, &mut event.entity.data, event.id),
             Some(Kind::Cube { .. }) => {
                 let Some((rel, forward)) = cube::side_button_action(event.id) else { return };
                 let mut sides = read_sides(&event.entity.nbt).unwrap_or(cube::DEFAULT_SIDES);
