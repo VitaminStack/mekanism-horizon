@@ -48,6 +48,10 @@ pub mod oredict_tags;
 #[path = "../../../native/mekanism_native/api/src/oredict.rs"]
 pub mod oredict;
 
+/// Digital Miner rules (M08).
+#[path = "../../../native/mekanism_native/api/src/miner.rs"]
+pub mod miner;
+
 /// Personal Chest and Personal Barrel (M08).
 #[path = "../../../native/mekanism_native/api/src/storage.rs"]
 pub mod storage;

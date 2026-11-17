@@ -43,6 +43,7 @@
     "mekanism:solar_neutron_activator",
     "#mekanism:transmitters",
     "mekanism:oredictionificator",
-    "mekanism:formulaic_assemblicator"
+    "mekanism:formulaic_assemblicator",
+    "mekanism:digital_miner"
   ]
 }

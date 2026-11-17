@@ -578,6 +578,12 @@ SPECIAL_IDS = []
 block('oredictionificator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE)
 SPECIAL_IDS.append('oredictionificator')
 put(f'data/{NS}/horizon/menu/oredictionificator.json', {'slots': 2, 'data_slots': 26, 'results': [1]})
+# Digital Miner: 27 main slots + 9 filter slots; data = miner.rs DATA_LEN (12). Its 17 bounding blocks
+# are `mekanism:bounding_block`.
+block('digital_miner', 'minecraft:barrel', 3.5, 16.0, extra={'state_properties': {'active': {'type': 'boolean'}},
+                                                           'default_state': {'facing': 'north', 'active': 'false'}})
+SPECIAL_IDS.append('digital_miner')
+put(f'data/{NS}/horizon/menu/digital_miner.json', {'slots': 36, 'data_slots': 12, 'results': []})
 # Formulaic Assemblicator + Crafting Formula: registered only (docs/sessions/m08-special-machines.md:
 # Horizon gives a native mod no vanilla crafting recipes, so the crafting behaviour is not ported).
 block('formulaic_assemblicator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE)

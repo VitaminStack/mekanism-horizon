@@ -57,6 +57,8 @@ mod machine;
 mod process;
 mod pump;
 mod pumps;
+mod miner;
+mod miners;
 mod oredict;
 mod oredict_tags;
 mod oredicts;
@@ -497,7 +499,8 @@ impl Hooks for MekanismNative {
                 insert_faces: [true; 6],
                 extract_faces: [true; 6],
             }),
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) | Kind::Special(_) => None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) => None,
+            Kind::Special(b) => special::energy_buffer(b),
         }
     }
 
@@ -540,6 +543,8 @@ impl Hooks for MekanismNative {
                 Flow::Cancel
             }
             Some(Kind::Storage(_)) if !storages::allowed(host, event.pos) => Flow::Cancel,
+            // A miner's bounding blocks open no screen (the generators' mirror their main block's).
+            Some(Kind::Bounding) if special::is_miner_bounding(host, event.pos) => Flow::Cancel,
             Some(Kind::Tank(t)) => {
                 let Some((item, _, _)) = host.held() else { return Flow::Continue };
                 if tanks::use_bucket(host, event.pos, event.face, &item, t) { Flow::Cancel } else { Flow::Continue }
@@ -674,7 +679,7 @@ impl Hooks for MekanismNative {
     fn menu_button(&self, host: &mut dyn Host, event: &mut MenuButtonEvent) {
         match kind(&event.entity.id) {
             Some(Kind::Machine(m)) => process::button(m, &mut event.entity.nbt, event.id),
-            Some(Kind::Special(b)) => special::button(b, event),
+            Some(Kind::Special(b)) => special::button(host, event, b),
             Some(Kind::Tank(t)) => {
                 if let Some(data) = tanks::button(t, &mut event.entity.nbt, event.id) {
                     event.entity.data = data;
@@ -754,7 +759,8 @@ impl Hooks for MekanismNative {
         // Breaking a multiblock takes its bounding blocks with it; breaking a
         // bounding block breaks the main block, which drops (Mekanism's
         // BlockBounding), except for a player in creative mode.
-        if host.block(event.pos) == generator::BOUNDING {
+        if special::destroy_block(host, event.pos) {
+        } else if host.block(event.pos) == generator::BOUNDING {
             if let Some((block, main)) = generators::bounding_main(host, event.pos) {
                 generators::remove_bounding(host, main, block, Some(event.pos));
                 let creative = host.acting_player().is_some_and(|p| p.game_mode == 1);
@@ -819,6 +825,9 @@ impl Hooks for MekanismNative {
 
     /// Placing a cube or tank item restores what it carries.
     fn place_block(&self, host: &mut dyn Host, event: &mut PlaceBlockEvent) {
+        if special::place_block(host, &event.stack.item, event.pos) {
+            return;
+        }
         if generator::is_multiblock(&event.stack.item) {
             generators::place_multiblock(host, event.pos, &event.stack.item);
             return;
