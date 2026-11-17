@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "mekanism:basic_crushing_factory",
+    "mekanism:advanced_crushing_factory",
+    "mekanism:elite_crushing_factory",
+    "mekanism:ultimate_crushing_factory"
+  ]
+}

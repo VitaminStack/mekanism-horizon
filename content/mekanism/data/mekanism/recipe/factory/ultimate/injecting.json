@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:injecting",
+  "key": {
+    "A": "#mekanism:alloys/atomic",
+    "C": "#c:circuits/ultimate",
+    "I": "#c:gems/diamond",
+    "P": "mekanism:elite_injecting_factory"
+  },
+  "pattern": [
+    "ACA",
+    "IPI",
+    "ACA"
+  ],
+  "result": {
+    "id": "mekanism:ultimate_injecting_factory"
+  }
+}

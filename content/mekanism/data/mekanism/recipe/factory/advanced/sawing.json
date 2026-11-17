@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:sawing",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "C": "#c:circuits/advanced",
+    "I": "#c:ingots/osmium",
+    "P": "mekanism:basic_sawing_factory"
+  },
+  "pattern": [
+    "ACA",
+    "IPI",
+    "ACA"
+  ],
+  "result": {
+    "id": "mekanism:advanced_sawing_factory"
+  }
+}

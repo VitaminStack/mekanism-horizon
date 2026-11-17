@@ -223,6 +223,33 @@ for m, menu in CHEMICAL_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
     put(f'data/{NS}/horizon/menu/{m}.json', menu)
 
+# --- factories (M07): 8 types x 4 tiers, ticked and drawn by native/mekanism_native (factory.rs, factories.rs) ---
+# BlockTile.defaultProperties (3.5, 16) as the machines; barrel template for `facing` and the menu, `active` picks
+# the lit model. Slot order mirrors `factory::Factory::slots`: p inputs, p outputs, p secondary outputs
+# (sawing only), then one shared slot (combining: extra input; compressing, purifying, injecting, infusing: the
+# slot that fills the shared chemical tank). Data slots: energy, facing, active, tank amount, tank type, then
+# one progress per process (`factory::DATA_*`). Smelting factories need vanilla smelting recipes: not ported.
+FACTORY_PROCESSES = {'basic': 3, 'advanced': 5, 'elite': 7, 'ultimate': 9}
+FACTORY_TYPES = {  # type: (secondary output per process, shared slot)
+    'enriching': (False, False), 'crushing': (False, False), 'compressing': (False, True),
+    'combining': (False, True), 'purifying': (False, True), 'injecting': (False, True),
+    'infusing': (False, True), 'sawing': (True, False),
+}
+for tier, p in FACTORY_PROCESSES.items():
+    for kind, (secondary, shared) in FACTORY_TYPES.items():
+        fid = f'{tier}_{kind}_factory'
+        block(fid, 'minecraft:barrel', 3.5, 16.0, extra={
+            'state_properties': {'active': {'type': 'boolean'}},
+            'default_state': {'facing': 'north', 'active': 'false'}})
+        slots = 2 * p + (p if secondary else 0) + (1 if shared else 0)
+        put(f'data/{NS}/horizon/menu/{fid}.json', {
+            'slots': slots, 'data_slots': 5 + p, 'results': list(range(p, 2 * p + (p if secondary else 0)))})
+# The sawing factory's secondary outputs sit after the outputs, as results too (`factory::Slots`).
+
+# Tier Installers (`ItemTierInstaller`): right click on a machine or a factory (native `factories::install`).
+for tier in FACTORY_PROCESSES:
+    item(f'{tier}_tier_installer')
+
 # Nutritional Liquifier recipes (`mekanism:liquification`): Mekanism has none as data; its machine turns any
 # food into paste in code (`TileEntityNutritionalLiquifier.createDynamicRecipe`: nutrition x 50 mB,
 # `nutritionalPasteMBPerFood`). Horizon gives a native mod no way to read an item's food values, so

@@ -48,6 +48,8 @@ mod chemicals;
 mod cube;
 mod dictionary_tags;
 mod energy;
+mod factories;
+mod factory;
 mod gear;
 mod generator;
 mod generators;
@@ -142,6 +144,8 @@ enum Kind {
     Pump { plenisher: bool },
     /// A Mechanical Pipe, Pressurized Tube or Thermodynamic Conductor (`transmitter.rs`).
     Transmitter(&'static transmitter::Tier),
+    /// One of `factory::TIERS` x `factory::TYPES` (`factories.rs`).
+    Factory(factory::Factory),
 }
 
 fn kind(block: &str) -> Option<Kind> {
@@ -174,6 +178,9 @@ fn kind(block: &str) -> Option<Kind> {
     }
     if let Some(t) = transmitter::tier_of(block) {
         return Some(Kind::Transmitter(t));
+    }
+    if let Some(f) = factory::find(block) {
+        return Some(Kind::Factory(f));
     }
     generators::find(block).map(Kind::Generator)
 }
@@ -305,6 +312,14 @@ impl MekanismNative {
         if !m.sound.is_empty() {
             let volume = upgrade::volume(process::installed(&event.entity.nbt)[upgrade::Upgrade::Muffling.index()]);
             self.hum_at(host, event.pos, m.sound, m.sound_ticks, active, SOUND_BLOCKS, volume);
+        }
+    }
+
+    fn factory_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent, f: &factory::Factory) {
+        let active = factories::tick(host, event, f, &mut self.recipes.lock().unwrap());
+        let (sound, ticks) = factories::sound(f);
+        if !sound.is_empty() {
+            self.hum(host, event.pos, sound, ticks, active);
         }
     }
 
@@ -460,6 +475,7 @@ impl Hooks for MekanismNative {
     fn block_entity_container(&self, _host: &dyn Host, event: &mut BlockEntityContainerEvent) -> Option<ModContainer> {
         match kind(event.block)? {
             Kind::Machine(m) => Some(process::container(m)),
+            Kind::Factory(f) => Some(factories::container(&f)),
             Kind::Generator(g) => Some(generators::container(g)),
             Kind::Bounding => Some(generators::bounding_container()),
             Kind::Tank(t) => Some(tanks::container(t)),
@@ -495,6 +511,13 @@ impl Hooks for MekanismNative {
                 // machine's tick keeps the stored energy within its own, upgraded capacity.
                 capacity: m.max_capacity(),
                 max_insert: m.max_capacity(),
+                max_extract: 0,
+                insert_faces: [true; 6],
+                extract_faces: [false; 6],
+            }),
+            Kind::Factory(f) => Some(ModEnergyBuffer {
+                capacity: f.capacity(),
+                max_insert: f.capacity(),
                 max_extract: 0,
                 insert_faces: [true; 6],
                 extract_faces: [false; 6],
@@ -544,6 +567,12 @@ impl Hooks for MekanismNative {
         if matches!(self.gear.right_click_block(host, event.pos, event.face), Flow::Cancel) {
             return Flow::Cancel;
         }
+        // A Tier Installer turns a machine or a factory into the next factory (`factories::install`).
+        if let Some((item, _, _)) = host.held() {
+            if factories::installer_tier(&item).is_some() && factories::install(host, event.pos, &item) {
+                return Flow::Cancel;
+            }
+        }
         match kind(&host.block(event.pos)) {
             // Bins have no screen: every click on one is the bin's.
             Some(Kind::Bin(t)) => {
@@ -576,6 +605,7 @@ impl Hooks for MekanismNative {
     fn block_entity_tick(&self, host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
         match kind(&event.entity.id) {
             Some(Kind::Machine(m)) => self.machine_tick(host, event, m),
+            Some(Kind::Factory(f)) => self.factory_tick(host, event, &f),
             Some(Kind::Generator(g)) => self.generator_tick(host, event, g),
             Some(Kind::Cube { capacity, rate }) => self.cube_tick(host, event, capacity, rate),
             Some(Kind::Debug { source }) => debug_tick(host, event.pos, source),
@@ -596,7 +626,7 @@ impl Hooks for MekanismNative {
     fn state_for_placement(&self, level: &dyn LevelHost, event: &mut StateForPlacementEvent) -> Option<Option<horizon_client::mod_api::BlockStateId>> {
         let pitch = match kind(&event.context.item)? {
             Kind::Cube { .. } => event.context.pitch,
-            Kind::Machine(_) | Kind::Generator(_) | Kind::Pump { .. } => 0.0,
+            Kind::Machine(_) | Kind::Factory(_) | Kind::Generator(_) | Kind::Pump { .. } => 0.0,
             Kind::Tank(t) if t.family == tank::Family::Chemical => 0.0,
             Kind::Bin(_) => 0.0,
             Kind::Storage(block) if storage::horizontal_only(block) => 0.0,
@@ -614,6 +644,7 @@ impl Hooks for MekanismNative {
     fn screen(&self, _host: &dyn Host, event: &mut ScreenEvent) -> Option<NativeScreen> {
         match kind(event.block)? {
             Kind::Machine(m) => Some(process::screen(m)),
+            Kind::Factory(f) => Some(factories::screen(&f)),
             Kind::Generator(g) => Some(generators::screen(g)),
             // Only the Advanced Solar and the Wind Generator are multiblocks: one layout.
             Kind::Bounding => Some(generators::screen(generator::WIND)),
@@ -637,6 +668,7 @@ impl Hooks for MekanismNative {
     fn screen_draw(&self, host: &dyn Host, event: &mut ScreenDrawEvent) {
         match kind(event.block) {
             Some(Kind::Machine(m)) => process::draw(host, event, m),
+            Some(Kind::Factory(f)) => factories::draw(host, event, &f),
             Some(Kind::Generator(g)) => generators::draw(host, event, g),
             Some(Kind::Bounding) => {
                 if let Some(g) = generators::bounding_generator(event.data) {
@@ -655,6 +687,7 @@ impl Hooks for MekanismNative {
     fn screen_click(&self, _host: &dyn Host, event: &mut ScreenClickEvent) -> Option<i32> {
         match kind(event.block)? {
             Kind::Machine(m) => process::click(m, event.at),
+            Kind::Factory(f) => factories::click(&f, event.at),
             Kind::Cube { .. } => cube::side_button_at(event.at, event.right),
             Kind::Tank(_) => tank::button_at(event.at, event.right),
             _ => None,
@@ -664,6 +697,7 @@ impl Hooks for MekanismNative {
     fn screen_tooltip(&self, _host: &dyn Host, event: &mut ScreenTooltipEvent) {
         match kind(event.block) {
             Some(Kind::Machine(m)) => event.lines.extend(machine::tooltip(m, event.data, event.at)),
+            Some(Kind::Factory(f)) => event.lines.extend(factories::tooltip(&f, event.data, event.at)),
             Some(Kind::Generator(g)) => event.lines.extend(generators::tooltip(g, event.data, event.at)),
             Some(Kind::Bounding) => {
                 if let Some(g) = generators::bounding_generator(event.data) {
@@ -681,6 +715,7 @@ impl Hooks for MekanismNative {
     fn menu_button(&self, host: &mut dyn Host, event: &mut MenuButtonEvent) {
         match kind(&event.entity.id) {
             Some(Kind::Machine(m)) => process::button(m, &mut event.entity.nbt, event.id),
+            Some(Kind::Factory(f)) => factories::button(&f, &mut event.entity.nbt, event.id),
             Some(Kind::Tank(t)) => {
                 if let Some(data) = tanks::button(t, &mut event.entity.nbt, event.id) {
                     event.entity.data = data;

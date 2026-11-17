@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "mekanism:enrichment_chamber"
+    "mekanism:enrichment_chamber",
+    "#mekanism:factories/enriching"
   ]
 }

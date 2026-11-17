@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "mekanism:chemical_injection_chamber"
+    "mekanism:chemical_injection_chamber",
+    "#mekanism:factories/injecting"
   ]
 }

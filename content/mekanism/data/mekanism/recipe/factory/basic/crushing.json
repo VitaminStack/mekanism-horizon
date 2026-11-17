@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:crushing",
+  "key": {
+    "A": "#mekanism:alloys/basic",
+    "C": "#c:circuits/basic",
+    "I": "#c:ingots/iron",
+    "P": "mekanism:crusher"
+  },
+  "pattern": [
+    "ACA",
+    "IPI",
+    "ACA"
+  ],
+  "result": {
+    "id": "mekanism:basic_crushing_factory"
+  }
+}

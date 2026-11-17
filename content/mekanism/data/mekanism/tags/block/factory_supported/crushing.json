@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "mekanism:crusher"
+    "mekanism:crusher",
+    "#mekanism:factories/crushing"
   ]
 }

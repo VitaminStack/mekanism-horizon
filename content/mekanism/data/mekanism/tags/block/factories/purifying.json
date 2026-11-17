@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "mekanism:basic_purifying_factory",
+    "mekanism:advanced_purifying_factory",
+    "mekanism:elite_purifying_factory",
+    "mekanism:ultimate_purifying_factory"
+  ]
+}

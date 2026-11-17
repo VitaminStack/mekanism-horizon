@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "mekanism:basic_enriching_factory",
+    "mekanism:advanced_enriching_factory",
+    "mekanism:elite_enriching_factory",
+    "mekanism:ultimate_enriching_factory"
+  ]
+}
