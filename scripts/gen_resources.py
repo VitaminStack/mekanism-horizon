@@ -572,6 +572,28 @@ put('data/c/tags/block/ores.json', {'replace': False, 'values': [
     'minecraft:nether_gold_ore', 'minecraft:nether_quartz_ore', 'minecraft:ancient_debris',
     *(f'#c:ores/{o}' for o in ('tin', 'osmium', 'uranium', 'fluorite', 'lead'))]})
 
+# --- M07 machine framework (session m07-machine-framework): upgrades, energy slot, redstone, Configurator ---
+# Upstream 26.3 has one `mekanism:upgrade` item with a data component; Horizon items carry no typed
+# component here, so each upgrade kind is its own item (`mekanism:upgrade_<kind>`). Effects: native/mekanism_native
+# `upgrade.rs`; models, names and recipes by import_upstream.py.
+UPGRADE_KINDS = ['speed', 'energy', 'muffling', 'chemical', 'anchor', 'filter', 'stone_generator', 'xp_containment']
+for kind in UPGRADE_KINDS:
+    item(f'upgrade_{kind}')
+item('configurator', stack=1)
+# Every machine (but the Solar Neutron Activator, which has neither energy slot nor upgrades) gets three
+# slots after its own (energy, upgrade input, upgrade output = a results slot) and four data entries after
+# its own (redstone mode, installed speed, energy, muffling): `machine.rs` `all_slots` / `data_slots`
+# (checked by its test `menu_files_match_the_table`).
+for m in ['metallurgic_infuser', *MACHINE_MENUS, *CHEMICAL_MENUS]:
+    if m == 'solar_neutron_activator':
+        continue
+    menu_file = ROOT / 'content' / NS / f'data/{NS}/horizon/menu/{m}.json'
+    menu = json.loads(menu_file.read_text(encoding='utf-8'))
+    menu['results'] = [*menu['results'], menu['slots'] + 2]
+    menu['slots'] += 3
+    menu['data_slots'] += 4
+    put(f'data/{NS}/horizon/menu/{m}.json', menu)
+
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
