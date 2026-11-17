@@ -82,6 +82,7 @@
       "nugget_steel",
       "nugget_tin",
       "nugget_uranium",
+      "portable_teleporter",
       "raw_lead",
       "raw_osmium",
       "raw_tin",
@@ -96,6 +97,7 @@
       "shard_tin",
       "shard_uranium",
       "substrate",
+      "teleportation_core",
       "ultimate_control_circuit"
     ],
     "blocks": [
@@ -176,9 +178,12 @@
       "precision_sawmill",
       "pressurized_reaction_chamber",
       "purification_chamber",
+      "quantum_entangloporter",
       "rotary_condensentrator",
       "solar_neutron_activator",
       "steel_casing",
+      "teleporter",
+      "teleporter_frame",
       "tin_ore",
       "ultimate_bin",
       "ultimate_chemical_tank",

@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "mekanism:basic_pressurized_tube",
+    "mekanism:advanced_pressurized_tube",
+    "mekanism:elite_pressurized_tube",
+    "mekanism:ultimate_pressurized_tube"
+  ]
+}
