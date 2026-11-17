@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "#": "#c:chests/wooden",
+    "C": "#c:circuits/basic",
+    "P": "minecraft:crafter",
+    "S": "#c:ingots/steel",
+    "X": "mekanism:steel_casing"
+  },
+  "pattern": [
+    "SPS",
+    "CXC",
+    "S#S"
+  ],
+  "result": {
+    "id": "mekanism:formulaic_assemblicator"
+  }
+}

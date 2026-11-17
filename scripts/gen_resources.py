@@ -578,6 +578,11 @@ SPECIAL_IDS = []
 block('oredictionificator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE)
 SPECIAL_IDS.append('oredictionificator')
 put(f'data/{NS}/horizon/menu/oredictionificator.json', {'slots': 2, 'data_slots': 26, 'results': [1]})
+# Formulaic Assemblicator + Crafting Formula: registered only (docs/sessions/m08-special-machines.md:
+# Horizon gives a native mod no vanilla crafting recipes, so the crafting behaviour is not ported).
+block('formulaic_assemblicator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE)
+SPECIAL_IDS.append('formulaic_assemblicator')
+item('crafting_formula', stack=1)
 # --- end M08 ---
 
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.

@@ -42,6 +42,7 @@
     "mekanism:isotopic_centrifuge",
     "mekanism:solar_neutron_activator",
     "#mekanism:transmitters",
-    "mekanism:oredictionificator"
+    "mekanism:oredictionificator",
+    "mekanism:formulaic_assemblicator"
   ]
 }

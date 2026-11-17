@@ -365,6 +365,13 @@ def main(up):
 
     for ns in SOURCES:
         shutil.copyfile(up / 'LICENSE', content(ns) / 'LICENSE-MEKANISM')
+    # --- M08: the Crafting Formula's item model selects on the custom property
+    # `mekanism:crafting_formula` (invalid/encoded), which Horizon does not know; keep the plain model.
+    formula = content('mekanism') / 'assets/mekanism/items/crafting_formula.json'
+    if formula.exists():
+        formula.write_text(json.dumps({'model': {'type': 'minecraft:model', 'model': 'mekanism:item/crafting_formula'}},
+                                      indent=2) + '\n', encoding='utf-8')
+    # --- end M08 ---
     print('imported:', stats)
 
 
