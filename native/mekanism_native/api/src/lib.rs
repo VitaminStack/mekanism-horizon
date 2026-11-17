@@ -64,6 +64,7 @@ mod tank;
 mod tanks;
 mod transmitter;
 mod transmitters;
+mod upgrade;
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
@@ -79,7 +80,7 @@ use horizon_client::mod_api::{
     ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent, StateForPlacementEvent, Tag,
     Text, TooltipEvent, RightClickBlockEvent, CanEatEvent, InventoryTickEvent, ItemBarEvent, OnEquipEvent,
     LivingEntityUseItemFinishEvent, LivingEntityUseItemStartEvent, LivingIncomingDamageV2Event,
-    UseAnimationEvent, UseDurationEvent, UseItemEvent,
+    UseAnimationEvent, UseDurationEvent, UseItemEvent, UseItemOnEvent, MenuSlotRulesEvent,
 };
 use machine::Machine;
 
@@ -108,6 +109,16 @@ const SOUND_WEATHER: usize = 3;
 
 pub fn hooks() -> Box<dyn Hooks> {
     Box::new(MekanismNative::default())
+}
+
+/// The Configurator (`ItemConfigurator`).
+const CONFIGURATOR: &str = "mekanism:configurator";
+
+/// Capacity and charge rate of an item that holds energy: tablets, cubes and the gear.
+fn item_buffer(item: &str) -> Option<(i32, i32)> {
+    items::energy_buffer(item)
+        .or_else(|| (item == TABLET).then_some((TABLET_CAPACITY, TABLET_RATE)))
+        .or_else(|| cube::tier(item))
 }
 
 /// What a block of this mod is.
@@ -264,6 +275,12 @@ impl MekanismNative {
     }
 
     fn hum_as(&self, host: &mut dyn Host, pos: [i32; 3], sound: &str, ticks: i32, active: bool, source: usize) {
+        self.hum_at(host, pos, sound, ticks, active, source, 1.0);
+    }
+
+    /// The loop at `volume` (muffling upgrades lower it; none is no sound at all).
+    #[allow(clippy::too_many_arguments)]
+    fn hum_at(&self, host: &mut dyn Host, pos: [i32; 3], sound: &str, ticks: i32, active: bool, source: usize, volume: f32) {
         let place = (host.dimension().to_owned(), pos);
         let mut hums = self.hums.lock().unwrap();
         if !active {
@@ -273,7 +290,9 @@ impl MekanismNative {
         let left = hums.entry(place).or_insert(0);
         if *left <= 0 {
             let at = [pos[0] as f64 + 0.5, pos[1] as f64 + 0.5, pos[2] as f64 + 0.5];
-            host.play_sound(sound, at, source, 1.0, 1.0);
+            if volume > 0.0 {
+                host.play_sound(sound, at, source, volume, 1.0);
+            }
             *left = ticks;
         }
         *left -= 1;
@@ -284,7 +303,8 @@ impl MekanismNative {
         // After the lock is released: a neighbour's `accepts` hook takes it too.
         process::eject_output(host, event, m);
         if !m.sound.is_empty() {
-            self.hum(host, event.pos, m.sound, m.sound_ticks, active);
+            let volume = upgrade::volume(process::installed(&event.entity.nbt)[upgrade::Upgrade::Muffling.index()]);
+            self.hum_at(host, event.pos, m.sound, m.sound_ticks, active, SOUND_BLOCKS, volume);
         }
     }
 
@@ -471,8 +491,10 @@ impl Hooks for MekanismNative {
             // Machines take energy on every side and give none.
             // (the Solar Neutron Activator uses none)
             Kind::Machine(m) => (!m.solar()).then(|| ModEnergyBuffer {
-                capacity: m.capacity(),
-                max_insert: m.capacity(),
+                // Horizon's buffer is one size per block type: the most the energy upgrades allow; the
+                // machine's tick keeps the stored energy within its own, upgraded capacity.
+                capacity: m.max_capacity(),
+                max_insert: m.max_capacity(),
                 max_extract: 0,
                 insert_faces: [true; 6],
                 extract_faces: [false; 6],
@@ -869,13 +891,40 @@ impl Hooks for MekanismNative {
     }
 
     fn item_energy_buffer(&self, _host: &dyn Host, event: &mut ItemEnergyBufferEvent) -> Option<ItemEnergyBuffer> {
-        if let Some((capacity, rate)) = items::energy_buffer(event.item) {
-            return Some(ItemEnergyBuffer { capacity, max_insert: rate, max_extract: rate });
+        item_buffer(event.item).map(|(capacity, rate)| ItemEnergyBuffer { capacity, max_insert: rate, max_extract: rate })
+    }
+
+    /// The Configurator's Rotate mode (`ItemConfigurator.useOn`): a machine's or cube's front turns to the
+    /// face clicked, horizontally only on machines. Its other modes need per-side config and item modes
+    /// Horizon does not give a block's faces (see docs/sessions/m07-machine-framework.md).
+    fn use_item_on(&self, host: &mut dyn Host, event: &mut UseItemOnEvent<'_>) -> Flow {
+        if &*event.stack.item != CONFIGURATOR {
+            return Flow::Continue;
         }
-        if event.item == TABLET {
-            return Some(ItemEnergyBuffer { capacity: TABLET_CAPACITY, max_insert: TABLET_RATE, max_extract: TABLET_RATE });
+        let Some(dir) = cube::OFFSETS.iter().position(|o| *o == event.face) else { return Flow::Continue };
+        let block = host.block(event.pos);
+        let turnable = match kind(&block) {
+            Some(Kind::Cube { .. }) => true,
+            Some(Kind::Machine(_) | Kind::Generator(_) | Kind::Pump { .. }) => dir != cube::UP && dir != cube::DOWN,
+            _ => false,
+        };
+        if !turnable || host.block_property(event.pos, "facing").is_none() {
+            return Flow::Continue;
         }
-        cube::tier(event.item).map(|(capacity, rate)| ItemEnergyBuffer { capacity, max_insert: rate, max_extract: rate })
+        host.set_block_property(event.pos, "facing", cube::DIR_NAMES[dir]);
+        Flow::Cancel
+    }
+
+    /// Players' clicks into a machine's energy slot (anything that holds energy) and upgrade slot (upgrades).
+    fn menu_slot_rules(&self, event: &mut MenuSlotRulesEvent<'_>) {
+        let menu: &str = &event.menu;
+        let Some(m) = machine::MACHINES.iter().find(|m| m.menu == menu) else { return };
+        let slot = event.slot as usize;
+        if m.energy_slot() == Some(slot) {
+            event.may_place = event.may_place && item_buffer(&event.stack.item).is_some();
+        } else if m.upgrade_slot() == Some(slot) {
+            event.may_place = event.may_place && upgrade::Upgrade::from_item(&event.stack.item).is_some();
+        }
     }
     // Hand-held gear (M11), `items.rs`.
     fn use_item(&self, host: &mut dyn Host, event: &mut UseItemEvent<'_>) -> Flow {

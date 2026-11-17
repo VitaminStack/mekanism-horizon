@@ -108,7 +108,7 @@ fn snbt(tag: &Tag) -> Option<String> {
 
 /// `stack` with its custom data after `change`. `set_component` only takes a mod's own component
 /// types, so the stack is rebuilt from SNBT; its other components are dropped (the gear has none).
-fn edit_data(host: &dyn Host, stack: &mut ItemStack, change: impl FnOnce(&mut Compound)) {
+pub(crate) fn edit_data(host: &dyn Host, stack: &mut ItemStack, change: impl FnOnce(&mut Compound)) {
     let mut data = stack.custom_data().cloned().unwrap_or_default();
     change(&mut data);
     let Some(data) = snbt(&Tag::Compound(data)) else { return };

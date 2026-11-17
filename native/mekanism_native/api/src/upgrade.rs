@@ -60,6 +60,10 @@ impl Upgrade {
         }
     }
 
+    pub fn from_index(i: usize) -> Upgrade {
+        KINDS[i]
+    }
+
     pub fn from_item(item: &str) -> Option<Upgrade> {
         KINDS.into_iter().find(|u| u.item() == item)
     }
