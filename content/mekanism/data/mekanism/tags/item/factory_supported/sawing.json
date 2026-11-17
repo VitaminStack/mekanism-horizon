@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "mekanism:precision_sawmill"
+    "mekanism:precision_sawmill",
+    "#mekanism:factories/sawing"
   ]
 }

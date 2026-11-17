@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "mekanism:combiner"
+    "mekanism:combiner",
+    "#mekanism:factories/combining"
   ]
 }

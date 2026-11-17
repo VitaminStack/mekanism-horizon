@@ -1,0 +1,18 @@
+{
+  "template": "minecraft:barrel",
+  "properties": {
+    "hardness": 3.5,
+    "explosion_resistance": 16.0,
+    "requires_tool": true
+  },
+  "state_properties": {
+    "active": {
+      "type": "boolean"
+    }
+  },
+  "default_state": {
+    "facing": "north",
+    "active": "false"
+  },
+  "item": true
+}

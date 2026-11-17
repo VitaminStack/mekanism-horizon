@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:crushing",
+  "key": {
+    "A": "#mekanism:alloys/infused",
+    "C": "#c:circuits/advanced",
+    "I": "#c:ingots/osmium",
+    "P": "mekanism:basic_crushing_factory"
+  },
+  "pattern": [
+    "ACA",
+    "IPI",
+    "ACA"
+  ],
+  "result": {
+    "id": "mekanism:advanced_crushing_factory"
+  }
+}

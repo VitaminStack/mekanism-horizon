@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mekanism:purifying",
+  "key": {
+    "A": "#mekanism:alloys/reinforced",
+    "C": "#c:circuits/elite",
+    "I": "#c:ingots/gold",
+    "P": "mekanism:advanced_purifying_factory"
+  },
+  "pattern": [
+    "ACA",
+    "IPI",
+    "ACA"
+  ],
+  "result": {
+    "id": "mekanism:elite_purifying_factory"
+  }
+}
