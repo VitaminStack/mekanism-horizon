@@ -64,6 +64,8 @@ mod tank;
 mod tanks;
 mod transmitter;
 mod transmitters;
+mod transporter;
+mod transporters;
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
@@ -131,6 +133,8 @@ enum Kind {
     Pump { plenisher: bool },
     /// A Mechanical Pipe, Pressurized Tube or Thermodynamic Conductor (`transmitter.rs`).
     Transmitter(&'static transmitter::Tier),
+    /// A Logistical, Restrictive or Diversion Transporter (`transporter.rs`).
+    Transporter(&'static transporter::Tier),
 }
 
 fn kind(block: &str) -> Option<Kind> {
@@ -163,6 +167,9 @@ fn kind(block: &str) -> Option<Kind> {
     }
     if let Some(t) = transmitter::tier_of(block) {
         return Some(Kind::Transmitter(t));
+    }
+    if let Some(t) = transporter::tier_of(block) {
+        return Some(Kind::Transporter(t));
     }
     generators::find(block).map(Kind::Generator)
 }
@@ -454,6 +461,7 @@ impl Hooks for MekanismNative {
                 outputs: Vec::new(),
                 menu: Some(CUBE_MENU.to_owned()),
             }),
+            Kind::Transporter(_) => Some(transporters::container()),
             Kind::Debug { .. } | Kind::DebugChemical | Kind::Transmitter(_) => None,
         }
     }
@@ -487,7 +495,7 @@ impl Hooks for MekanismNative {
                 extract_faces: [true; 6],
             }),
             Kind::Transmitter(t) => transmitters::energy_buffer(t),
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) => None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transporter(_) => None,
         }
     }
 
@@ -530,6 +538,10 @@ impl Hooks for MekanismNative {
                 Flow::Cancel
             }
             Some(Kind::Storage(_)) if !storages::allowed(host, event.pos) => Flow::Cancel,
+            // An empty hand sets a transporter's sides (diversion control, connection).
+            Some(Kind::Transporter(t)) => {
+                if transporters::right_click(host, event.pos, event.face, t) { Flow::Cancel } else { Flow::Continue }
+            }
             Some(Kind::Tank(t)) => {
                 let Some((item, _, _)) = host.held() else { return Flow::Continue };
                 if tanks::use_bucket(host, event.pos, event.face, &item, t) { Flow::Cancel } else { Flow::Continue }
@@ -565,6 +577,7 @@ impl Hooks for MekanismNative {
             Some(Kind::Storage(_)) => {}
             Some(Kind::Pump { plenisher }) => pumps::tick(host, event, plenisher),
             Some(Kind::Transmitter(t)) => transmitters::tick(host, event, t),
+            Some(Kind::Transporter(t)) => transporters::tick(host, event, t),
             None => {}
         }
     }
@@ -580,7 +593,7 @@ impl Hooks for MekanismNative {
             Kind::Bin(_) => 0.0,
             Kind::Storage(block) if storage::horizontal_only(block) => 0.0,
             Kind::Storage(_) => event.context.pitch,
-            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Transmitter(_) => return None,
+            Kind::Debug { .. } | Kind::Bounding | Kind::Tank(_) | Kind::DebugChemical | Kind::Transmitter(_) | Kind::Transporter(_) => return None,
         };
         let facing = cube::facing_from_look(event.context.yaw, pitch);
         level
@@ -608,7 +621,7 @@ impl Hooks for MekanismNative {
                 own_labels: true,
                 own_background: false,
             }),
-            Kind::Debug { .. } | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) => None,
+            Kind::Debug { .. } | Kind::DebugChemical | Kind::Bin(_) | Kind::Storage(_) | Kind::Transmitter(_) | Kind::Transporter(_) => None,
         }
     }
 
