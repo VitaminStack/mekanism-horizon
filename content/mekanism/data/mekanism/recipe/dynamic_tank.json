@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": "#c:buckets/empty",
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    " S ",
+    "SBS",
+    " S "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanism:dynamic_tank"
+  }
+}

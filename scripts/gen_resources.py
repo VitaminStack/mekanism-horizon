@@ -586,6 +586,18 @@ put('data/minecraft/tags/block/mineable/pickaxe.json',
         'turbine_rotor', 'electromagnetic_coil', 'rotational_complex', 'saturating_condenser',
         'fission_fuel_assembly', 'control_rod_assembly')]}, GEN)
 
+# --- multiblocks (M09): structure formation lives in native/.../multiblock.rs and multiblocks.rs ---
+# Shell blocks use the barrel template so they open their menu; `formed` is set by the native mod while
+# the block is part of a valid structure. BlockBasicMultiblock strength 5 / 9; Structural Glass and the
+# induction cells and providers are plain BlockTile-strength blocks (3.5 / 16).
+MULTIBLOCK_STATE = {'state_properties': {'formed': {'type': 'boolean'}},
+                    'default_state': {'facing': 'north', 'formed': 'false'}}
+for mid in ('dynamic_tank', 'dynamic_valve'):
+    block(mid, 'minecraft:barrel', 5.0, 9.0, extra=MULTIBLOCK_STATE)
+    # Menu data: amount (3), capacity (3), contents kind, valve mode, formed.
+    put(f'data/{NS}/horizon/menu/{mid}.json', {'slots': 1, 'data_slots': 9, 'results': [0]})
+block('structural_glass', 'minecraft:glass', 3.5, 16.0, occludes=False)
+
 # Hand-written content stays declared too, so the importer covers it.
 for ns, reg in registry.items():
     for kind in ('item', 'block'):

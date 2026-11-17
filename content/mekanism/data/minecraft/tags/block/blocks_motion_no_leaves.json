@@ -40,6 +40,8 @@
     "mekanism:painting_machine",
     "mekanism:pressurized_reaction_chamber",
     "mekanism:isotopic_centrifuge",
-    "mekanism:solar_neutron_activator"
+    "mekanism:solar_neutron_activator",
+    "#mekanism:transmitters",
+    "#mekanism:structures"
   ]
 }

@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#mekanism:transmitters/buffered",
+    "#mekanism:transmitters/heat"
+  ]
+}
