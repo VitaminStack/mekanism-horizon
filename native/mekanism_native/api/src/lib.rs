@@ -455,9 +455,19 @@ fn configure(host: &mut dyn Host, pos: [i32; 3], face: [i32; 3]) -> bool {
     true
 }
 
+/// What the block entity `id` with saved data `nbt` takes from a neighbour: `energy::acceptor`
+/// with its installed upgrades, and an Induction Port in input mode (its Horizon buffer).
+fn acceptor(id: &str, nbt: &Compound) -> Option<energy::Acceptor> {
+    if id == induction::PORT {
+        let buffer = induction::PORT_BUFFER;
+        return (!inductions::output(nbt)).then_some(energy::Acceptor { capacity: buffer, rate: buffer, sided: false });
+    }
+    energy::acceptor(id, &process::installed(nbt))
+}
+
 /// Move up to `budget` of `stored` into the block on side `dir` of `pos`, if
-/// it takes energy there (`energy::acceptor`: a cube through a side set to
-/// input, a machine on every side). Returns what moved: what the neighbour
+/// it takes energy there (`acceptor`: a cube through a side set to
+/// input, a machine on every side, an input port). Returns what moved: what the neighbour
 /// gains the giver loses, so none is lost or made.
 fn give(host: &mut dyn Host, pos: [i32; 3], dir: usize, budget: i32, stored: i32) -> i32 {
     if budget <= 0 || stored <= 0 {
@@ -467,7 +477,7 @@ fn give(host: &mut dyn Host, pos: [i32; 3], dir: usize, budget: i32, stored: i32
     let their_facing = facing(host, at);
     let mut moved = 0;
     host.change_mod_block_entity(at, &mut |m| {
-        let Some(acceptor) = energy::acceptor(&m.id, &process::installed(&m.nbt)) else { return };
+        let Some(acceptor) = acceptor(&m.id, &m.nbt) else { return };
         if acceptor.sided {
             let their_side = cube::relative(cube::opposite(dir), their_facing);
             if read_sides(&m.nbt).unwrap_or(cube::DEFAULT_SIDES)[their_side] != Mode::Input {

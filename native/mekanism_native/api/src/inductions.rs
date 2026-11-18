@@ -78,7 +78,7 @@ fn totals(nbt: &Compound) -> Totals {
     }
 }
 
-fn output(nbt: &Compound) -> bool {
+pub(super) fn output(nbt: &Compound) -> bool {
     matches!(nbt.get(&key(nbt, PORT_OUTPUT)), Some(Tag::Byte(1)))
 }
 

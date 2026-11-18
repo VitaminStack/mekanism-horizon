@@ -20,7 +20,7 @@
 
 use horizon_client::mod_api::{BlockEntityTickEvent, Direction, Host, ModEnergyBuffer, ModFluidTanks, Tag};
 
-use super::{cube, energy, generator, generators, give, key, offset, read_energy, tank, tanks, transmitter, write_int, ENERGY};
+use super::{acceptor, cube, energy, generator, generators, give, induction, key, offset, read_energy, tank, tanks, transmitter, write_int, ENERGY};
 use transmitter::{Cell, Kind, Link, Neighbour, Port, Tier};
 
 /// The conductor's heat in Kelvin times its capacity (1), a `Tag::Double`.
@@ -63,8 +63,8 @@ fn connects(host: &dyn Host, pos: [i32; 3], dir: usize, t: &Tier) -> bool {
     }
     match t.kind {
         Kind::Conductor => block == generator::HEAT,
-        // Cubes, machines and pumps: what `energy::acceptor` knows.
-        Kind::Cable => energy::acceptor(&block, &[0; 3]).is_some(),
+        // Cubes, machines and pumps: what `energy::acceptor` knows; and Induction Ports.
+        Kind::Cable => block == induction::PORT || energy::acceptor(&block, &[0; 3]).is_some(),
         Kind::Pipe | Kind::Tube => {
             // A tank of the other family (a fluid tank next to a tube) gets no arm.
             tank::tier_of(&block).is_none_or(|b| Some(b.family) == t.family())
@@ -141,7 +141,7 @@ fn energy_tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, t: &Tier) 
         let amount = read_energy(&other.nbt, ENERGY);
         if let Some(o) = transmitter::tier_of(&other.id).filter(|o| o.kind == Kind::Cable) {
             ports.push(Port { dir, link: Link::Cable, amount, capacity: o.capacity });
-        } else if let Some(a) = energy::acceptor(&other.id, &super::process::installed(&other.nbt)) {
+        } else if let Some(a) = acceptor(&other.id, &other.nbt) {
             ports.push(Port { dir, link: Link::Sink, amount, capacity: a.capacity });
         }
     }

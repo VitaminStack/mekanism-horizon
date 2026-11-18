@@ -107,7 +107,8 @@ impl Stored {
 /// master's tank. In `Fill`/`Both` the buffer's contents go into the master
 /// (whatever fits, and only the master's own fluid); in `Empty`/`Both` the buffer
 /// is refilled from the master. Mekanism's `ContainerEditMode.BOTH` lets a valve
-/// do either; one tick moves in first, then out.
+/// do either; one tick moves in first, then out. `Both` refills only half the
+/// buffer: a full buffer would refuse what a pipe brings, so nothing could flow in.
 pub fn exchange(buffer: &mut Stored, tank: &mut Stored, capacity: i64, buffer_capacity: i32, mode: Mode) {
     if mode != Mode::Empty && buffer.amount > 0 {
         let same = tank.amount == 0 || tank.fluid == buffer.fluid;
@@ -124,8 +125,9 @@ pub fn exchange(buffer: &mut Stored, tank: &mut Stored, capacity: i64, buffer_ca
     }
     if mode != Mode::Fill && tank.amount > 0 {
         let same = buffer.amount == 0 || buffer.fluid == tank.fluid;
+        let target = if mode == Mode::Both { buffer_capacity / 2 } else { buffer_capacity } as i64;
         if same {
-            let moved = tank.amount.min(buffer_capacity as i64 - buffer.amount).max(0);
+            let moved = tank.amount.min(target - buffer.amount).max(0);
             if moved > 0 {
                 if buffer.amount == 0 {
                     buffer.fluid = tank.fluid.clone();
@@ -261,10 +263,24 @@ mod tests {
 
     #[test]
     fn both_mode_does_either() {
-        // Pipe put 3,000 in; the same tick refills the buffer.
+        // Pipe put 3,000 in; the same tick refills half the buffer.
         let (mut buffer, mut tank) = (s("minecraft:water", 3_000), s("minecraft:water", 50_000));
         exchange(&mut buffer, &mut tank, 100_000, BUFFER, Mode::Both);
-        assert_eq!((buffer.amount, tank.amount), (BUFFER as i64, 53_000 - BUFFER as i64));
+        let half = (BUFFER / 2) as i64;
+        assert_eq!((buffer.amount, tank.amount), (half, 53_000 - half));
+    }
+
+    /// A pipe filling a valve in `Both` mode: the buffer keeps room, so the tank keeps growing.
+    #[test]
+    fn both_mode_keeps_taking_inflow() {
+        let (mut buffer, mut tank) = (Stored::default(), Stored::default());
+        for _ in 0..10 {
+            let room = BUFFER as i64 - buffer.amount;
+            assert!(room > 0, "the valve takes more");
+            buffer = s("minecraft:water", buffer.amount + room);
+            exchange(&mut buffer, &mut tank, 10_000_000, BUFFER, Mode::Both);
+        }
+        assert!(tank.amount > 0, "the inflow reaches the tank");
     }
 
     #[test]
