@@ -38,8 +38,11 @@ VANILLA_RECIPES = {'minecraft:crafting_shaped', 'minecraft:crafting_shapeless', 
 # Pipes, tubes and conductors (M06): blockstates, models and item definitions by gen_resources.py (upstream's
 # are OBJ models behind a custom loader); their textures `block/models/multipart/<id>(_vertical).png` are
 # upstream's, copied as they are.
-TRANSMITTERS = {f'{NS}:{t}_{k}' for k in ('mechanical_pipe', 'pressurized_tube', 'thermodynamic_conductor')
-                for t in ('basic', 'advanced', 'elite', 'ultimate')}
+# Universal Cables (M03) and Logistical, Restrictive and Diversion Transporters (M08) are the same kind of block.
+TRANSMITTERS = {f'{NS}:{t}_{k}' for k in ('mechanical_pipe', 'pressurized_tube', 'thermodynamic_conductor',
+                                          'universal_cable', 'logistical_transporter')
+                for t in ('basic', 'advanced', 'elite', 'ultimate')} | {
+    f'{NS}:restrictive_transporter', f'{NS}:diversion_transporter'}
 # Assets written elsewhere: the energy cubes by scripts/import_energy_cube.py (custom model loader
 # turned into plain models), the debug blocks and transmitters by gen_resources.py.
 ASSET_SKIP = {f'{NS}:{t}_energy_cube' for t in ('basic', 'advanced', 'elite', 'ultimate', 'creative')} | {
@@ -192,6 +195,12 @@ def main(up):
         for suffix in ('.png', '.png.mcmeta'):
             if not copy_asset(ns, f'textures/{path}{suffix}') and suffix == '.png':
                 print(f'  missing texture {tex}')
+    # The transmitters' own models are written by gen_resources.py, so nothing above follows them to
+    # their textures: copy those here (`block/models/multipart/<id>.png` and `<id>_vertical.png`).
+    for full in sorted(TRANSMITTERS):
+        for suffix in ('', '_vertical'):
+            if not copy_asset(NS, f'textures/block/models/multipart/{full.partition(":")[2]}{suffix}.png'):
+                print(f'  missing transmitter texture {full}{suffix}')
     stats['models'], stats['textures'] = len(seen_models), len(textures)
 
     # --- recipes ---
@@ -363,8 +372,61 @@ def main(up):
             dst.write_text(json.dumps(dict(sorted(ours.items())), indent=2, ensure_ascii=False) + '\n',
                            encoding='utf-8')
 
+    # --- M07 upgrades and Configurator (session m07-machine-framework) ---
+    # Upstream's one `mekanism:upgrade` item (a data component picks the kind) is one item per kind here, with
+    # its model, texture, name and recipe; the Configurator's definition drops the component-selected models
+    # (Horizon has no `mekanism:configurator_mode` component) for its default model.
+    ns_dir = content(NS)
+    for kind in ('speed', 'energy', 'muffling', 'chemical', 'anchor', 'filter', 'stone_generator', 'xp_containment'):
+        item_id = f'upgrade_{kind}'
+        copy_asset(NS, f'textures/item/upgrade/{kind}.png')
+        for rel, obj in ((f'assets/{NS}/items/{item_id}.json',
+                          {'model': {'type': 'minecraft:model', 'model': f'{NS}:item/{item_id}'}}),
+                         (f'assets/{NS}/models/item/{item_id}.json',
+                          {'parent': 'minecraft:item/generated', 'textures': {'layer0': f'{NS}:item/upgrade/{kind}'}})):
+            (ns_dir / rel).parent.mkdir(parents=True, exist_ok=True)
+            (ns_dir / rel).write_text(json.dumps(obj, indent=2) + '\n', encoding='utf-8')
+        recipe = json.loads((gen[NS] / f'data/{NS}/recipe/upgrade/{kind}.json').read_text(encoding='utf-8'))
+        recipe['result'] = {'id': f'{NS}:{item_id}'}
+        dst = ns_dir / f'data/{NS}/recipe/{item_id}.json'
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(json.dumps(recipe, indent=2) + '\n', encoding='utf-8')
+    configurator = ns_dir / f'assets/{NS}/items/configurator.json'
+    configurator.write_text(json.dumps({'model': {'type': 'minecraft:model', 'model': f'{NS}:item/configurator'}},
+                                       indent=2) + '\n', encoding='utf-8')
+    for lang in ('en_us', 'de_de'):
+        src = find(NS, f'lang/{lang}.json')
+        if not src:
+            continue
+        up_lang = json.loads(src.read_text(encoding='utf-8'))
+        dst = ns_dir / f'assets/{NS}/lang/{lang}.json'
+        ours = json.loads(dst.read_text(encoding='utf-8'))
+        fmt = up_lang.get('gui.mekanism.upgrade', '%1$s Upgrade')
+        for kind in ('speed', 'energy', 'muffling', 'chemical', 'anchor', 'filter', 'stone_generator', 'xp_containment'):
+            name = up_lang.get(f'upgrade.mekanism.{kind}')
+            if name:
+                ours[f'item.{NS}.upgrade_{kind}'] = fmt.replace('%1$s', name)
+        dst.write_text(json.dumps(dict(sorted(ours.items())), indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+
     for ns in SOURCES:
         shutil.copyfile(up / 'LICENSE', content(ns) / 'LICENSE-MEKANISM')
+    # --- M08: the Crafting Formula's item model selects on the custom property
+    # `mekanism:crafting_formula` (invalid/encoded), which Horizon does not know; keep the plain model.
+    formula = content('mekanism') / 'assets/mekanism/items/crafting_formula.json'
+    if formula.exists():
+        formula.write_text(json.dumps({'model': {'type': 'minecraft:model', 'model': 'mekanism:item/crafting_formula'}},
+                                      indent=2) + '\n', encoding='utf-8')
+    # `mekanism:holiday_selector` is a Mekanism blockstate type Horizon does not know; keep the plain model.
+    for f in (content('mekanism') / 'assets/mekanism/blockstates').glob('*.json'):
+        text = f.read_text(encoding='utf-8')
+        if 'holiday_selector' not in text:
+            continue
+        state = json.loads(text)
+        for variant in state.get('variants', {}).values():
+            variant.pop('type', None)
+            variant.pop('holidays', None)
+        f.write_text(json.dumps(state, indent=2) + '\n', encoding='utf-8')
+    # --- end M08 ---
     print('imported:', stats)
 
 

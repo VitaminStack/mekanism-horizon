@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanismadditions:reinforced_plastic_recolor",
+  "key": {
+    "#": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_blocks/reinforced",
+      "subtracted": "mekanismadditions:pink_reinforced_plastic"
+    },
+    "D": "#c:dyes/pink"
+  },
+  "pattern": [
+    " # ",
+    "#D#",
+    " # "
+  ],
+  "result": {
+    "count": 4,
+    "id": "mekanismadditions:pink_reinforced_plastic"
+  }
+}

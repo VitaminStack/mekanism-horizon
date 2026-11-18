@@ -384,3 +384,55 @@ Build: Native `native-fdc87ae-e93aa89e0e57` (erster Lauf für PR 25 und 26 mit `
 | Neustart: Tankinhalte von Reaction Chamber, Centrifuge, Activator (Lithium + Tritium bleibt 7.300 mB) | ok |
 | Pipes/Tubes/Conductors Tiers Advanced bis Ultimate, Pipe aus Maschinen-Output, 200+ Pipes, Chunk-Unload, Sounds, Tooltips, Crafting-Rezepte; Reaction Chamber ohne Energie, Activator in anderen Biomen, 2-Block-Höhe | nicht geprüft |
 
+
+## Welle 1 Abnahme: Upgrades, Transport, Ausrüstung, Multiblöcke, Teleport, Spezialmaschinen (18.11.2026, per Agent Control `horizon-ctl`)
+
+Build: Content und Native aus dem lokalen Testbranch `test/wave1-acceptance` (`main` + die 8 Wave-1-Branches). Erster Lauf mit Native `native-fdc87ae-29d7630f6d54`. Nachprüfungen nach den Fixes mit `native-fdc87ae-c2013bd9866e` und zuletzt `native-fdc87ae-5cf7278cbc49` (Stand nach `dc21d6b` plus Chunk-Unload-Fix). Kreativwelt `W1Accept`. Checkliste: `docs/sessions/WAVE1-CHECKLIST.md`.
+
+| Test | Ergebnis |
+|---|---|
+| Speed Upgrade x8 in der Enrichment Chamber: 1 Vorgang je 20 Ticks, Puffer 9.500 FE | ok, nachdem ein Fehler **behoben** wurde: Cubes füllten nur den Grundpuffer, die Maschine hielt nie die Energie eines Ticks (`badaff7`) |
+| Configurator dreht Maschine (Ost, Süd) und Energy Cube (oben) | ok, nachdem ein Fehler **behoben** wurde (`badaff7`) |
+| Redstone-Label in der GUI überlappt nicht mehr | ok, **behoben** (`badaff7`) |
+| Energy Tablet lädt die Maschine | ok |
+| Neustart: Upgrades und Energie bleiben | ok |
+| Logistical Transporter: Klick auf einen Arm gibt „west: Pull“, Items fließen | ok, nachdem ein Fehler **behoben** wurde: die Hitbox war leer (Shapes in Pixeln statt Blockeinheiten), und die Seitenwahl traf auch Seiten ohne Arm (`badaff7`, `0cd5d54`) |
+| Glow Panels: Hitbox | **behoben** (Shapes in Blockeinheiten, `0cd5d54`); ingame nicht nachgeprüft |
+| Free Runners: Schritthöhe 1,1, nach dem Ausziehen 0,6 | ok, nachdem ein Fehler **behoben** wurde (Schritthöhe blieb nach dem Ausziehen, `badaff7`) |
+| Scuba Mask + Tank: Luft bleibt unter Wasser 300, Sauerstoff sinkt; ohne Maske sinkt die Luft | ok |
+| Flamethrower: verbraucht Wasserstoff, tötet ein Schwein | ok |
+| Verzauberung bleibt nach Energieverbrauch | ok |
+| Electric Bow | **Blocker**: Horizon spannt und schießt nur `minecraft:bow` (fest verdrahtet), und die Host-API hat keinen Aufruf zum Spawnen von Entities oder Projektilen |
+| Dynamic Tank: formt sich, Kapazität 432.000 mB; Auflösen und Neubilden behält den Inhalt; Chunk-Unload behält die Struktur | ok |
+| Dynamic Valve im Modus Both nimmt Zufluss | ok, nachdem ein Fehler **behoben** wurde: der Puffer wurde ganz gefüllt, Zufluss kam nie an (`34e1eeb`) |
+| Induction Matrix: ohne Provider ungültig; 3×4×3 mit Cell und Provider formt sich (8 G Kapazität, 256 k Transfer) | ok |
+| Induction Port Eingang aus einem Creative Cube lädt die Matrix; Ausgang lädt einen Basic Cube | ok, nachdem ein Fehler **behoben** wurde: Ports nahmen keine Mekanism-Energie an, Kabel bekamen keinen Arm (`34e1eeb`) |
+| Teleporter A nach B: Teleport, Energie −119 FE; zu wenig Energie: kein Teleport | ok |
+| Portable Teleporter teleportiert (−116 FE); Kanalwahl zählt bis `freq::CHANNELS`, wechselt dann public/private | ok (Kanalwahl ist ein Ersatz für die GUI, so entworfen) |
+| Quantum Entangloporter: Items aus E1 kommen bei E2 an, ein Hopper an E2 leert den Pool | ok, nachdem ein Fehler **behoben** wurde: E1 behielt das ganze Fenster, und ein Mitglied ohne Fenster zeigte einen leeren Stack (count 0). Jetzt wechseln sich die Mitglieder alle 10 Ticks am Fenster ab (`dc21d6b`) |
+| Entangloporter Neustart: 10 Diamanten wurden zu 20 (vorher in einem Lauf auch Verlust) | **behoben**: Die Registry wird jetzt nur beim Speichern der Welt geschrieben (`world_saved`), zusammen mit den Chunks. Nachgeprüft: 10 Diamanten über 3 Neustarts, plus 1 Neustart mitten im Leeren per Hopper, genau 10 in der Kiste. 5.000 FE bleiben über 1 Neustart 5.000 FE (zwei getrennte Lesungen, nicht geleert gezählt) (`dc21d6b`) |
+| Entangloporter, ein Mitglied entladen: E3 bei 600 64 600 auf Frequenz 1, 10 Diamanten hinein, zurück zu E1/E2: der Hopper an E2 holt genau 10; E3 ist nach dem Neuladen leer | ok, nachdem ein Fehler **behoben** wurde: das entladene Mitglied behielt das Fenster in seinem Slot. Jetzt gibt es das Fenster bei `chunk_unload` an den Pool zurück |
+| Teleporter nach den Registry-Änderungen (Build `5cf7278cbc49`): Teleport zum nächsten aktiven Teleporter der Frequenz, −117 FE | ok |
+| Neustart: Frequenzen (Teleporter, Entangloporter) bleiben gebunden | ok |
+| Oredictionificator: GUI, Filter `dusts/bronze` zu `dust_bronze`; Bronzestaub wird umgewandelt, Cobblestone bleibt im Eingang | ok |
+| Oredictionificator Neustart: Filter bleiben | ok |
+| Digital Miner: Platzieren gibt 17 Bounding Blocks + Hauptblock (3×3×2) | ok |
+| Digital Miner ohne Filter, nicht invertiert: baut nichts ab | ok (wie im Original) |
+| Digital Miner invertiert, Radius 2, Y 60 bis 63: baut ab, verbraucht Energie, Modell aktiv, wirft in die Kiste 2 hinter und 1 über dem Miner aus | ok |
+| Digital Miner Silk Touch: Stein statt Cobblestone, Verbrauch ×12 | ok |
+| Digital Miner Neustart: Radius bleibt 2 (nur dieser Wert geprüft) | ok |
+| Formulaic Assemblicator: Block und Item existieren (ohne Funktion, wie geplant) | ok |
+| Entangloporter: Fluid- und Chemical-Sharing, Autosave während des Spiels (nur Beenden geprüft), Mitglieder in verschiedenen Dimensionen | nicht geprüft |
+
+Offen (nicht behoben):
+
+- Electric Bow: Blocker in Horizon (siehe oben).
+- Teleporter und Entangloporter GUI: Das Kanal-Label überlappt den „>“-Knopf, der Text „Not bound…“ läuft über, das Label „Item“ überlappt.
+- Oredictionificator GUI: „Left: next Right: previous“ überlappt „Inventory“.
+- Basic Solar Generator gibt nur nach unten ab.
+- Universal Cable zeigt keinen Arm zu Generatoren.
+- Warnung beim Laden: Platziertes Feature `mekanism:salt`.
+- Die Kapazitätsformel der Factory weicht vom Original ab.
+- Teleporter-Kapazität ist 1.000 FE. Der Code-Kommentar sagt, das entspricht dem Original; nicht nachgeprüft.
+- Frequenzen werden nur noch beim Speichern der Welt geschrieben. Nach einem Absturz fehlen die Änderungen seit dem letzten Autosave. Chunks, die zwischen zwei Autosaves entladen und geschrieben wurden, sind neuer als die Registry: ein Absturz kann dann Entangloporter-Inhalt auch verdoppeln, nicht nur verlieren.
+- Entangloporter-Mitglieder wechseln sich nach `game_time` ihrer Dimension ab. Laufen die Zeiten zweier Dimensionen auseinander, kann ein Mitglied seltener an die Reihe kommen (nicht geprüft).

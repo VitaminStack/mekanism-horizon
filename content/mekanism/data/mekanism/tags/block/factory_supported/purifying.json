@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "mekanism:purification_chamber"
+    "mekanism:purification_chamber",
+    "#mekanism:factories/purifying"
   ]
 }

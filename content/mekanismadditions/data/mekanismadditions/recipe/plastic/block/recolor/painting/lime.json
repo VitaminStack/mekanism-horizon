@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:lime"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:plastic_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_blocks/plastic",
+      "subtracted": "mekanismadditions:lime_plastic"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:lime_plastic"
+  },
+  "per_tick_usage": false
+}

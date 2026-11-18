@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "#mekanism:transmitters/chemical",
+    "#mekanism:transmitters/fluid",
+    "#mekanism:transmitters/energy"
+  ]
+}

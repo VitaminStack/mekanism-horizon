@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:light_blue"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:glow_plastic_slabs_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_slabs/glow",
+      "subtracted": "mekanismadditions:light_blue_plastic_glow_slab"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:light_blue_plastic_glow_slab"
+  },
+  "per_tick_usage": false
+}

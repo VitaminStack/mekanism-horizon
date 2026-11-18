@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:gray"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:plastic_stairs_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_stairs/normal",
+      "subtracted": "mekanismadditions:gray_plastic_stairs"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:gray_plastic_stairs"
+  },
+  "per_tick_usage": false
+}

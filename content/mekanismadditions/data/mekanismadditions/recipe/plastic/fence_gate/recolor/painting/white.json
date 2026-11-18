@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:white"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:plastic_fence_gates_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_fence_gates/normal",
+      "subtracted": "mekanismadditions:white_plastic_fence_gate"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:white_plastic_fence_gate"
+  },
+  "per_tick_usage": false
+}

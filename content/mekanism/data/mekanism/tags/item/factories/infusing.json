@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "mekanism:basic_infusing_factory",
+    "mekanism:advanced_infusing_factory",
+    "mekanism:elite_infusing_factory",
+    "mekanism:ultimate_infusing_factory"
+  ]
+}

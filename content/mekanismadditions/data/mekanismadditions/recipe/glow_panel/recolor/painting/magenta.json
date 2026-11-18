@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:magenta"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:glow_panels_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:glow_panels",
+      "subtracted": "mekanismadditions:magenta_glow_panel"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:magenta_glow_panel"
+  },
+  "per_tick_usage": false
+}

@@ -1,6 +1,13 @@
-//! The host side of Mechanical Pipes, Pressurized Tubes and Thermodynamic
-//! Conductors (M06): the tick, the tank and the connection arms. Their
-//! Horizon-free rules and values are in `transmitter.rs`.
+//! The host side of Mechanical Pipes, Pressurized Tubes, Thermodynamic
+//! Conductors (M06) and Universal Cables (M03): the tick, the tank and the
+//! connection arms. Their Horizon-free rules and values are in `transmitter.rs`.
+//!
+//! A cable is a block entity with one Horizon energy buffer
+//! (`block_entity_energy`, saved as `energy`) that takes energy on every side
+//! and gives none through the capability: it moves its own energy on each tick
+//! with `transmitter::distribute`, into end points and levelling into other
+//! cables through `give`, the call generators and cubes use. Other mods' blocks
+//! cannot be reached (docs/upstream/horizon-energy-host.md).
 //!
 //! A pipe or tube is a block entity with one Horizon block-entity tank
 //! (`block_entity_fluids`, API 54) that takes only its own family
@@ -11,10 +18,10 @@
 //! The six boolean block states `down`..`east` show an arm to every
 //! neighbour the block joins; they are set from the tick.
 
-use horizon_client::mod_api::{BlockEntityTickEvent, Direction, Host, ModFluidTanks, Tag};
+use horizon_client::mod_api::{BlockEntityTickEvent, Direction, Host, ModEnergyBuffer, ModFluidTanks, Tag};
 
-use super::{cube, generator, generators, key, offset, tank, tanks, transmitter};
-use transmitter::{Cell, Kind, Neighbour, Tier};
+use super::{acceptor, cube, energy, generator, generators, give, induction, key, offset, read_energy, tank, tanks, transmitter, write_int, ENERGY};
+use transmitter::{Cell, Kind, Link, Neighbour, Port, Tier};
 
 /// The conductor's heat in Kelvin times its capacity (1), a `Tag::Double`.
 const HEAT: &str = generators::HEAT;
@@ -34,6 +41,18 @@ pub(super) fn fluids(t: &Tier) -> ModFluidTanks {
     }
 }
 
+/// A cable's buffer: its tier's capacity, any amount in on every side, nothing
+/// out through the capability (the cable pushes by itself).
+pub(super) fn energy_buffer(t: &Tier) -> Option<ModEnergyBuffer> {
+    (t.kind == Kind::Cable).then(|| ModEnergyBuffer {
+        capacity: t.capacity,
+        max_insert: t.rate,
+        max_extract: 0,
+        insert_faces: [true; 6],
+        extract_faces: [false; 6],
+    })
+}
+
 /// Whether the neighbour at `dir` gets an arm: another transmitter of the
 /// kind, a block with a tank (pipes and tubes) or a Heat Generator (conductors).
 fn connects(host: &dyn Host, pos: [i32; 3], dir: usize, t: &Tier) -> bool {
@@ -44,6 +63,8 @@ fn connects(host: &dyn Host, pos: [i32; 3], dir: usize, t: &Tier) -> bool {
     }
     match t.kind {
         Kind::Conductor => block == generator::HEAT,
+        // Cubes, machines and pumps: what `energy::acceptor` knows; and Induction Ports.
+        Kind::Cable => block == induction::PORT || energy::acceptor(&block, &[0; 3]).is_some(),
         Kind::Pipe | Kind::Tube => {
             // A tank of the other family (a fluid tank next to a tube) gets no arm.
             tank::tier_of(&block).is_none_or(|b| Some(b.family) == t.family())
@@ -69,6 +90,7 @@ pub(super) fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, t: &Ti
     show_arms(host, event.pos, t);
     match t.kind {
         Kind::Conductor => heat_tick(host, event, t),
+        Kind::Cable => energy_tick(host, event, t),
         Kind::Pipe | Kind::Tube => push_tick(host, event, t),
     }
 }
@@ -100,6 +122,33 @@ fn push_tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, t: &Tier) {
         left -= (offer - refused).clamp(0, offer);
     }
     tanks::write_fluid(&mut event.entity.nbt, Some(&id), left);
+}
+
+/// Pushes the cable's energy out: first to end points, then levelling into
+/// neighbouring cables. Neighbours are read as they are now and given to
+/// through `give`, which answers what they really took; only that leaves.
+fn energy_tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent, t: &Tier) {
+    let pos = event.pos;
+    let stored = read_energy(&event.entity.nbt, ENERGY).clamp(0, t.capacity);
+    // Saved amounts outside the buffer (a lower tier's capacity) are clamped once.
+    write_int(&mut event.entity.nbt, ENERGY, stored);
+    if stored <= 0 {
+        return;
+    }
+    let mut ports = Vec::new();
+    for dir in 0..6 {
+        let Some(other) = host.mod_block_entity(offset(pos, dir)) else { continue };
+        let amount = read_energy(&other.nbt, ENERGY);
+        if let Some(o) = transmitter::tier_of(&other.id).filter(|o| o.kind == Kind::Cable) {
+            ports.push(Port { dir, link: Link::Cable, amount, capacity: o.capacity });
+        } else if let Some(a) = acceptor(&other.id, &other.nbt) {
+            ports.push(Port { dir, link: Link::Sink, amount, capacity: a.capacity });
+        }
+    }
+    let moved = transmitter::distribute(stored, t.capacity, t.rate, &ports, &mut |dir, budget| {
+        give(host, pos, dir, budget, budget)
+    });
+    write_int(&mut event.entity.nbt, ENERGY, stored - moved);
 }
 
 fn write_heat(nbt: &mut horizon_client::mod_api::Compound, heat: f64) {

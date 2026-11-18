@@ -1,0 +1,10 @@
+{
+  "template": "minecraft:stick",
+  "rarity": "common",
+  "max_stack_size": 1,
+  "components": {
+    "minecraft:equippable": {
+      "slot": "chest"
+    }
+  }
+}

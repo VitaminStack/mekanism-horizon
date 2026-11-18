@@ -14,6 +14,13 @@ pub mod infuser;
 #[path = "../../../native/mekanism_native/api/src/machine.rs"]
 pub mod machine;
 
+/// Upgrades, the energy slot and redstone control (M05/M07).
+#[path = "../../../native/mekanism_native/api/src/upgrade.rs"]
+pub mod upgrade;
+/// Factories: tier and type tables, slot layout, shared energy, upgrades.
+#[path = "../../../native/mekanism_native/api/src/factory.rs"]
+pub mod factory;
+
 /// What takes energy from a neighbouring Mekanism block, and how much.
 #[path = "../../../native/mekanism_native/api/src/energy.rs"]
 pub mod energy;
@@ -35,6 +42,10 @@ pub mod pump;
 #[path = "../../../native/mekanism_native/api/src/transmitter.rs"]
 pub mod transmitter;
 
+/// Logistical, Restrictive and Diversion Transporters (M08).
+#[path = "../../../native/mekanism_native/api/src/transporter.rs"]
+pub mod transporter;
+
 /// Canteen, Gauge Dropper and Atomic Disassembler rules (M11).
 #[path = "../../../native/mekanism_native/api/src/gear.rs"]
 pub mod gear;
@@ -42,9 +53,35 @@ pub mod gear;
 #[path = "../../../native/mekanism_native/api/src/bin.rs"]
 pub mod bin;
 
+/// Oredictionificator rules and its generated tag table (M08).
+#[path = "../../../native/mekanism_native/api/src/oredict_tags.rs"]
+pub mod oredict_tags;
+#[path = "../../../native/mekanism_native/api/src/oredict.rs"]
+pub mod oredict;
+
+/// Digital Miner rules (M08).
+#[path = "../../../native/mekanism_native/api/src/miner.rs"]
+pub mod miner;
+
 /// Personal Chest and Personal Barrel (M08).
 #[path = "../../../native/mekanism_native/api/src/storage.rs"]
 pub mod storage;
+
+/// General multiblock structure validation (M09).
+#[path = "../../../native/mekanism_native/api/src/multiblock.rs"]
+pub mod multiblock;
+/// Dynamic Tank, Dynamic Valve and Structural Glass (M09).
+#[path = "../../../native/mekanism_native/api/src/dynamic_tank.rs"]
+pub mod dynamic_tank;
+/// Induction Matrix (M09).
+#[path = "../../../native/mekanism_native/api/src/induction.rs"]
+pub mod induction;
+/// Frequency registry and shared buffers (M08).
+#[path = "../../../native/mekanism_native/api/src/frequency.rs"]
+pub mod frequency;
+/// Teleporter cost, frame and status rules (M08).
+#[path = "../../../native/mekanism_native/api/src/teleporter.rs"]
+pub mod teleporter;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnergyStorage {

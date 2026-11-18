@@ -5,6 +5,9 @@
     "mekanismgenerators:rotational_complex",
     "mekanismgenerators:electromagnetic_coil",
     "mekanismgenerators:turbine_casing",
-    "mekanismgenerators:saturating_condenser"
+    "mekanismgenerators:saturating_condenser",
+    "mekanismgenerators:turbine_valve",
+    "mekanismgenerators:turbine_vent",
+    "#mekanism:structures/common"
   ]
 }

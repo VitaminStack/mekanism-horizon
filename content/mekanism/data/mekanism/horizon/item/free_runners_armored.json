@@ -1,0 +1,26 @@
+{
+  "template": "minecraft:stick",
+  "rarity": "common",
+  "max_stack_size": 1,
+  "components": {
+    "minecraft:equippable": {
+      "slot": "feet"
+    },
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "amount": 3.0,
+        "id": "minecraft:armor.feet",
+        "operation": "add_value",
+        "slot": "feet"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "amount": 2.0,
+        "id": "minecraft:armor.feet",
+        "operation": "add_value",
+        "slot": "feet"
+      }
+    ]
+  }
+}

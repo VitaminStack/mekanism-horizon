@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "C": "#c:circuits/basic",
+    "I": "#c:ingots/tin",
+    "S": "#c:ingots/steel",
+    "T": "mekanism:basic_chemical_tank"
+  },
+  "pattern": [
+    "SCS",
+    "ITI",
+    " I "
+  ],
+  "result": {
+    "id": "mekanism:jetpack"
+  }
+}

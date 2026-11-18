@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:green"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:plastic_slabs_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_slabs/normal",
+      "subtracted": "mekanismadditions:green_plastic_slab"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:green_plastic_slab"
+  },
+  "per_tick_usage": false
+}

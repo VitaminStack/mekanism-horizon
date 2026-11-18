@@ -136,6 +136,35 @@ item('atomic_disassembler', 'minecraft:stick', stack=1, components={
         {'blocks': f'#minecraft:mineable/{tool}', 'correct_for_drops': True, 'speed': 20.0}
         for tool in ('pickaxe', 'axe', 'shovel', 'hoe')], 'damage_per_block': 0},
 })
+# --- worn and held powered gear (M11, `worn.rs`): jetpacks, Free Runners, Scuba, Electric Bow, Flamethrower ---
+# Armour is a stick template (no durability: their use is the stored fuel or energy) with `minecraft:equippable`; the
+# worn model needs Mekanism's Java renderers and is not ported, so no `asset_id`. Armour values are MekanismStartupConfig's.
+def _worn_armor(armor, toughness, slot):
+    mid = f'minecraft:armor.{slot}'
+    return [{'type': 'minecraft:armor', 'amount': float(armor), 'id': mid, 'operation': 'add_value', 'slot': slot},
+            {'type': 'minecraft:armor_toughness', 'amount': float(toughness), 'id': mid, 'operation': 'add_value',
+             'slot': slot}]
+
+
+def _worn(id_, slot, armor=0, toughness=0, enchantable=None):
+    comp = {'minecraft:equippable': {'slot': slot}}
+    if armor or toughness:
+        comp['minecraft:attribute_modifiers'] = _worn_armor(armor, toughness, slot)
+    if enchantable:
+        comp['minecraft:enchantable'] = {'value': enchantable}
+    item(id_, 'minecraft:stick', stack=1, components=comp)
+
+
+_worn('jetpack', 'chest')
+_worn('jetpack_armored', 'chest', 8, 2)
+_worn('free_runners', 'feet')
+_worn('free_runners_armored', 'feet', 3, 2)
+_worn('scuba_mask', 'head', enchantable=9)
+_worn('scuba_tank', 'chest')
+# Electric Bow: a bow without durability (energy instead); the native mod cancels a shot without energy.
+item('electric_bow', 'minecraft:bow', stack=1, components={'!minecraft:max_damage': {}, 'minecraft:enchantable': {'value': 1}})
+# Flamethrower: held down like a bow (`use_duration` hook), no durability.
+item('flamethrower', 'minecraft:iron_ingot', stack=1)
 # Bio Fuel (Crusher output, Bio Generator input) and its block (MekanismBlocks: strength 0.5, grass sound).
 item('bio_fuel')
 # Pressurized Reaction Chamber products: the substrate (also the chamber's catalyst) and the HDPE pellet.
@@ -222,6 +251,33 @@ CHEMICAL_MENUS = {
 for m, menu in CHEMICAL_MENUS.items():
     block(m, 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
     put(f'data/{NS}/horizon/menu/{m}.json', menu)
+
+# --- factories (M07): 8 types x 4 tiers, ticked and drawn by native/mekanism_native (factory.rs, factories.rs) ---
+# BlockTile.defaultProperties (3.5, 16) as the machines; barrel template for `facing` and the menu, `active` picks
+# the lit model. Slot order mirrors `factory::Factory::slots`: p inputs, p outputs, p secondary outputs
+# (sawing only), then one shared slot (combining: extra input; compressing, purifying, injecting, infusing: the
+# slot that fills the shared chemical tank). Data slots: energy, facing, active, tank amount, tank type, then
+# one progress per process (`factory::DATA_*`). Smelting factories need vanilla smelting recipes: not ported.
+FACTORY_PROCESSES = {'basic': 3, 'advanced': 5, 'elite': 7, 'ultimate': 9}
+FACTORY_TYPES = {  # type: (secondary output per process, shared slot)
+    'enriching': (False, False), 'crushing': (False, False), 'compressing': (False, True),
+    'combining': (False, True), 'purifying': (False, True), 'injecting': (False, True),
+    'infusing': (False, True), 'sawing': (True, False),
+}
+for tier, p in FACTORY_PROCESSES.items():
+    for kind, (secondary, shared) in FACTORY_TYPES.items():
+        fid = f'{tier}_{kind}_factory'
+        block(fid, 'minecraft:barrel', 3.5, 16.0, extra={
+            'state_properties': {'active': {'type': 'boolean'}},
+            'default_state': {'facing': 'north', 'active': 'false'}})
+        slots = 2 * p + (p if secondary else 0) + (1 if shared else 0)
+        put(f'data/{NS}/horizon/menu/{fid}.json', {
+            'slots': slots, 'data_slots': 5 + p, 'results': list(range(p, 2 * p + (p if secondary else 0)))})
+# The sawing factory's secondary outputs sit after the outputs, as results too (`factory::Slots`).
+
+# Tier Installers (`ItemTierInstaller`): right click on a machine or a factory (native `factories::install`).
+for tier in FACTORY_PROCESSES:
+    item(f'{tier}_tier_installer')
 
 # Nutritional Liquifier recipes (`mekanism:liquification`): Mekanism has none as data; its machine turns any
 # food into paste in code (`TileEntityNutritionalLiquifier.createDynamicRecipe`: nutrition x 50 mB,
@@ -345,15 +401,21 @@ for pid in ('electric_pump', 'fluidic_plenisher'):
     block(pid, 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE, occludes=False)
     put(f'data/{NS}/horizon/menu/{pid}.json', {'slots': 1, 'data_slots': 6, 'results': []})
 
-# --- transmitters (M06): Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors ---
+# --- transmitters (M06): Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors; Universal Cables (M03);
+# Logistical, Restrictive and Diversion Transporters (M08) ---
 # Block entities of native/.../transmitter.rs; the six boolean block states `down`..`east` are the arms to
 # the neighbours the block joins (set by the native mod). Mekanism's own models are OBJ models behind a
 # custom loader, so the blockstates are plain multipart ones over cuboids: a centre cube (large 6 px for
 # pipes, small 4 px for tubes and conductors) and one arm per side, textured from the upstream
-# `block/models/multipart/<id>(_vertical).png`. Selection and collision boxes are the centre cube only
-# (Horizon shapes depend on one property, not on six). Strength 3.5 / 16 as BlockTransmitter.
-TRANSMITTER_KINDS = {'mechanical_pipe': 5, 'pressurized_tube': 6, 'thermodynamic_conductor': 6}  # kind -> centre min
-TRANSMITTER_IDS = [f'{t}_{k}' for k in TRANSMITTER_KINDS for t in CUBE_TIERS[:4]]
+# `block/models/multipart/<id>(_vertical).png`. Selection and collision boxes are the centre cube plus
+# the joined arms, one entry per combination of the six properties (Horizon shape boxes are in blocks,
+# 0..1, not pixels). Strength 3.5 / 16 as BlockTransmitter.
+# kind -> centre min: cables are small (4 px) like tubes, transporters large (6 px) like pipes.
+TRANSMITTER_KINDS = {'mechanical_pipe': 5, 'pressurized_tube': 6, 'thermodynamic_conductor': 6,
+                     'universal_cable': 6, 'logistical_transporter': 5}
+# The Restrictive and Diversion Transporters have no tier (BlockLargeTransmitter, one block each).
+TRANSMITTER_SINGLES = {'restrictive_transporter': 5, 'diversion_transporter': 5}
+TRANSMITTER_IDS = [f'{t}_{k}' for k in TRANSMITTER_KINDS for t in CUBE_TIERS[:4]] + list(TRANSMITTER_SINGLES)
 ARM_NAMES = ['down', 'up', 'north', 'south', 'west', 'east']
 TEX = f'{NS}:block/models/multipart'
 
@@ -365,27 +427,41 @@ def cuboid(lo, hi, side_tex, end_tex):
     return {'from': lo, 'to': hi, 'faces': faces}
 
 
-def arm(dir_, lo, hi):
-    """The arm toward `dir_`: from the centre cube (`lo`..`hi`) to the block edge."""
+def arm_bounds(dir_, lo, hi):
+    """The arm toward `dir_`, in pixels: from the centre cube (`lo`..`hi`) to the block edge."""
     a, b = list(lo), list(hi)
     axis, sign = {'down': (1, -1), 'up': (1, 1), 'north': (2, -1), 'south': (2, 1), 'west': (0, -1), 'east': (0, 1)}[dir_]
     if sign < 0:
         a[axis], b[axis] = 0, lo[axis]
     else:
         a[axis], b[axis] = hi[axis], 16
-    return cuboid(a, b, '#side', '#center')
+    return a, b
+
+
+def arm(dir_, lo, hi):
+    """The model element of the arm toward `dir_`."""
+    return cuboid(*arm_bounds(dir_, lo, hi), '#side', '#center')
+
+
+def transmitter_shapes(lo, hi):
+    """Shapes keyed by all six arm properties: the centre cube and each joined arm, in blocks."""
+    values = {}
+    for mask in range(64):
+        joined = [bool(mask >> i & 1) for i in range(6)]
+        boxes = [lo + hi] + [sum(arm_bounds(d, lo, hi), []) for d, j in zip(ARM_NAMES, joined) if j]
+        values[','.join(str(j).lower() for j in joined)] = [[v / 16 for v in b] for b in boxes]
+    return {'properties': ARM_NAMES, 'values': values}
 
 
 for tid in TRANSMITTER_IDS:
-    kind = next(k for k in TRANSMITTER_KINDS if tid.endswith(k))
-    lo_v = TRANSMITTER_KINDS[kind]
+    lo_v = TRANSMITTER_SINGLES.get(tid) or TRANSMITTER_KINDS[next(k for k in TRANSMITTER_KINDS if tid.endswith(k))]
     lo, hi = [lo_v] * 3, [16 - lo_v] * 3
-    box = [lo + hi]
+    shapes = transmitter_shapes(lo, hi)
     block(tid, 'minecraft:iron_block', 3.5, 16.0, extra={
         'state_properties': {d: {'type': 'boolean'} for d in ARM_NAMES},
         'default_state': {d: 'false' for d in ARM_NAMES},
-        'shapes': {'property': 'up', 'values': {'true': box, 'false': box}, 'default': box},
-        'collision_shapes': {'property': 'up', 'values': {'true': box, 'false': box}, 'default': box},
+        'shapes': shapes,
+        'collision_shapes': shapes,
     }, sounds=STONE, occludes=False)
     textures = {'center': f'{TEX}/{tid}', 'side': f'{TEX}/{tid}_vertical', 'particle': f'{TEX}/{tid}'}
     put(f'assets/{NS}/models/block/transmitter/{tid}_center.json',
@@ -572,19 +648,96 @@ put('data/c/tags/block/ores.json', {'replace': False, 'values': [
     'minecraft:nether_gold_ore', 'minecraft:nether_quartz_ore', 'minecraft:ancient_debris',
     *(f'#c:ores/{o}' for o in ('tin', 'osmium', 'uranium', 'fluorite', 'lead'))]})
 
+# --- M07 machine framework (session m07-machine-framework): upgrades, energy slot, redstone, Configurator ---
+# Upstream 26.3 has one `mekanism:upgrade` item with a data component; Horizon items carry no typed
+# component here, so each upgrade kind is its own item (`mekanism:upgrade_<kind>`). Effects: native/mekanism_native
+# `upgrade.rs`; models, names and recipes by import_upstream.py.
+UPGRADE_KINDS = ['speed', 'energy', 'muffling', 'chemical', 'anchor', 'filter', 'stone_generator', 'xp_containment']
+for kind in UPGRADE_KINDS:
+    item(f'upgrade_{kind}')
+item('configurator', stack=1)
+# Every machine (but the Solar Neutron Activator, which has neither energy slot nor upgrades) gets three
+# slots after its own (energy, upgrade input, upgrade output = a results slot) and four data entries after
+# its own (redstone mode, installed speed, energy, muffling): `machine.rs` `all_slots` / `data_slots`
+# (checked by its test `menu_files_match_the_table`).
+for m in ['metallurgic_infuser', *MACHINE_MENUS, *CHEMICAL_MENUS]:
+    if m == 'solar_neutron_activator':
+        continue
+    menu_file = ROOT / 'content' / NS / f'data/{NS}/horizon/menu/{m}.json'
+    menu = json.loads(menu_file.read_text(encoding='utf-8'))
+    menu['results'] = [*menu['results'], menu['slots'] + 2]
+    menu['slots'] += 3
+    menu['data_slots'] += 4
+    put(f'data/{NS}/horizon/menu/{m}.json', menu)
+# --- M08 frequencies: Teleporter, Teleporter Frame, Portable Teleporter, Quantum Entangloporter ---
+# Native side: native/.../teleporters.rs and entangloporter.rs. BlockTile strength 3.5 / 16 as for machines;
+# the frame is `strength(5, 6)` (TeleporterFrame). The barrel template gives `facing` and a block that opens its
+# menu: the teleporter has no facing in Mekanism (its blockstate has no variants), the entangloporter takes all six
+# directions (turned toward the placer by the native mod). Both drop themselves with no contents (the buffers
+# live on the frequency). Teleportation core: the teleporter's and the entangloporter's recipe ingredient.
+item('teleportation_core')
+item('portable_teleporter', stack=1)
+block('teleporter', 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
+block('teleporter_frame', 'minecraft:iron_block', 5.0, 6.0, sounds=STONE)
+block('quantum_entangloporter', 'minecraft:barrel', 3.5, 16.0, extra={'default_state': {'facing': 'north'}})
+# Teleporter data: 4 panel entries, status, energy. Entangloporter: 4 panel entries, then energy, fluid and
+# chemical as two entries each and the fluid's and the chemical's kind (see entangloporter.rs).
+put(f'data/{NS}/horizon/menu/teleporter.json', {'slots': 1, 'data_slots': 6, 'results': []})
+put(f'data/{NS}/horizon/menu/quantum_entangloporter.json', {'slots': 1, 'data_slots': 12, 'results': []})
+M08_PICKAXE = [f'{NS}:teleporter', f'{NS}:teleporter_frame', f'{NS}:quantum_entangloporter']
+# --- end M08 frequencies ---
+# --- M08 special machines (native/.../special.rs): block ids and menus. ---
+SPECIAL_IDS = []
+# Oredictionificator: input + output slot; data = didProcess, scroll, 8 filters x 3 ints (oredict.rs).
+block('oredictionificator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE)
+SPECIAL_IDS.append('oredictionificator')
+put(f'data/{NS}/horizon/menu/oredictionificator.json', {'slots': 2, 'data_slots': 26, 'results': [1]})
+# Digital Miner: 27 main slots + 9 filter slots; data = miner.rs DATA_LEN (12). Its 17 bounding blocks
+# are `mekanism:bounding_block`.
+block('digital_miner', 'minecraft:barrel', 3.5, 16.0, extra={'state_properties': {'active': {'type': 'boolean'}},
+                                                           'default_state': {'facing': 'north', 'active': 'false'}})
+SPECIAL_IDS.append('digital_miner')
+put(f'data/{NS}/horizon/menu/digital_miner.json', {'slots': 36, 'data_slots': 12, 'results': []})
+# Formulaic Assemblicator + Crafting Formula: registered only (docs/sessions/m08-special-machines.md:
+# Horizon gives a native mod no vanilla crafting recipes, so the crafting behaviour is not ported).
+block('formulaic_assemblicator', 'minecraft:barrel', 3.5, 16.0, extra=MACHINE_STATE)
+SPECIAL_IDS.append('formulaic_assemblicator')
+item('crafting_formula', stack=1)
+# --- end M08 ---
+
 # Base tag for hand-written blocks; import_upstream.py merges Mekanism's own tags into it.
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{NS}:{t}_energy_cube' for t in CUBE_TIERS]
      + [f'{NS}:{t}_{f}_tank' for f in ('fluid', 'chemical') for t in CUBE_TIERS]
      + [f'{NS}:{t}_bin' for t in CUBE_TIERS] + [f'{NS}:personal_chest', f'{NS}:personal_barrel']
      + [f'{NS}:{m}' for m in ('metallurgic_infuser', 'electric_pump', 'fluidic_plenisher', *MACHINE_MENUS)]
-     + [f'{NS}:{t}' for t in TRANSMITTER_IDS]})
+     + [f'{NS}:{t}' for t in TRANSMITTER_IDS] + M08_PICKAXE + [f'{NS}:{i}' for i in SPECIAL_IDS]})
 put('data/minecraft/tags/block/mineable/pickaxe.json',
     {'replace': False, 'values': [f'{GEN}:{g}' for g in (
         'heat_generator', 'solar_generator', 'bio_generator', 'advanced_solar_generator', 'wind_generator',
         'gas_burning_generator', 'turbine_casing', 'fission_reactor_casing', 'fusion_reactor_frame', 'reactor_glass', 'laser_focus_matrix',
         'turbine_rotor', 'electromagnetic_coil', 'rotational_complex', 'saturating_condenser',
         'fission_fuel_assembly', 'control_rod_assembly')]}, GEN)
+
+# --- multiblocks (M09): structure formation lives in native/.../multiblock.rs and multiblocks.rs ---
+# Shell blocks use the barrel template so they open their menu; `formed` is set by the native mod while
+# the block is part of a valid structure. BlockBasicMultiblock strength 5 / 9; Structural Glass and the
+# induction cells and providers are plain BlockTile-strength blocks (3.5 / 16).
+MULTIBLOCK_STATE = {'state_properties': {'formed': {'type': 'boolean'}},
+                    'default_state': {'facing': 'north', 'formed': 'false'}}
+for mid in ('dynamic_tank', 'dynamic_valve'):
+    block(mid, 'minecraft:barrel', 5.0, 9.0, extra=MULTIBLOCK_STATE)
+    # Menu data: amount (3), capacity (3), contents kind, valve mode, formed.
+    put(f'data/{NS}/horizon/menu/{mid}.json', {'slots': 1, 'data_slots': 9, 'results': [0]})
+block('structural_glass', 'minecraft:glass', 3.5, 16.0, occludes=False)
+# Induction Matrix: casing and port are shell blocks with a menu (data: energy 3, capacity 3, transfer 3,
+# cells, providers, port mode, formed); cells and providers sit inside and need no block entity.
+for mid in ('induction_casing', 'induction_port'):
+    block(mid, 'minecraft:barrel', 5.0, 9.0, extra=MULTIBLOCK_STATE)
+    put(f'data/{NS}/horizon/menu/{mid}.json', {'slots': 1, 'data_slots': 13, 'results': [0]})
+for tier in ('basic', 'advanced', 'elite', 'ultimate'):
+    block(f'{tier}_induction_cell', 'minecraft:iron_block', 3.5, 16.0, sounds=STONE)
+    block(f'{tier}_induction_provider', 'minecraft:iron_block', 3.5, 16.0, sounds=STONE)
 
 # Hand-written content stays declared too, so the importer covers it.
 for ns, reg in registry.items():

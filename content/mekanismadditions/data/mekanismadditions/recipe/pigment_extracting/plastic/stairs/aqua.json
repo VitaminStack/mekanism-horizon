@@ -1,0 +1,13 @@
+{
+  "type": "mekanism:pigment_extracting",
+  "experience": 0.1,
+  "group": "aqua",
+  "input": {
+    "count": 1,
+    "ingredient": "mekanismadditions:aqua_plastic_stairs"
+  },
+  "output": {
+    "amount": 32,
+    "id": "mekanism:aqua"
+  }
+}

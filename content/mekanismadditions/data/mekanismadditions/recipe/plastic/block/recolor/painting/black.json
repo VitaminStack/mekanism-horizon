@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:black"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:plastic_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_blocks/plastic",
+      "subtracted": "mekanismadditions:black_plastic"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:black_plastic"
+  },
+  "per_tick_usage": false
+}

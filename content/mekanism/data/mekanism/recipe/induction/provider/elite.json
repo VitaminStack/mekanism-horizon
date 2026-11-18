@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "mekanism:induction_provider",
+  "key": {
+    "#": "mekanism:elite_energy_cube",
+    "C": "#c:circuits/elite",
+    "P": "mekanism:advanced_induction_provider"
+  },
+  "pattern": [
+    "CPC",
+    "P#P",
+    "CPC"
+  ],
+  "result": {
+    "id": "mekanism:elite_induction_provider"
+  }
+}

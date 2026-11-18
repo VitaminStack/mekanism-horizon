@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "mekanism:basic_compressing_factory",
+    "mekanism:advanced_compressing_factory",
+    "mekanism:elite_compressing_factory",
+    "mekanism:ultimate_compressing_factory"
+  ]
+}

@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "mekanism:osmium_compressor"
+    "mekanism:osmium_compressor",
+    "#mekanism:factories/compressing"
   ]
 }

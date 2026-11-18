@@ -1,0 +1,26 @@
+{
+  "template": "minecraft:stick",
+  "rarity": "common",
+  "max_stack_size": 1,
+  "components": {
+    "minecraft:equippable": {
+      "slot": "chest"
+    },
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "amount": 8.0,
+        "id": "minecraft:armor.chest",
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "amount": 2.0,
+        "id": "minecraft:armor.chest",
+        "operation": "add_value",
+        "slot": "chest"
+      }
+    ]
+  }
+}

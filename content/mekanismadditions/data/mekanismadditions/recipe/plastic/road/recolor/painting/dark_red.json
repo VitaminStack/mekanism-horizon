@@ -1,0 +1,21 @@
+{
+  "type": "mekanism:painting",
+  "chemical_input": {
+    "amount": 64,
+    "ingredient": "mekanism:dark_red"
+  },
+  "experience": 0.1,
+  "group": "mekanismadditions:plastic_road_painting",
+  "item_input": {
+    "count": 1,
+    "ingredient": {
+      "neoforge:ingredient_type": "neoforge:difference",
+      "base": "#mekanismadditions:plastic_blocks/road",
+      "subtracted": "mekanismadditions:dark_red_plastic_road"
+    }
+  },
+  "output": {
+    "id": "mekanismadditions:dark_red_plastic_road"
+  },
+  "per_tick_usage": false
+}

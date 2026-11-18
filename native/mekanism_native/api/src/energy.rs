@@ -8,10 +8,11 @@
 //! none overflows: `accept` never returns more than the room left.
 //!
 //! Horizon gives a trait mod no energy access to other mods' blocks (see
-//! docs/upstream/horizon-energy-host.md), so pushes reach only the blocks
-//! `acceptor` knows.
+//! docs/upstream/horizon-energy-host.md; re-checked at `fdc87ae` for the Universal
+//! Cables: `Host` has no energy call, `native_energy*` are `pub(in crate::game)`),
+//! so pushes reach only the blocks `acceptor` knows.
 
-use super::{cube, machine, pump};
+use super::{cube, machine, miner, pump, transmitter, upgrade};
 
 /// A block that takes energy from a neighbouring Mekanism block.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -24,15 +25,30 @@ pub struct Acceptor {
     pub sided: bool,
 }
 
-pub fn acceptor(block: &str) -> Option<Acceptor> {
+/// `installed` are the upgrades in the block's saved data (`process::installed`); only machines
+/// read them, whose buffer grows or shrinks with them.
+pub fn acceptor(block: &str, installed: &upgrade::Installed) -> Option<Acceptor> {
     if let Some((capacity, rate)) = cube::tier(block) {
         return Some(Acceptor { capacity, rate, sided: true });
+    }
+    // A Universal Cable takes up to its whole buffer on every side.
+    if let Some(t) = transmitter::tier_of(block).filter(|t| t.kind == transmitter::Kind::Cable) {
+        return Some(Acceptor { capacity: t.capacity, rate: t.rate, sided: false });
     }
     if pump::is_either(block) {
         return Some(Acceptor { capacity: pump::CAPACITY, rate: pump::CAPACITY, sided: false });
     }
+    if let Some(f) = super::factory::find(block) {
+        return Some(Acceptor { capacity: f.capacity(), rate: f.capacity(), sided: false });
+    }
+    if block == miner::BLOCK {
+        return Some(Acceptor { capacity: miner::CAPACITY, rate: miner::CAPACITY, sided: false });
+    }
     // Machines take up to their whole buffer per call (no side config ported).
-    machine::find(block).map(|m| Acceptor { capacity: m.capacity(), rate: m.capacity(), sided: false })
+    machine::find(block).map(|m| {
+        let capacity = m.upgraded(installed).capacity();
+        Acceptor { capacity, rate: capacity, sided: false }
+    })
 }
 
 impl Acceptor {
@@ -50,7 +66,7 @@ mod tests {
 
     #[test]
     fn cubes_are_sided_and_limited_by_their_tier() {
-        let a = acceptor("mekanism:basic_energy_cube").unwrap();
+        let a = acceptor("mekanism:basic_energy_cube", &[0; 3]).unwrap();
         assert_eq!(a, Acceptor { capacity: 4_000_000, rate: 4_000, sided: true });
         assert_eq!(a.accept(1_000_000, 1_000_000, 0), 4_000);
         assert_eq!(a.accept(1_000_000, 1_000_000, 3_999_000), 1_000);
@@ -59,33 +75,64 @@ mod tests {
     #[test]
     fn machines_take_their_whole_buffer_on_any_side() {
         for m in &machine::MACHINES {
-            let a = acceptor(m.block).unwrap();
+            let a = acceptor(m.block, &[0; 3]).unwrap();
             assert_eq!(a, Acceptor { capacity: m.capacity(), rate: m.capacity(), sided: false });
             assert_eq!(a.accept(i32::MAX, i32::MAX, 0), m.capacity());
             assert_eq!(a.accept(i32::MAX, i32::MAX, m.capacity()), 0);
         }
     }
 
+    /// Eight speed upgrades make the chamber use 100 times as much: a cube must fill the larger
+    /// buffer, or the machine never holds one tick's energy.
+    #[test]
+    fn upgraded_machines_take_their_upgraded_buffer() {
+        let chamber = machine::find("mekanism:enrichment_chamber").unwrap();
+        let fast = chamber.upgraded(&[8, 0, 0]);
+        let a = acceptor("mekanism:enrichment_chamber", &[8, 0, 0]).unwrap();
+        assert_eq!(a.capacity, fast.capacity());
+        assert!(a.accept(i32::MAX, i32::MAX, 0) >= fast.usage);
+    }
+
+    #[test]
+    fn cables_take_up_to_their_buffer_on_any_side() {
+        for (block, capacity) in [
+            ("mekanism:basic_universal_cable", 8_000),
+            ("mekanism:advanced_universal_cable", 128_000),
+            ("mekanism:elite_universal_cable", 1_024_000),
+            ("mekanism:ultimate_universal_cable", 8_192_000),
+        ] {
+            let a = acceptor(block, &[0; 3]).unwrap();
+            assert_eq!(a, Acceptor { capacity, rate: capacity, sided: false });
+            assert_eq!(a.accept(i32::MAX, i32::MAX, 0), capacity);
+            assert_eq!(a.accept(i32::MAX, i32::MAX, capacity - 1), 1);
+        }
+        // A generator with 100,000 behind it fills a basic cable to the brim, no more.
+        let basic = acceptor("mekanism:basic_universal_cable", &[0; 3]).unwrap();
+        assert_eq!(basic.accept(100_000, 100_000, 7_500), 500);
+        // Pipes, tubes and conductors take no energy.
+        assert!(acceptor("mekanism:basic_mechanical_pipe", &[0; 3]).is_none());
+    }
+
     #[test]
     fn other_blocks_take_nothing() {
-        assert!(acceptor("minecraft:furnace").is_none());
-        assert!(acceptor("mekanismgenerators:heat_generator").is_none());
+        assert!(acceptor("minecraft:furnace", &[0; 3]).is_none());
+        assert!(acceptor("mekanismgenerators:heat_generator", &[0; 3]).is_none());
     }
 
     /// The creative cube at `i32::MAX`, and saved amounts outside the buffer.
     #[test]
     fn extreme_amounts_never_overflow() {
-        let creative = acceptor(cube::CREATIVE).unwrap();
+        let creative = acceptor(cube::CREATIVE, &[0; 3]).unwrap();
         assert_eq!(creative.accept(i32::MAX, i32::MAX, i32::MAX), 0);
         assert_eq!(creative.accept(i32::MAX, i32::MAX, i32::MAX - 5), 5);
         assert_eq!(creative.accept(i32::MAX, i32::MAX, 0), i32::MAX);
-        let basic = acceptor("mekanism:basic_energy_cube").unwrap();
+        let basic = acceptor("mekanism:basic_energy_cube", &[0; 3]).unwrap();
         assert_eq!(basic.accept(i32::MAX, i32::MAX, i32::MAX), 0, "more saved than the buffer holds");
         assert_eq!(basic.accept(i32::MAX, i32::MAX, i32::MIN), 4_000, "negative saved amount");
         assert_eq!(basic.accept(-1, 100, 0), 0);
         assert_eq!(basic.accept(100, -1, 0), 0);
         for (block, capacity, _) in cube::TIERS {
-            let a = acceptor(block).unwrap();
+            let a = acceptor(block, &[0; 3]).unwrap();
             for theirs in [0, 1, capacity / 2, capacity - 1, capacity] {
                 let moved = a.accept(i32::MAX, i32::MAX, theirs);
                 assert!(moved >= 0 && theirs.checked_add(moved).is_some_and(|sum| sum <= capacity), "{block} {theirs}");
