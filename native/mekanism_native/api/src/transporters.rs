@@ -265,7 +265,12 @@ pub(super) fn right_click(host: &mut dyn Host, pos: Pos, face: [i32; 3], t: &Tie
     if !sneaking && t.variant != Variant::Diversion {
         return false;
     }
-    let Some(side) = side_of(face) else { return false };
+    // The arm looked at, else the clicked face (a chest hides the face that points at it).
+    let picked = host.acting_player().and_then(|p| {
+        let eye = [p.position[0], p.position[1] + if sneaking { 1.27 } else { 1.62 }, p.position[2]];
+        transporter::picked_side(pos, eye, transporter::view_vector(p.yaw, p.pitch))
+    });
+    let Some(side) = picked.or_else(|| side_of(face)) else { return false };
     let mut line = None;
     host.change_mod_block_entity(pos, &mut |m: &mut ModBlockEntity| {
         let mut sides = read_sides(&m.nbt);

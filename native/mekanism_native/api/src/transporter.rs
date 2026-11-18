@@ -406,6 +406,56 @@ pub fn arrived(t: &Transit, entered: usize) -> Transit {
     Transit { progress: t.progress % 100, from: entered as u8, origin: t.origin, refused: t.refused }
 }
 
+/// The side a player's look picks on a transporter at `pos`, as Mekanism's per-side hit boxes do:
+/// the arm (`5/16..11/16` across, from the core to the block's face) the ray from `eye` along
+/// `dir` meets first. None when it meets the core first or misses: then the clicked face counts.
+/// Lets a player pick the side that faces a chest, whose own face the chest hides.
+pub fn picked_side(pos: Pos, eye: [f64; 3], dir: [f64; 3]) -> Option<usize> {
+    const LO: f64 = 5.0 / 16.0;
+    const HI: f64 = 11.0 / 16.0;
+    let local = [eye[0] - pos[0] as f64, eye[1] - pos[1] as f64, eye[2] - pos[2] as f64];
+    let hit = |min: [f64; 3], max: [f64; 3]| -> Option<f64> {
+        let (mut near, mut far) = (0.0f64, f64::INFINITY);
+        for a in 0..3 {
+            if dir[a].abs() < 1e-12 {
+                if local[a] < min[a] || local[a] > max[a] {
+                    return None;
+                }
+                continue;
+            }
+            let (t1, t2) = ((min[a] - local[a]) / dir[a], (max[a] - local[a]) / dir[a]);
+            near = near.max(t1.min(t2));
+            far = far.min(t1.max(t2));
+        }
+        (near <= far).then_some(near)
+    };
+    let core = hit([LO; 3], [HI; 3]);
+    let mut best: Option<(f64, usize)> = None;
+    for (side, offset) in cube::OFFSETS.iter().enumerate() {
+        let (mut min, mut max) = ([LO; 3], [HI; 3]);
+        for a in 0..3 {
+            match offset[a] {
+                -1 => (min[a], max[a]) = (0.0, LO),
+                1 => (min[a], max[a]) = (HI, 1.0),
+                _ => {}
+            }
+        }
+        if let Some(t) = hit(min, max) {
+            if best.is_none_or(|(b, _)| t < b) {
+                best = Some((t, side));
+            }
+        }
+    }
+    let (t, side) = best?;
+    core.is_none_or(|c| t < c).then_some(side)
+}
+
+/// The look direction of a player's `yaw` and `pitch` in degrees (`Entity.calculateViewVector`).
+pub fn view_vector(yaw: f32, pitch: f32) -> [f64; 3] {
+    let (y, p) = ((yaw as f64).to_radians(), (pitch as f64).to_radians());
+    [-y.sin() * p.cos(), -p.sin(), y.cos() * p.cos()]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -659,5 +709,29 @@ mod tests {
         }
         assert!(is_inventory_block("mekanism:basic_bin"));
         assert!(is_inventory_block("mekanism:enrichment_chamber"));
+    }
+
+    #[test]
+    fn a_look_at_the_arm_picks_that_side() {
+        // Standing west of a transporter at the origin, above a chest on its west, looking down
+        // at the west arm: west (4) is picked although the chest hides the west face.
+        let eye = [-1.2, 1.6, 0.5];
+        let target = [0.15, 0.5, 0.5];
+        let dir = [target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]];
+        assert_eq!(picked_side([0, 0, 0], eye, dir), Some(4));
+        // Straight down the north arm: north.
+        assert_eq!(picked_side([0, 0, 0], [0.5, 0.5, -2.0], [0.0, 0.0, 1.0]), Some(2));
+        // Diagonally into the core, past every arm: the clicked face decides.
+        assert_eq!(picked_side([0, 0, 0], [-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]), None);
+        // Missing the block entirely.
+        assert_eq!(picked_side([0, 0, 0], [5.0, 5.0, 5.0], [1.0, 0.0, 0.0]), None);
+    }
+
+    #[test]
+    fn view_vector_matches_minecraft() {
+        let south = view_vector(0.0, 0.0);
+        assert!((south[2] - 1.0).abs() < 1e-9 && south[0].abs() < 1e-9);
+        let down = view_vector(0.0, 90.0);
+        assert!((down[1] + 1.0).abs() < 1e-9);
     }
 }

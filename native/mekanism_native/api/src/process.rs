@@ -777,7 +777,7 @@ fn draw_controls(host: &dyn Host, event: &mut ScreenDrawEvent, m: &Machine, inst
         host.fill(event.batch, [x + rx + 1.0, y + ry + 1.0, w - 2.0, h - 2.0], 0xFF4A6FA5);
         host.text(event.batch, label, [x + rx + 3.0, y + ry + 1.0], 0xFFFFFF, true);
     };
-    button(host, event, machine::REDSTONE_BUTTON, &format!("RS:{}", mode.label()));
+    button(host, event, machine::REDSTONE_BUTTON, &format!("RS:{}", &mode.label()[..1]));
     for kind in upgrade::KINDS {
         button(host, event, machine::uninstall_button(kind), &format!("{}{}", &kind.label()[..1], installed[kind.index()]));
     }

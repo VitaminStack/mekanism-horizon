@@ -387,9 +387,14 @@ impl Machine {
         if self.solar() { None } else { Some(self.slots() + 2) }
     }
 
-    /// The machine as its installed upgrades make it: `UpgradeUtils.getTicks`, `getEnergyPerTick` and
-    /// `getMaxEnergy` on its table values. The Reaction Chamber's duration is its recipe's and the
-    /// Solar Neutron Activator has no upgrades, so those keep their ticks.
+    /// The machine as its installed upgrades make it: `UpgradeUtils.getTicks` and `getEnergyPerTick`
+    /// on its table values. The Reaction Chamber's duration is its recipe's and the Solar Neutron
+    /// Activator has no upgrades, so those keep their ticks.
+    ///
+    /// Capacity follows `MachineEnergyContainer.updateMaxEnergy`: a machine that takes speed upgrades
+    /// stores its upgraded usage times `max(STORAGE_MULTIPLIER, ticks)` once an upgrade changed it,
+    /// so eight speed upgrades (100x usage) still fit one tick's energy. The Reaction Chamber, whose
+    /// recipe energy sets its buffer here, keeps `getMaxEnergy` on its table storage.
     pub fn upgraded(&self, installed: &upgrade::Installed) -> Machine {
         let [speed, energy, _] = *installed;
         let mut m = *self;
@@ -400,13 +405,24 @@ impl Machine {
             m.ticks = upgrade::ticks(self.ticks as u32, speed) as i32;
         }
         m.usage = upgrade::energy_per_tick(self.usage as u64, speed, energy).min(i32::MAX as u64) as i32;
-        m.storage = upgrade::max_energy(self.storage as u64, energy).min(i32::MAX as u64) as i32;
+        m.storage = if matches!(self.op, Op::React) {
+            upgrade::max_energy(self.storage as u64, energy).min(i32::MAX as u64) as i32
+        } else if speed == 0 && energy == 0 {
+            self.storage
+        } else {
+            (m.usage as u64 * STORAGE_MULTIPLIER.max(m.ticks as u64)).min(i32::MAX as u64) as i32
+        };
         m
     }
 
     /// The most energy any upgrades let it store (what Horizon's static buffer is declared with).
     pub fn max_capacity(&self) -> i32 {
-        upgrade::max_energy(self.storage as u64, upgrade::Upgrade::Energy.max()).min(i32::MAX as u64) as i32
+        let (speed, energy) = (upgrade::Upgrade::Speed.max(), upgrade::Upgrade::Energy.max());
+        (0..=speed)
+            .flat_map(|s| (0..=energy).map(move |e| [s, e, 0]))
+            .map(|installed| self.upgraded(&installed).storage)
+            .max()
+            .unwrap_or(self.storage)
     }
 
     /// Length of the menu data the machine's tanks, buffer and mode need; the redstone mode and the
@@ -619,7 +635,9 @@ pub const ENERGY_SLOT_POS: [f32; 2] = [98.0, 54.0];
 pub const UPGRADE_SLOT_POS: [f32; 2] = [118.0, 54.0];
 pub const UPGRADE_OUT_POS: [f32; 2] = [138.0, 54.0];
 /// The redstone button, and the three small buttons that take one upgrade of a kind out again.
-pub const REDSTONE_BUTTON: [f32; 4] = [56.0, 73.0, 40.0, 10.0];
+/// The redstone button shows the mode's initial (`RS:H`); its tooltip names the mode. It starts
+/// right of the inventory label, which ends near x 55.
+pub const REDSTONE_BUTTON: [f32; 4] = [60.0, 73.0, 30.0, 10.0];
 pub fn uninstall_button(kind: upgrade::Upgrade) -> [f32; 4] {
     [98.0 + 22.0 * kind.index() as f32, 74.0, 20.0, 9.0]
 }
@@ -715,6 +733,9 @@ pub const PRC_OUTPUT: usize = 2;
 const PRC_USAGE: i32 = 2;
 /// What its buffer holds: Mekanism sizes it by the recipe running (energy per tick x its duration,
 /// at least 4 ticks); this is the longest shipped one, wood or coal gasification (900 ticks at 2 FE/t).
+/// `AttributeEnergy.STORAGE_MULTIPLIER`: ticks of usage a machine stores at least.
+const STORAGE_MULTIPLIER: u64 = 4;
+
 pub const PRC_STORAGE: i32 = 1_800;
 
 /// The Isotopic Centrifuge and the Solar Neutron Activator: input and output gauges beside the arrow.
@@ -1900,9 +1921,15 @@ mod tests {
         let crusher = machine("mekanism:crusher");
         let max = crusher.upgraded(&[8, 0, 0]);
         assert_eq!((max.ticks, max.usage), (crusher.ticks / 10, crusher.usage * 100));
+        // Upstream sizes the buffer to usage x max(4, ticks) once an upgrade is in.
+        assert_eq!(max.storage, max.usage * max.ticks);
         let frugal = crusher.upgraded(&[0, 8, 0]);
-        assert_eq!((frugal.ticks, frugal.usage, frugal.storage), (crusher.ticks, 1, crusher.storage * 10));
-        assert_eq!(crusher.max_capacity(), crusher.storage * 10);
+        assert_eq!((frugal.ticks, frugal.usage, frugal.storage), (crusher.ticks, 1, crusher.ticks));
+        assert_eq!(crusher.max_capacity(), max.storage);
+        let chamber = machine("mekanism:enrichment_chamber").upgraded(&[8, 0, 0]);
+        assert!(chamber.storage >= chamber.usage, "eight speed upgrades still fit one tick");
+        let washer = machine("mekanism:chemical_washer").upgraded(&[8, 0, 0]);
+        assert_eq!(washer.storage, washer.usage * 4);
         let none = crusher.upgraded(&[0; 3]);
         assert_eq!((none.ticks, none.usage, none.storage), (crusher.ticks, crusher.usage, crusher.storage));
         let sna = machine("mekanism:solar_neutron_activator");

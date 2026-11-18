@@ -134,11 +134,7 @@ impl State {
             .cloned()
             .filter(|s| matches!(&*s.item, gear::FREE_RUNNERS | gear::FREE_RUNNERS_ARMORED));
         let Some(stack) = worn else {
-            self.snaps.lock().unwrap().entry(eid).and_modify(|s| s.boots = None);
-            self.fall_cost.lock().unwrap().remove(&eid);
-            if self.stepped.lock().unwrap().remove(&uuid) {
-                host.set_attribute_base(uuid, "minecraft:step_height", gear::BASE_STEP_HEIGHT);
-            }
+            self.boots_off(host, uuid, eid);
             return;
         };
         let owed = self.fall_cost.lock().unwrap().remove(&eid).unwrap_or(0);
@@ -155,6 +151,29 @@ impl State {
             host.set_attribute_base(uuid, "minecraft:step_height", want);
         }
         self.stepped.lock().unwrap().insert(uuid);
+    }
+
+    /// Free Runners taken off: the step height goes back. `inventory_tick` reaches only slots that
+    /// hold an item, so an emptied feet slot is noticed here, once a player tick.
+    pub fn player_tick(&self, host: &mut dyn Host) {
+        let Some(player) = host.acting_player() else { return };
+        if !self.stepped.lock().unwrap().contains(&player.uuid) {
+            return;
+        }
+        let runners = FEET.iter().any(|&slot| {
+            host.carried_stack(slot).is_some_and(|s| matches!(&*s.item, gear::FREE_RUNNERS | gear::FREE_RUNNERS_ARMORED))
+        });
+        if !runners {
+            self.boots_off(host, player.uuid, player.entity_id as u32);
+        }
+    }
+
+    fn boots_off(&self, host: &mut dyn Host, uuid: u128, eid: u32) {
+        self.snaps.lock().unwrap().entry(eid).and_modify(|s| s.boots = None);
+        self.fall_cost.lock().unwrap().remove(&eid);
+        if self.stepped.lock().unwrap().remove(&uuid) {
+            host.set_attribute_base(uuid, "minecraft:step_height", gear::BASE_STEP_HEIGHT);
+        }
     }
 
     fn snap(&self, eid: u32, change: impl FnOnce(&mut Snap)) {

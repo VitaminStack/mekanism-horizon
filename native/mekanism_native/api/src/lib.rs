@@ -103,7 +103,7 @@ use horizon_client::mod_api::{
     ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent, StateForPlacementEvent, Tag,
     Text, TooltipEvent, RightClickBlockEvent, CanEatEvent, InventoryTickEvent, ItemBarEvent, OnEquipEvent,
     LivingEntityUseItemFinishEvent, LivingEntityUseItemStartEvent, LivingIncomingDamageV2Event,
-    UseAnimationEvent, UseDurationEvent, UseItemEvent, UseItemOnEvent, MenuSlotRulesEvent,
+    UseAnimationEvent, UseDurationEvent, UseItemEvent, MenuSlotRulesEvent,
     ArrowLooseEvent, ClientTickPostEvent, EntityShootBowEvent, LivingBreatheEvent, LivingFallEvent,
     NetFromClientEvent, NetFromServerEvent, OnUseTickEvent,
     PlayerTickEvent,
@@ -439,6 +439,22 @@ fn debug_tick(host: &mut dyn Host, pos: [i32; 3], source: bool) {
     }
 }
 
+/// The Configurator in Rotate mode (`ItemConfigurator.useOn`): the clicked face becomes the
+/// front. Cubes turn to all six sides, machines, generators and pumps only horizontally.
+fn configure(host: &mut dyn Host, pos: [i32; 3], face: [i32; 3]) -> bool {
+    let Some(dir) = cube::OFFSETS.iter().position(|o| *o == face) else { return false };
+    let turnable = match kind(&host.block(pos)) {
+        Some(Kind::Cube { .. }) => true,
+        Some(Kind::Machine(_) | Kind::Generator(_) | Kind::Pump { .. }) => dir != cube::UP && dir != cube::DOWN,
+        _ => false,
+    };
+    if !turnable || host.block_property(pos, "facing").is_none() {
+        return false;
+    }
+    host.set_block_property(pos, "facing", cube::DIR_NAMES[dir]);
+    true
+}
+
 /// Move up to `budget` of `stored` into the block on side `dir` of `pos`, if
 /// it takes energy there (`energy::acceptor`: a cube through a side set to
 /// input, a machine on every side). Returns what moved: what the neighbour
@@ -451,7 +467,7 @@ fn give(host: &mut dyn Host, pos: [i32; 3], dir: usize, budget: i32, stored: i32
     let their_facing = facing(host, at);
     let mut moved = 0;
     host.change_mod_block_entity(at, &mut |m| {
-        let Some(acceptor) = energy::acceptor(&m.id) else { return };
+        let Some(acceptor) = energy::acceptor(&m.id, &process::installed(&m.nbt)) else { return };
         if acceptor.sided {
             let their_side = cube::relative(cube::opposite(dir), their_facing);
             if read_sides(&m.nbt).unwrap_or(cube::DEFAULT_SIDES)[their_side] != Mode::Input {
@@ -635,6 +651,10 @@ impl Hooks for MekanismNative {
         // A Tier Installer turns a machine or a factory into the next factory (`factories::install`).
         if let Some((item, _, _)) = host.held() {
             if factories::installer_tier(&item).is_some() && factories::install(host, event.pos, &item) {
+                return Flow::Cancel;
+            }
+            // Here, not in `use_item_on`: that runs after the block's own use, which opens the screen.
+            if &*item == CONFIGURATOR && configure(host, event.pos, event.face) {
                 return Flow::Cancel;
             }
         }
@@ -1045,23 +1065,6 @@ impl Hooks for MekanismNative {
     /// The Configurator's Rotate mode (`ItemConfigurator.useOn`): a machine's or cube's front turns to the
     /// face clicked, horizontally only on machines. Its other modes need per-side config and item modes
     /// Horizon does not give a block's faces (see docs/sessions/m07-machine-framework.md).
-    fn use_item_on(&self, host: &mut dyn Host, event: &mut UseItemOnEvent<'_>) -> Flow {
-        if &*event.stack.item != CONFIGURATOR {
-            return Flow::Continue;
-        }
-        let Some(dir) = cube::OFFSETS.iter().position(|o| *o == event.face) else { return Flow::Continue };
-        let block = host.block(event.pos);
-        let turnable = match kind(&block) {
-            Some(Kind::Cube { .. }) => true,
-            Some(Kind::Machine(_) | Kind::Generator(_) | Kind::Pump { .. }) => dir != cube::UP && dir != cube::DOWN,
-            _ => false,
-        };
-        if !turnable || host.block_property(event.pos, "facing").is_none() {
-            return Flow::Continue;
-        }
-        host.set_block_property(event.pos, "facing", cube::DIR_NAMES[dir]);
-        Flow::Cancel
-    }
 
     /// Players' clicks into a machine's energy slot (anything that holds energy) and upgrade slot (upgrades).
     fn menu_slot_rules(&self, event: &mut MenuSlotRulesEvent<'_>) {
@@ -1098,6 +1101,7 @@ impl Hooks for MekanismNative {
     /// A player standing in a ready Teleporter's frame is teleported (`teleporters.rs`).
     fn player_tick(&self, host: &mut dyn Host, _event: &mut PlayerTickEvent) {
         teleporters::player_tick(host);
+        self.worn.player_tick(host);
     }
 
     fn living_incoming_damage_v2(&self, host: &mut dyn Host, event: &mut LivingIncomingDamageV2Event<'_>) -> Flow {
