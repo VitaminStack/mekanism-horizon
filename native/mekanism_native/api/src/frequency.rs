@@ -288,6 +288,17 @@ impl Registry {
         }
     }
 
+    /// The members of `kind` frequencies seen in chunk `chunk` of `dimension`, in any frequency.
+    pub fn members_in_chunk(&self, kind: Kind, dimension: &str, chunk: [i32; 2]) -> Vec<(Identity, Member)> {
+        self.map
+            .values()
+            .filter(|f| f.identity.kind == kind)
+            .flat_map(|f| f.active.keys().map(move |m| (f.identity.clone(), m)))
+            .filter(|(_, m)| m.dimension == dimension && [m.pos[0] >> 4, m.pos[2] >> 4] == chunk)
+            .map(|(i, m)| (i, m.clone()))
+            .collect()
+    }
+
     /// Removes a member from every frequency (its block was broken or changed).
     pub fn forget(&mut self, member: &Member) {
         for f in self.map.values_mut() {
@@ -743,6 +754,21 @@ mod tests {
         let c = Member::new("minecraft:overworld", [9, 9, 9]);
         assert!(holds_window(&members, &c, 0), "an unlisted member holds it");
         assert!(holds_window(&[a.clone()], &a, -3), "a lone member always holds it");
+    }
+
+    #[test]
+    fn members_in_a_chunk() {
+        let id = Identity::new(Kind::Inventory, "1", true, ALICE);
+        let tp = Identity::new(Kind::Teleporter, "1", true, ALICE);
+        let mut r = Registry::new();
+        r.create(&id, "A").unwrap();
+        r.create(&tp, "A").unwrap();
+        let inside = Member::new("minecraft:overworld", [-45, 64, 5]);
+        r.touch(&id, &inside, 0);
+        r.touch(&id, &Member::new("minecraft:overworld", [-45, 64, 20]), 0);
+        r.touch(&id, &Member::new("minecraft:the_nether", [-45, 64, 5]), 0);
+        r.touch(&tp, &Member::new("minecraft:overworld", [-40, 64, 5]), 0);
+        assert_eq!(r.members_in_chunk(Kind::Inventory, "minecraft:overworld", [-3, 0]), vec![(id, inside)]);
     }
 
     /// A member out of turn (window 0) keeps no empty buffer of the pool's kind: it would show

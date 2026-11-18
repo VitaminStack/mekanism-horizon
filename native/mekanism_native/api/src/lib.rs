@@ -103,7 +103,7 @@ use horizon_client::mod_api::{
     ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent, StateForPlacementEvent, Tag,
     Text, TooltipEvent, RightClickBlockEvent, CanEatEvent, InventoryTickEvent, ItemBarEvent, OnEquipEvent,
     LivingEntityUseItemFinishEvent, LivingEntityUseItemStartEvent, LivingIncomingDamageV2Event,
-    UseAnimationEvent, UseDurationEvent, UseItemEvent, MenuSlotRulesEvent, WorldSavedEvent,
+    UseAnimationEvent, UseDurationEvent, UseItemEvent, MenuSlotRulesEvent, WorldSavedEvent, ChunkUnloadEvent,
     ArrowLooseEvent, ClientTickPostEvent, EntityShootBowEvent, LivingBreatheEvent, LivingFallEvent,
     NetFromClientEvent, NetFromServerEvent, OnUseTickEvent,
     PlayerTickEvent,
@@ -1109,6 +1109,11 @@ impl Hooks for MekanismNative {
     }
 
     /// A player standing in a ready Teleporter's frame is teleported (`teleporters.rs`).
+    /// Quantum Entangloporters in the chunk give their window back before it is saved.
+    fn chunk_unload(&self, host: &mut dyn Host, event: &mut ChunkUnloadEvent<'_>) {
+        entangloporter::unloaded(host, event.dimension, event.chunk);
+    }
+
     /// Frequencies are saved with the chunks, never between saves (see `teleporters`).
     fn world_saved(&self, host: &mut dyn Host, _event: &mut WorldSavedEvent) {
         teleporters::save(host);

@@ -5,9 +5,11 @@
 //! shares that frequency's buffers (`InventoryFrequency`: energy, fluid, chemical, one item slot).
 //! Horizon's energy, fluid and container hooks read a block entity's own buffer, so each member
 //! carries a window of the shared buffer: every tick it hands everything it holds back to the
-//! registry's pool and takes a window out again (`frequency::exchange`). What a neighbour put in or
-//! took out of the window moves the pool by the same amount; nothing is made or lost. The pool is
-//! saved with the registry (`teleporters.rs`).
+//! registry's pool (`frequency::exchange`); the loaded members take turns of `TURN_TICKS` at
+//! taking a window out again (`frequency::holds_window`), so a neighbour of any member reaches
+//! the whole pool. What a neighbour put in or took out of the window moves the pool by the same
+//! amount; nothing is made or lost. A member whose chunk unloads gives its window back first
+//! (`unloaded`). The pool is saved with the registry, when the world saves (`teleporters.rs`).
 //!
 //! Not ported: heat, the per-side item/fluid/chemical/energy config (every side takes and gives
 //! all four), the item slot's own energy-in slot, and the 256,000,000 FE buffer reaching a
@@ -230,10 +232,33 @@ pub(super) fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
 /// buffers are then emptied so a cancelled break does not count them twice. Its item slot
 /// drops with the block.
 pub(super) fn broken(host: &mut dyn Host, pos: [i32; 3]) {
+    give_back(host, pos, false);
+}
+
+/// `chunk_unload`: the members in the chunk give their whole window back, the item too, so the
+/// loaded members still reach it. Their chunk is saved with empty windows.
+pub(super) fn unloaded(host: &mut dyn Host, dimension: &str, chunk: [i32; 2]) {
+    let members = tp::with(host, |s, _| s.registry.members_in_chunk(FKind::Inventory, dimension, chunk));
+    for (_, member) in members {
+        give_back(host, member.pos, true);
+        tp::with(host, |s, _| s.registry.forget(&member));
+    }
+}
+
+/// Moves the member's buffers at `pos` into its frequency's pool, and its item slot with
+/// `item` (a stack with components stays: the pool keeps ids only).
+fn give_back(host: &mut dyn Host, pos: [i32; 3], item: bool) {
     let Some(entity) = host.mod_block_entity(pos) else { return };
     let Some(id) = tp::bound(&entity.nbt, FKind::Inventory) else { return };
     let mut energy = Tank::new(None, i64::from(read_energy(&entity.nbt, ENERGY)));
     let [mut fluid, mut chemical] = read_tanks(&entity.nbt);
+    let slot = entity.items.first().cloned().flatten().filter(|_| item);
+    let kind = slot.as_ref().and_then(|s| plain_kind(host, s));
+    let mut stack = match (&slot, &kind) {
+        (Some(s), Some(k)) => Tank::new(Some(k.as_str()), i64::from(s.count)),
+        _ => Tank::default(),
+    };
+    let limit = kind.as_deref().and_then(|k| host.max_stack_size(k)).map_or(64, i64::from);
     let found = tp::with(host, |s, _| {
         let Some(f) = s.registry.get_mut(&id) else { return false };
         let mut pool = Tank::new(None, f.shared.energy);
@@ -241,15 +266,28 @@ pub(super) fn broken(host: &mut dyn Host, pos: [i32; 3]) {
         f.shared.energy = pool.amount;
         exchange(&mut f.shared.fluid, freq::FLUID_CAP, &mut fluid, 0);
         exchange(&mut f.shared.chemical, freq::CHEMICAL_CAP, &mut chemical, 0);
+        if kind.is_some() {
+            exchange(&mut f.shared.item, limit, &mut stack, 0);
+        }
         s.registry.dirty = true;
         true
     });
-    if found {
-        host.change_mod_block_entity(pos, &mut |m| {
-            write_int(&mut m.nbt, ENERGY, 0);
-            write_tanks(&mut m.nbt, &[Tank::default(), Tank::default()]);
-        });
+    if !found {
+        return;
     }
+    // What the pool had no room for stays in the slot.
+    let left = match (&slot, &kind) {
+        (Some(s), Some(_)) if stack.amount > 0 => Some(ItemStack { count: stack.amount as u32, ..s.clone() }),
+        (Some(_), Some(_)) => None,
+        _ => slot.clone(),
+    };
+    host.change_mod_block_entity(pos, &mut |m| {
+        write_int(&mut m.nbt, ENERGY, energy.amount.clamp(0, i64::from(i32::MAX)) as i32);
+        write_tanks(&mut m.nbt, &[fluid.clone(), chemical.clone()]);
+        if item && !m.items.is_empty() {
+            m.items[0] = left.clone();
+        }
+    });
 }
 
 pub(super) fn draw(host: &dyn Host, event: &mut ScreenDrawEvent) {
