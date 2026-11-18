@@ -387,7 +387,7 @@ Build: Native `native-fdc87ae-e93aa89e0e57` (erster Lauf für PR 25 und 26 mit `
 
 ## Welle 1 Abnahme: Upgrades, Transport, Ausrüstung, Multiblöcke, Teleport, Spezialmaschinen (18.11.2026, per Agent Control `horizon-ctl`)
 
-Build: Content und Native aus dem lokalen Testbranch `test/wave1-acceptance` (`main` + die 8 Wave-1-Branches). Erster Lauf mit Native `native-fdc87ae-29d7630f6d54`. Nachprüfungen nach den Fixes mit `native-fdc87ae-c2013bd9866e` und zuletzt `native-fdc87ae-79b76aabf0ba` (Stand `dc21d6b`). Kreativwelt `W1Accept`. Checkliste: `docs/sessions/WAVE1-CHECKLIST.md`.
+Build: Content und Native aus dem lokalen Testbranch `test/wave1-acceptance` (`main` + die 8 Wave-1-Branches). Erster Lauf mit Native `native-fdc87ae-29d7630f6d54`. Nachprüfungen nach den Fixes mit `native-fdc87ae-c2013bd9866e` und zuletzt `native-fdc87ae-5cf7278cbc49` (Stand nach `dc21d6b` plus Chunk-Unload-Fix). Kreativwelt `W1Accept`. Checkliste: `docs/sessions/WAVE1-CHECKLIST.md`.
 
 | Test | Ergebnis |
 |---|---|
@@ -397,7 +397,7 @@ Build: Content und Native aus dem lokalen Testbranch `test/wave1-acceptance` (`m
 | Energy Tablet lädt die Maschine | ok |
 | Neustart: Upgrades und Energie bleiben | ok |
 | Logistical Transporter: Klick auf einen Arm gibt „west: Pull“, Items fließen | ok, nachdem ein Fehler **behoben** wurde: die Hitbox war leer (Shapes in Pixeln statt Blockeinheiten), und die Seitenwahl traf auch Seiten ohne Arm (`badaff7`, `0cd5d54`) |
-| Glow Panels: Hitbox | **behoben** (Shapes in Blockeinheiten, `0cd5d54`) |
+| Glow Panels: Hitbox | **behoben** (Shapes in Blockeinheiten, `0cd5d54`); ingame nicht nachgeprüft |
 | Free Runners: Schritthöhe 1,1, nach dem Ausziehen 0,6 | ok, nachdem ein Fehler **behoben** wurde (Schritthöhe blieb nach dem Ausziehen, `badaff7`) |
 | Scuba Mask + Tank: Luft bleibt unter Wasser 300, Sauerstoff sinkt; ohne Maske sinkt die Luft | ok |
 | Flamethrower: verbraucht Wasserstoff, tötet ein Schwein | ok |
@@ -410,7 +410,9 @@ Build: Content und Native aus dem lokalen Testbranch `test/wave1-acceptance` (`m
 | Teleporter A nach B: Teleport, Energie −119 FE; zu wenig Energie: kein Teleport | ok |
 | Portable Teleporter teleportiert (−116 FE); Kanalwahl zählt bis `freq::CHANNELS`, wechselt dann public/private | ok (Kanalwahl ist ein Ersatz für die GUI, so entworfen) |
 | Quantum Entangloporter: Items aus E1 kommen bei E2 an, ein Hopper an E2 leert den Pool | ok, nachdem ein Fehler **behoben** wurde: E1 behielt das ganze Fenster, und ein Mitglied ohne Fenster zeigte einen leeren Stack (count 0). Jetzt wechseln sich die Mitglieder alle 10 Ticks am Fenster ab (`dc21d6b`) |
-| Entangloporter Neustart: 10 Diamanten wurden zu 20 (vorher in einem Lauf auch Verlust) | **behoben**: Die Registry wird jetzt nur beim Speichern der Welt geschrieben (`world_saved`), zusammen mit den Chunks. Nachgeprüft: 10 Diamanten über 3 Neustarts, plus 1 Neustart mitten im Leeren per Hopper, genau 10 in der Kiste. 5.000 FE bleiben über 1 Neustart 5.000 FE (`dc21d6b`) |
+| Entangloporter Neustart: 10 Diamanten wurden zu 20 (vorher in einem Lauf auch Verlust) | **behoben**: Die Registry wird jetzt nur beim Speichern der Welt geschrieben (`world_saved`), zusammen mit den Chunks. Nachgeprüft: 10 Diamanten über 3 Neustarts, plus 1 Neustart mitten im Leeren per Hopper, genau 10 in der Kiste. 5.000 FE bleiben über 1 Neustart 5.000 FE (zwei getrennte Lesungen, nicht geleert gezählt) (`dc21d6b`) |
+| Entangloporter, ein Mitglied entladen: E3 bei 600 64 600 auf Frequenz 1, 10 Diamanten hinein, zurück zu E1/E2: der Hopper an E2 holt genau 10; E3 ist nach dem Neuladen leer | ok, nachdem ein Fehler **behoben** wurde: das entladene Mitglied behielt das Fenster in seinem Slot. Jetzt gibt es das Fenster bei `chunk_unload` an den Pool zurück |
+| Teleporter nach den Registry-Änderungen (Build `5cf7278cbc49`): Teleport zum nächsten aktiven Teleporter der Frequenz, −117 FE | ok |
 | Neustart: Frequenzen (Teleporter, Entangloporter) bleiben gebunden | ok |
 | Oredictionificator: GUI, Filter `dusts/bronze` zu `dust_bronze`; Bronzestaub wird umgewandelt, Cobblestone bleibt im Eingang | ok |
 | Oredictionificator Neustart: Filter bleiben | ok |
@@ -418,8 +420,9 @@ Build: Content und Native aus dem lokalen Testbranch `test/wave1-acceptance` (`m
 | Digital Miner ohne Filter, nicht invertiert: baut nichts ab | ok (wie im Original) |
 | Digital Miner invertiert, Radius 2, Y 60 bis 63: baut ab, verbraucht Energie, Modell aktiv, wirft in die Kiste 2 hinter und 1 über dem Miner aus | ok |
 | Digital Miner Silk Touch: Stein statt Cobblestone, Verbrauch ×12 | ok |
-| Digital Miner Neustart: Einstellungen bleiben | ok |
+| Digital Miner Neustart: Radius bleibt 2 (nur dieser Wert geprüft) | ok |
 | Formulaic Assemblicator: Block und Item existieren (ohne Funktion, wie geplant) | ok |
+| Entangloporter: Fluid- und Chemical-Sharing, Autosave während des Spiels (nur Beenden geprüft), Mitglieder in verschiedenen Dimensionen | nicht geprüft |
 
 Offen (nicht behoben):
 
@@ -431,4 +434,5 @@ Offen (nicht behoben):
 - Warnung beim Laden: Platziertes Feature `mekanism:salt`.
 - Die Kapazitätsformel der Factory weicht vom Original ab.
 - Teleporter-Kapazität ist 1.000 FE. Der Code-Kommentar sagt, das entspricht dem Original; nicht nachgeprüft.
-- Frequenzen werden nur noch beim Speichern der Welt geschrieben. Nach einem Absturz fehlen, wie bei den Chunks, die Änderungen seit dem letzten Autosave.
+- Frequenzen werden nur noch beim Speichern der Welt geschrieben. Nach einem Absturz fehlen die Änderungen seit dem letzten Autosave. Chunks, die zwischen zwei Autosaves entladen und geschrieben wurden, sind neuer als die Registry: ein Absturz kann dann Entangloporter-Inhalt auch verdoppeln, nicht nur verlieren.
+- Entangloporter-Mitglieder wechseln sich nach `game_time` ihrer Dimension ab. Laufen die Zeiten zweier Dimensionen auseinander, kann ein Mitglied seltener an die Reihe kommen (nicht geprüft).
