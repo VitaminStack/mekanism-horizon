@@ -77,7 +77,7 @@ fn is_loaded(host: &mut dyn Host, pos: Pos) -> bool {
     host.level(&dimension).is_some_and(|l| l.is_loaded(&*host, pos))
 }
 
-fn game_time(host: &mut dyn Host) -> i64 {
+pub(super) fn game_time(host: &mut dyn Host) -> i64 {
     let dimension = host.dimension().to_owned();
     host.level(&dimension).and_then(|l| l.game_time(&*host)).unwrap_or(0)
 }

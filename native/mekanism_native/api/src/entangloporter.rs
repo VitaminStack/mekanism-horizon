@@ -167,16 +167,23 @@ pub(super) fn tick(host: &mut dyn Host, event: &mut BlockEntityTickEvent) {
         .map_or(64, i64::from);
 
     let before_item = (item.kind.clone(), item.amount);
-    let shown = tp::with(host, |s, _| {
-        let Some(f) = id.as_ref().and_then(|i| s.registry.get_mut(i)) else { return None };
+    let me = freq::Member::new(host.dimension(), event.pos);
+    let turn = super::multiblocks::game_time(host);
+    let shown = tp::with(host, |s, now| {
+        let i = id.as_ref()?;
+        s.registry.touch(i, &me, now);
+        // Members take turns at the window, so every member's neighbours reach the pool.
+        let holds = freq::holds_window(&s.registry.active(i, now, tp::ACTIVE_MS), &me, turn);
+        let window = |w: i64| if holds { w } else { 0 };
+        let Some(f) = s.registry.get_mut(i) else { return None };
         let before = f.shared.clone();
         let mut pool = Tank::new(None, f.shared.energy);
-        exchange(&mut pool, freq::ENERGY_CAP, &mut energy, freq::ENERGY_WINDOW);
+        exchange(&mut pool, freq::ENERGY_CAP, &mut energy, window(freq::ENERGY_WINDOW));
         f.shared.energy = pool.amount;
-        exchange(&mut f.shared.fluid, freq::FLUID_CAP, &mut fluid, freq::FLUID_WINDOW);
-        exchange(&mut f.shared.chemical, freq::CHEMICAL_CAP, &mut chemical, freq::CHEMICAL_WINDOW);
+        exchange(&mut f.shared.fluid, freq::FLUID_CAP, &mut fluid, window(freq::FLUID_WINDOW));
+        exchange(&mut f.shared.chemical, freq::CHEMICAL_CAP, &mut chemical, window(freq::CHEMICAL_WINDOW));
         if !slot_foreign {
-            exchange(&mut f.shared.item, limit, &mut item, limit);
+            exchange(&mut f.shared.item, limit, &mut item, window(limit));
         }
         if f.shared != before {
             s.registry.dirty = true;

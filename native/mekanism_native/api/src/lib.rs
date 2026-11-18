@@ -103,7 +103,7 @@ use horizon_client::mod_api::{
     ScreenDrawEvent, ScreenEvent, ScreenTooltipEvent, StandaloneModelsEvent, StateForPlacementEvent, Tag,
     Text, TooltipEvent, RightClickBlockEvent, CanEatEvent, InventoryTickEvent, ItemBarEvent, OnEquipEvent,
     LivingEntityUseItemFinishEvent, LivingEntityUseItemStartEvent, LivingIncomingDamageV2Event,
-    UseAnimationEvent, UseDurationEvent, UseItemEvent, MenuSlotRulesEvent,
+    UseAnimationEvent, UseDurationEvent, UseItemEvent, MenuSlotRulesEvent, WorldSavedEvent,
     ArrowLooseEvent, ClientTickPostEvent, EntityShootBowEvent, LivingBreatheEvent, LivingFallEvent,
     NetFromClientEvent, NetFromServerEvent, OnUseTickEvent,
     PlayerTickEvent,
@@ -1109,6 +1109,11 @@ impl Hooks for MekanismNative {
     }
 
     /// A player standing in a ready Teleporter's frame is teleported (`teleporters.rs`).
+    /// Frequencies are saved with the chunks, never between saves (see `teleporters`).
+    fn world_saved(&self, host: &mut dyn Host, _event: &mut WorldSavedEvent) {
+        teleporters::save(host);
+    }
+
     fn player_tick(&self, host: &mut dyn Host, _event: &mut PlayerTickEvent) {
         teleporters::player_tick(host);
         self.worn.player_tick(host);

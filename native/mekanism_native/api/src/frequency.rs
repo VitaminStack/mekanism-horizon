@@ -165,7 +165,26 @@ pub fn exchange(pool: &mut Tank, cap: i64, local: &mut Tank, window: i64) {
         local.amount += give;
         pool.amount -= give;
     }
+    // A closed window (0) must not leave the pool's kind on an empty local buffer.
+    local.tidy();
     pool.tidy();
+}
+
+/// How many game ticks one member holds the window. More than one: the member that ticks first
+/// in a game tick finds the pool still empty (the last holder gives its window back only in its
+/// own tick), so it needs a second tick to fill its window.
+pub const TURN_TICKS: i64 = 10;
+
+/// Whether `me` holds the window of a shared pool on game tick `tick`: the active members take
+/// turns of `TURN_TICKS` (`members` in the registry's order). A window held by one member only
+/// would leave the others empty, so a neighbour of the second member could never take anything
+/// out. A member not (yet) listed holds it, so a lone new member is never starved.
+pub fn holds_window(members: &[Member], me: &Member, tick: i64) -> bool {
+    if !members.contains(me) {
+        return true;
+    }
+    let turn = tick.div_euclid(TURN_TICKS);
+    members[turn.rem_euclid(members.len() as i64) as usize] == *me
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -710,5 +729,29 @@ mod tests {
         assert_eq!(FLUID_CAP, 256 * 1_000);
         assert_eq!(CHEMICAL_CAP, 8_192 * 1_000);
         assert!(ENERGY_WINDOW <= i64::from(i32::MAX) && FLUID_WINDOW < FLUID_CAP && CHEMICAL_WINDOW < CHEMICAL_CAP);
+    }
+
+    #[test]
+    fn members_take_turns_at_the_window() {
+        let (a, b) = (Member::new("minecraft:overworld", [0, 0, 0]), Member::new("minecraft:overworld", [0, 0, 5]));
+        let members = vec![a.clone(), b.clone()];
+        for tick in 0..4 * TURN_TICKS {
+            assert_ne!(holds_window(&members, &a, tick), holds_window(&members, &b, tick), "one holder per tick");
+        }
+        assert!((0..TURN_TICKS).all(|t| holds_window(&members, &a, t)), "a turn lasts TURN_TICKS");
+        assert!((0..2 * TURN_TICKS).any(|t| holds_window(&members, &b, t)), "the second member gets its turn");
+        let c = Member::new("minecraft:overworld", [9, 9, 9]);
+        assert!(holds_window(&members, &c, 0), "an unlisted member holds it");
+        assert!(holds_window(&[a.clone()], &a, -3), "a lone member always holds it");
+    }
+
+    /// A member out of turn (window 0) keeps no empty buffer of the pool's kind: it would show
+    /// as a stack of 0 items.
+    #[test]
+    fn a_closed_window_leaves_no_empty_kind() {
+        let mut pool = Tank::new(Some("minecraft:diamond"), 10);
+        let mut local = Tank::default();
+        exchange(&mut pool, 64, &mut local, 0);
+        assert_eq!((local.kind, local.amount, pool.amount), (None, 0, 10));
     }
 }

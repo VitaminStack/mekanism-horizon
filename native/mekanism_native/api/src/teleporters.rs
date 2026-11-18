@@ -5,9 +5,11 @@
 //! State:
 //! - The frequency registry is one process-wide `State`, loaded from and saved to
 //!   `<world>/mekanism_horizon/frequencies.txt` (`host.world_dir()`), keyed by the world's
-//!   folder so a world switch loads the other world's file. It is written when a frequency is
-//!   created or deleted, and at most every 5 s when buffers changed: a crash or stop can lose
-//!   the last few seconds of a Quantum Entangloporter's buffer changes.
+//!   folder so a world switch loads the other world's file. It is written only when the world
+//!   saves (`world_saved`, which the final save on close also fires), like Mekanism's
+//!   `SavedData`: a Quantum Entangloporter's pool and the windows its members hold in their
+//!   chunks are then the same tick's snapshot, so a restart neither doubles nor loses what was
+//!   lent out. A crash loses the changes since the last save, as for the chunks.
 //!   Without a world folder (no server) it stays in memory.
 //! - Which teleporters are active is not saved: each ticking teleporter registers itself
 //!   (`Registry::touch`), so only teleporters in loaded chunks are destinations, as in Mekanism.
@@ -49,9 +51,8 @@ const CUSTOM_DATA: &str = "minecraft:custom_data";
 
 const FOLDER: &str = "mekanism_horizon";
 const FILE: &str = "frequencies.txt";
-const SAVE_EVERY_MS: u64 = 5_000;
 /// A teleporter not seen this long (milliseconds) is not a destination: it is in an unloaded chunk.
-const ACTIVE_MS: u64 = 3_000;
+pub(super) const ACTIVE_MS: u64 = 3_000;
 
 /// Menu data of the frequency panel, shared with the Quantum Entangloporter.
 pub(super) const DATA_PANEL: usize = 4;
@@ -73,7 +74,6 @@ pub(super) struct State {
     pub(super) registry: Registry,
     dests: BTreeMap<Member, Dest>,
     gates: BTreeMap<Member, Gate>,
-    saved_at: u64,
 }
 
 impl State {
@@ -84,16 +84,14 @@ impl State {
             registry: text.map_or_else(Registry::new, |t| Registry::load(&t)),
             dests: BTreeMap::new(),
             gates: BTreeMap::new(),
-            saved_at: 0,
         }
     }
 
-    /// Write the registry if it changed: at once with `force`, else at most every few seconds.
-    pub(super) fn flush(&mut self, now: u64, force: bool) {
-        if !self.registry.dirty || (!force && now.saturating_sub(self.saved_at) < SAVE_EVERY_MS) {
+    /// Write the registry if it changed.
+    fn flush(&mut self) {
+        if !self.registry.dirty {
             return;
         }
-        self.saved_at = now;
         let Some(dir) = &self.dir else { return };
         let folder = dir.join(FOLDER);
         let tmp = folder.join("frequencies.tmp");
@@ -120,14 +118,22 @@ pub(super) fn with<R>(host: &mut dyn Host, f: impl FnOnce(&mut State, u64) -> R)
     let mut guard = STATE.lock().unwrap_or_else(|e| e.into_inner());
     if guard.as_ref().is_none_or(|s| s.dir != dir) {
         if let Some(old) = guard.as_mut() {
-            old.flush(now, true);
+            old.flush();
         }
         *guard = Some(State::open(dir));
     }
     let state = guard.as_mut().expect("opened above");
-    let result = f(state, now);
-    state.flush(now, false);
-    result
+    f(state, now)
+}
+
+/// The world saved its chunks (`world_saved`): write the registry of that world now, so both
+/// are the same tick's snapshot.
+pub(super) fn save(host: &dyn Host) {
+    let dir = host.world_dir();
+    let mut guard = STATE.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(state) = guard.as_mut().filter(|s| s.dir == dir) {
+        state.flush();
+    }
 }
 
 // --- NBT of the bound frequency and the GUI's selection ---
@@ -204,11 +210,7 @@ pub(super) fn panel_button(host: &mut dyn Host, nbt: &mut Compound, kind: FKind,
     let mode = if sel.public { "public" } else { "private" };
     let message = if id == freq::BUTTON_SET {
         let outcome = with(host, |s, _| {
-            let created = s.registry.create(&identity, &player.name);
-            if created.is_ok() {
-                s.flush(now_ms(), true);
-            }
-            created
+            s.registry.create(&identity, &player.name)
         });
         write_str(nbt, NAME, &identity.name);
         write_byte(nbt, PUBLIC, identity.public);
@@ -219,11 +221,7 @@ pub(super) fn panel_button(host: &mut dyn Host, nbt: &mut Compound, kind: FKind,
         }
     } else {
         let outcome = with(host, |s, _| {
-            let deleted = s.registry.delete(&identity, player.uuid, player.permission);
-            if deleted.is_ok() {
-                s.flush(now_ms(), true);
-            }
-            deleted
+            s.registry.delete(&identity, player.uuid, player.permission)
         });
         match outcome {
             Ok(()) => format!("Frequency {} ({mode}) deleted", identity.name),
