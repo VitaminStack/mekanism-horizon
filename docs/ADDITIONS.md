@@ -1,57 +1,57 @@
 # Mekanism: Additions (M12)
 
-Content-Mod `content/mekanismadditions` (Namespace `mekanismadditions`). Rein Content, kein nativer Code: jeder Block ist eine Vanilla-Vorlage (`template`) plus `properties`.
+Content mod `content/mekanismadditions` (namespace `mekanismadditions`). Pure content, no native code: every block is a vanilla template (`template`) plus `properties`.
 
-Erzeugt mit `python -I scripts/gen_additions.py <Mekanism-26.3-Checkout>` (Sparse-Clone von `src/additions`, `src/datagen/generated/mekanismadditions`, `src/api/java/mekanism/api/text` und `LICENSE` reicht; Pillow wird gebraucht). Modelle, Blockstates, Item-Definitionen, Loot-Tabellen, Rezepte, Tags und Namen stammen aus dem Checkout. Lizenz: MIT, siehe `content/mekanismadditions/LICENSE-MEKANISM`.
+Generated with `python -I scripts/gen_additions.py <Mekanism-26.3-checkout>` (a sparse clone of `src/additions`, `src/datagen/generated/mekanismadditions`, `src/api/java/mekanism/api/text` and `LICENSE` is enough; Pillow is needed). Models, blockstates, item definitions, loot tables, recipes, tags and names come from the checkout. License: MIT, see `content/mekanismadditions/LICENSE-MEKANISM`.
 
-## Umfang (271 Blöcke)
+## Scope (271 blocks)
 
-18 Farben (Vanilla-Farben plus `aqua` und `dark_red`), je 15 Varianten: Plastic, Slick, Glow, Reinforced, Road, Transparent, Stairs, Slabs, Fences, Fence Gates, Glow Stairs/Slabs, Transparent Stairs/Slabs und Glow Panel; dazu Obsidian TNT.
+18 colors (vanilla colors plus `aqua` and `dark_red`), 15 variants each: Plastic, Slick, Glow, Reinforced, Road, Transparent, Stairs, Slabs, Fences, Fence Gates, Glow Stairs/Slabs, Transparent Stairs/Slabs and Glow Panel; plus Obsidian TNT.
 
-| Variante | Vorlage | Werte |
+| Variant | Template | Values |
 |---|---|---|
-| Plastic, Road | `stone` | Härte 5, Widerstand 6 |
-| Slick | `stone` | `friction` 0,98 |
-| Glow, Glow Stairs/Slabs | `stone`, `stone_stairs`, `stone_slab` | Licht 10 |
-| Reinforced | `stone` | Härte 50, Widerstand 1200 |
+| Plastic, Road | `stone` | hardness 5, resistance 6 |
+| Slick | `stone` | `friction` 0.98 |
+| Glow, Glow Stairs/Slabs | `stone`, `stone_stairs`, `stone_slab` | light 10 |
+| Reinforced | `stone` | hardness 50, resistance 1200 |
 | Transparent (+ Stairs/Slabs) | `glass`, `stone_stairs`, `stone_slab` | `occludes: false` |
-| Fence / Gate | `nether_brick_fence` / `oak_fence_gate` | Härte 5, Widerstand 6 |
-| Glow Panel | `small_amethyst_bud` | Licht 15, eigene `shapes` je `facing` aus `BlockShapes.GLOW_PANEL` |
-| Obsidian TNT | `tnt` | Härte 0 |
+| Fence / Gate | `nether_brick_fence` / `oak_fence_gate` | hardness 5, resistance 6 |
+| Glow Panel | `small_amethyst_bud` | light 15, own `shapes` per `facing` from `BlockShapes.GLOW_PANEL` |
+| Obsidian TNT | `tnt` | hardness 0 |
 
-Alle: Sound Stein, Kartenfarbe wie `EnumColor`, kein Werkzeug nötig.
+All: stone sound, map color as `EnumColor`, no tool required.
 
-Farben: Upstream färbt die grauen Texturen zur Laufzeit (Block-/Item-Farbanbieter). Horizon-Content hat keinen Farbanbieter. Der Generator färbt deshalb jede Textur je Farbe vor (`textures/block/<farbe>/`) und erzeugt je Farbe eigene Modelle (`models/block/<farbe>/`); die gemeinsamen `colored/*`-Modelle sind ohne `tintindex` kopiert. Beim Glow Panel ist nur die Mittelplatte gefärbt, wie im Original.
+Colors: Upstream tints the gray textures at runtime (block/item color providers). Horizon content has no color provider. So the generator pre-colors each texture per color (`textures/block/<color>/`) and creates separate models per color (`models/block/<color>/`); the shared `colored/*` models are copied without `tintindex`. On the Glow Panel, only the center plate is colored, as in the original.
 
-## Rezepte
+## Recipes
 
-Übernommen: Slabs, Stairs, Fences, Gates, Roads, Reinforced, Glow, Transparent (Shaped/Shapeless) und die Slick-Rezepte der Enrichment Chamber, soweit alle Mekanism-Zutaten registriert sind. Nicht enthalten:
+Taken over: Slabs, Stairs, Fences, Gates, Roads, Reinforced, Glow, Transparent (shaped/shapeless) and the Slick recipes of the Enrichment Chamber, as far as all Mekanism ingredients are registered. Not included:
 
-- Plastic-Grundrezept und Glow Panels: brauchen `mekanism:hdpe_sheet` (HDPE, M06 Chemie). Der Generator nimmt sie automatisch auf, sobald das Item in `scripts/registry.json` steht.
-- Umfärben (`neoforge:difference`-Zutat) und Painting-Machine-Rezepte (`mekanism:painting`, M06).
-- Pigment-Extraktion, Balloons, Walkie-Talkie.
+- Plastic base recipe and Glow Panels: need `mekanism:hdpe_sheet` (HDPE, M06 chemistry). The generator adds them automatically once the item is in `scripts/registry.json`.
+- Recoloring (`neoforge:difference` ingredient) and Painting Machine recipes (`mekanism:painting`, M06).
+- Pigment extraction, Balloons, Walkie-Talkie.
 
-## Abweichungen vom Original (Horizon-Grenzen, nichts vorgetäuscht)
+## Differences from the original (Horizon limits, nothing faked)
 
-| Original | Hier | Grund |
+| Original | Here | Reason |
 |---|---|---|
-| Obsidian TNT: eigene Entität, Radius 12, Zündzeit konfigurierbar | explodiert wie Vanilla-TNT (Radius 4, Zündzeit 80 Ticks) | Eigene Entität/Explosion braucht Code. Ein Content-Block kann nur die Vorlage `tnt` übernehmen. Ein nativer Hook für Explosionsstärke fehlt |
-| Plastic Road: Geschwindigkeitsschub (`stepOn`) | normaler Block | `stepOn` ist Code; es gibt keine Content-Eigenschaft für Geschwindigkeit |
-| Glow/Transparent: `emissiveRendering`, CTM-Texturen, blendet verdeckte Innenflächen gleicher Farbe aus (`skipRendering`) | Licht über `light`; keine CTM, keine Face-Auslassung | Rendercode/Mod nicht verfügbar |
-| Transparent: `isValidSpawn`/`isSuffocating`/`isViewBlocking` aus, Leuchtfeuerfarbe | Glas-Vorlage (Spawn und Leuchtfeuer wie Glas) | Nicht als Eigenschaft ladbar |
-| Fence/Slab/Obsidian TNT: Extended-Fluid-Logging (Lava, Wasser) | Wasser wie Vanilla | `IStateExtendedFluidLoggable` ist Code |
-| Glow Panel: eigene Blockklasse, Platzierungsregeln | Vorlage `small_amethyst_bud` (6 Richtungen, wasserfähig, fällt ohne Stütze ab) | Verhalten wie Original ähnlich, Mindestgröße der Stützfläche nicht identisch |
-| Konfiguration (TNT-Radius/Zündzeit, Baby-Mobs, Spawn-Raten) | fehlt | Horizon-Content hat keine Config |
-| Advancements, Rezeptbuch-Einträge | fehlt | Datentyp nicht geladen |
+| Obsidian TNT: own entity, radius 12, configurable fuse time | explodes like vanilla TNT (radius 4, fuse time 80 ticks) | A custom entity/explosion needs code. A content block can only take over the `tnt` template. A native hook for explosion strength is missing |
+| Plastic Road: speed boost (`stepOn`) | normal block | `stepOn` is code; there is no content property for speed |
+| Glow/Transparent: `emissiveRendering`, CTM textures, hides covered inner faces of the same color (`skipRendering`) | light through `light`; no CTM, no face skipping | Render code/mod not available |
+| Transparent: `isValidSpawn`/`isSuffocating`/`isViewBlocking` off, beacon color | glass template (spawn and beacon like glass) | Cannot be loaded as a property |
+| Fence/Slab/Obsidian TNT: extended fluid logging (lava, water) | water as in vanilla | `IStateExtendedFluidLoggable` is code |
+| Glow Panel: own block class, placement rules | template `small_amethyst_bud` (6 directions, waterloggable, drops without support) | Behavior similar to the original, minimum size of the support face not identical |
+| Configuration (TNT radius/fuse time, baby mobs, spawn rates) | missing | Horizon content has no config |
+| Advancements, recipe book entries | missing | Data type not loaded |
 
-## Nicht gebaut: Entities, Balloons, Walkie-Talkies, Spawn Eggs
+## Not built: entities, Balloons, Walkie-Talkies, Spawn Eggs
 
-Nur untersucht (Schema aus `cargo horizon-mod`, kein Quelltext von Horizon verfügbar):
+Investigated only (schema from `cargo horizon-mod`, no Horizon source code available):
 
-- Horizon-Content kann `entity_type/*.json` deklarieren (Vorlage + Attribute, „living type“), also eine Vanilla-Kreatur mit Vanilla-KI und Vanilla-Modell unter neuer ID. Eigenes Verhalten, eigene Modelle, Biom-Spawns und Netzwerkdaten sind nicht Teil des Schemas.
-- **Baby-Mobs** (Creeper, Enderman, Skeleton, Stray, Wither Skeleton, Bogged, Parched): Original sind eigene Entitätsklassen mit kleinem Modell und Mekanisms Drops/Spawn-Biomen (`biome_modifier`). Als Vorlage nur mit Vanilla-Baby-Variante möglich; Spawns brauchen NeoForge-Biom-Modifier. Nicht gebaut, da keine Parität erreichbar.
-- **Balloons**: Entität, die per Leine an Block oder Spieler hängt, steigt auf und platzt (`EntityBalloon`, Interaktion, Netzwerk-Sync, Farbe, Advancement `pop_pop`). Braucht nativen Code (Entity-Tick, Rechtsklick auf Entität, Sync); Horizon-Content hat nichts davon.
-- **Walkie-Talkie**: Kanäle, Sprechfunk zwischen Spielern per Paket/Chat (`ItemWalkieTalkie`, Kanal-Komponenten, Taste). Braucht Items mit Zustand, Tastenabfrage und Netzwerk; native Mods dürfen laut Fähigkeiten „see the keys you hold…/message“ nutzen, der Aufwand gehört in einen eigenen nativen Task (M13-Interop).
-- **Spawn Eggs**: setzen die Baby-Entitäten voraus.
+- Horizon content can declare `entity_type/*.json` (template + attributes, "living type"), that is, a vanilla creature with vanilla AI and vanilla model under a new ID. Custom behavior, custom models, biome spawns and network data are not part of the schema.
+- **Baby mobs** (Creeper, Enderman, Skeleton, Stray, Wither Skeleton, Bogged, Parched): In the original these are separate entity classes with a small model and Mekanism's drops/spawn biomes (`biome_modifier`). As a template, only possible with the vanilla baby variant; spawns need NeoForge biome modifiers. Not built because parity is not reachable.
+- **Balloons**: an entity that hangs on a leash from a block or player, rises and pops (`EntityBalloon`, interaction, network sync, color, advancement `pop_pop`). Needs native code (entity tick, right-click on entity, sync); Horizon content has none of that.
+- **Walkie-Talkie**: channels, voice radio between players via packet/chat (`ItemWalkieTalkie`, channel components, key). Needs items with state, key polling and networking; according to their capabilities, native mods may "see the keys you hold…/message", but the effort belongs in a separate native task (M13 interop).
+- **Spawn Eggs**: depend on the baby entities.
 
-Diese Punkte bleiben in `TODO.md` offen.
+These items stay open in `TODO.md`.

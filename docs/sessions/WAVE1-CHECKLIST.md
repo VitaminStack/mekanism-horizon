@@ -1,60 +1,60 @@
-# Welle 1 – gebündelte Ingame-Checkliste
+# Wave 1 – bundled in-game checklist
 
-Branch `test/wave1-acceptance` (8 Sitzungs-Branches gemergt). Vorher bauen:
+Branch `test/wave1-acceptance` (8 session branches merged). Build first:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Native.ps1" -TrustNativeCode
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content.ps1"
 ```
 
-Der Native-Code der Welle ist **noch nie kompiliert** worden. Compile-Fehler aus dem ersten Build zuerst an die Lead-Session geben.
-Kreativwelt, Energie aus Creative Energy Cubes. Details je Punkt in der jeweiligen `docs/sessions/<name>.md`.
+The native code of this wave has **never been compiled**. Report compile errors from the first build to the lead session first.
+Use a creative world, with energy from Creative Energy Cubes. Details for each item are in the matching `docs/sessions/<name>.md`.
 
-## 1. Laden und Content
-- [ ] Spiel startet ohne Ladefehler, Native-Mod aktiv.
-- [ ] Neue Items/Blöcke mit Modell und Namen im Kreativ-Inventar: Upgrades, Configurator, 32 Factories, 4 Tier Installer, 4 Universal Cables, Transporter (4 Tiers, Restrictive, Diversion), Jetpack, Free Runners, Scuba, Electric Bow, Flamethrower, Dynamic Tank/Valve, Structural Glass, Induction Casing/Port/Cells/Providers, Teleporter, Teleporter Frame, Portable Teleporter, Quantum Entangloporter, Oredictionificator, Formulaic Assemblicator, Crafting Formula, Digital Miner.
-- [ ] Additions: Umfärben per Werkbank, Painting Machine und Pigment Extractor mit Plastic; Namen de/en (Additions, Tools).
-- [ ] Generators: Turbine Valve/Vent, Fission/Fusion Port, Logic Adapter, Fusion Controller craften, setzen, abbauen (ohne Funktion).
+## 1. Loading and content
+- [ ] The game starts without loading errors, native mod active.
+- [ ] New items/blocks with model and names in the creative inventory: Upgrades, Configurator, 32 Factories, 4 Tier Installers, 4 Universal Cables, Transporters (4 tiers, Restrictive, Diversion), Jetpack, Free Runners, Scuba, Electric Bow, Flamethrower, Dynamic Tank/Valve, Structural Glass, Induction Casing/Port/Cells/Providers, Teleporter, Teleporter Frame, Portable Teleporter, Quantum Entangloporter, Oredictionificator, Formulaic Assemblicator, Crafting Formula, Digital Miner.
+- [ ] Additions: recolor at the crafting table, Painting Machine and Pigment Extractor with Plastic; names in de/en (Additions, Tools).
+- [ ] Generators: craft, place and break Turbine Valve/Vent, Fission/Fusion Port, Logic Adapter, Fusion Controller (no function).
 
-## 2. Maschinen-Framework (`m07-machine-framework.md`)
-- [ ] Enrichment Chamber: Energy-Slot, Upgrade-Slots, Knöpfe `RS`, `S/E/M` sichtbar; alte Maschine aus früherem Spielstand lädt ohne Verlust.
-- [ ] Energy Tablet im Energy-Slot lädt die Maschine.
-- [ ] Speed x8: 20 Ticks je Operation; Energy-Upgrade ändert Kapazität; Muffling macht stumm; Upgrade per Klick zurück.
-- [ ] Redstone High/Low/Pulse; Modus bleibt nach Neustart.
-- [ ] Configurator dreht Maschine/Cube zur geklickten Seite.
+## 2. Machine framework (`m07-machine-framework.md`)
+- [ ] Enrichment Chamber: energy slot, upgrade slots, buttons `RS`, `S/E/M` visible; an old machine from an earlier save loads without loss.
+- [ ] An Energy Tablet in the energy slot charges the machine.
+- [ ] Speed x8: 20 ticks per operation; Energy upgrade changes capacity; Muffling makes it silent; click to take an upgrade back.
+- [ ] Redstone High/Low/Pulse; mode persists after restart.
+- [ ] Configurator turns the machine/cube to the clicked side.
 
 ## 3. Factories (`m07-factories.md`)
-- [ ] Basic Enriching Factory: 3 Prozesse parallel; voller Output pausiert.
-- [ ] Combining/Compressing/Sawing: Extra-Slot, Tank, Nebenausgabe; Ultimate-Layout (9 Spalten).
-- [ ] Tier Installer: Chamber → Basic Factory behält Inhalt; nichts doppelt oder verloren.
-- [ ] Neustart/Chunk-Unload behält Fortschritt, Energie, Tank; Abbau ohne Duplikat.
+- [ ] Basic Enriching Factory: 3 processes in parallel; full output pauses.
+- [ ] Combining/Compressing/Sawing: extra slot, tank, secondary output; Ultimate layout (9 columns).
+- [ ] Tier Installer: Chamber → Basic Factory keeps its contents; nothing duplicated or lost.
+- [ ] Restart/chunk unload keeps progress, energy, tank; breaking creates no duplicate.
 
-## 4. Kabel und Transporter (`m08-cables-transport.md`)
-- [ ] Solar Generator → Kabel → Cube lädt; Arme verbinden sich.
-- [ ] Transporter Truhe A → B (Sneak+Rechtsklick „Pull“), Tier-Tempo, volles Ziel, Diversion mit Redstone.
-- [ ] Abbau mit Items: Items fallen; Neustart: Items laufen weiter.
+## 4. Cables and transporters (`m08-cables-transport.md`)
+- [ ] Solar Generator → cable → cube charges; arms connect.
+- [ ] Transporter chest A → B (sneak+right-click "Pull"), tier speed, full target, Diversion with redstone.
+- [ ] Breaking with items: items drop; restart: items keep moving.
 
-## 5. Ausrüstung (`m11-gear.md`)
-- [ ] Jetpack an Chemical Tank (Wasserstoff) füllen, fliegen, Modi Hover/Vector/Disabled.
-- [ ] Free Runners: kein Fallschaden (Energie sinkt), Step-Assist.
-- [ ] Scuba Maske + Tank unter Wasser; Electric Bow (120 FE/Schuss); Flamethrower (Kegel, Feuer).
-- [ ] Verzauberungen bleiben nach Laden/Verbrauch erhalten.
+## 5. Gear (`m11-gear.md`)
+- [ ] Fill the Jetpack at a Chemical Tank (hydrogen), fly, modes Hover/Vector/Disabled.
+- [ ] Free Runners: no fall damage (energy drops), step assist.
+- [ ] Scuba mask + tank underwater; Electric Bow (120 FE/shot); Flamethrower (cone, fire).
+- [ ] Enchantments are kept after loading/use.
 
 ## 6. Multiblocks (`m09-multiblocks.md`)
-- [ ] Dynamic Tank 3×3×3 formt sich, Valve in Fläche, Pipe füllt, Abbau löst auf, Inhalt kehrt zurück.
-- [ ] Induction Matrix 3×3×3 mit Zelle + Provider formt sich; Port Input/Output; Kapazitätsanzeige.
-- [ ] Chunk-Unload löst Strukturen nicht auf.
+- [ ] Dynamic Tank 3×3×3 forms, Valve in a face, pipe fills it, breaking dissolves it, contents return.
+- [ ] Induction Matrix 3×3×3 with cell + provider forms; Port input/output; capacity display.
+- [ ] Chunk unload does not dissolve structures.
 
 ## 7. Teleporter (`m08-teleport-frequency.md`)
-- [ ] Zwei Teleporter mit Rahmen, gleicher Kanal: Spieler wird teleportiert, Energie sinkt; zu wenig Energie → kein Teleport.
-- [ ] Portable Teleporter: Kanal wechseln (Sneak), teleportieren.
-- [ ] Zwei Entangloporter gleicher Frequenz teilen Energie/Fluid/Chemie/Item; Neustart behält Frequenzen.
+- [ ] Two Teleporters with frames, same channel: the player is teleported, energy drops; too little energy → no teleport.
+- [ ] Portable Teleporter: switch channel (sneak), teleport.
+- [ ] Two Entangloporters with the same frequency share energy/fluid/chemical/item; restart keeps the frequencies.
 
-## 8. Spezialmaschinen (`m08-special-machines.md`)
-- [ ] Oredictionificator: Filter auf Tag, Eingang wird zum gewählten Item; Filter nach Neustart.
-- [ ] Digital Miner: 17 Bounding-Blöcke, Radius/minY/maxY, Abbau mit Filter, Silk Touch, Auswurf hinten, Neustart.
-- [ ] Formulaic Assemblicator: nur Block + Item, ohne Funktion (Blocker: keine Vanilla-Crafting-Rezepte für Native-Mods).
+## 8. Special machines (`m08-special-machines.md`)
+- [ ] Oredictionificator: filter on a tag, input becomes the chosen item; filter persists after restart.
+- [ ] Digital Miner: 17 bounding blocks, radius/minY/maxY, mining with filter, Silk Touch, ejection at the back, restart.
+- [ ] Formulaic Assemblicator: only block + item, no function (blocker: no vanilla crafting recipes for native mods).
 
-## Bekannte Lücken dieser Welle
-- Logistical Sorter, Thermal Evaporation Plant, Seismic Vibrator/Reader: nicht gebaut.
-- Factories und Framework haben je eigene Upgrade-Logik (`factory.rs`, `upgrade.rs`): nach der Abnahme zusammenführen.
+## Known gaps in this wave
+- Logistical Sorter, Thermal Evaporation Plant, Seismic Vibrator/Reader: not built.
+- Factories and framework each have their own upgrade logic (`factory.rs`, `upgrade.rs`): merge them after acceptance.

@@ -1,113 +1,113 @@
 # Known Issues
 
-Stand: 10.11.2026, Version 0.2.0 (Content-Mods `mekanismtools` und `mekanismadditions` 0.1.0). Gesammelt aus den Blocker-Notizen in [TODO.md](../TODO.md), [TOOLS.md](TOOLS.md), [ADDITIONS.md](ADDITIONS.md) und [TESTLOG.md](TESTLOG.md). Details und Begründungen stehen dort. „Horizon-Grenze“ heißt: Der Content-Pfad oder die native Hook-API von Horizon (`fdc87ae`, API 411) bietet es nicht.
+As of 10.11.2026, version 0.2.0 (content mods `mekanismtools` and `mekanismadditions` 0.1.0). Collected from the blocker notes in [TODO.md](../TODO.md), [TOOLS.md](TOOLS.md), [ADDITIONS.md](ADDITIONS.md) and [TESTLOG.md](TESTLOG.md). Details and reasons are listed there. "Horizon limit" means: Horizon's content path or native hook API (`fdc87ae`, API 411) does not offer it.
 
-## Allgemein
+## General
 
-- **Prototyp.** Nur in Testwelten verwenden. Save-Migrationen und ID-Stabilität zwischen Versionen sind nicht zugesichert (M13 offen).
-- **Native Mod nötig.** Maschinen, Generatoren, Energie und Tanks laufen nur mit der nativen Mod ([INSTALL.md](INSTALL.md)). Sie läuft ohne Sandbox mit Benutzerrechten.
-- **Horizon-Pin.** Getestet nur mit `fdc87ae`. Neuere Stände können die Hook-API ändern.
-- **Keine Konfiguration.** Werte (Tiers, Energieverbrauch, Materialwerte, TNT-Radius) sind feste Mekanism-Standardwerte. Horizon-Content hat keine Config.
-- **Multiplayer, Mod-Interop (AE2 u. a.), Performance** mit vielen Maschinen und Shader-Kompatibilität sind nicht systematisch getestet.
-- **Kein Transport.** Kabel, Pipes, Tubes und Logistik fehlen (M07/M08). Energie fließt nur zwischen benachbarten Blöcken.
-- **Fehlende Mod-Fluid-Eimer.** Horizon hat keine Eimer für Mod-Fluids, nur Tanks speichern sie.
-- **Native Tests nicht per `cargo test`.** Die Crate `native/mekanism_native/api` hängt an Horizons Client und lässt sich ohne Launcher-Toolchain nicht bauen. CI prüft nur Content-Validierung und `logic/energy`.
-- **Zeilenenden-Warnungen** (`LF will be replaced by CRLF`) bei `git add` unter Windows sind harmlos.
-- **Inkonsistente Upstream-Referenz.** TODO und `docs/CHEMISTRY.md` nennen Mekanism-Commit `31bb4906`, `docs/TESTLOG.md` nennt `330b7b4d`. Beim nächsten Upstream-Abgleich vereinheitlichen.
+- **Prototype.** Use it only in test worlds. Save migrations and ID stability between versions are not guaranteed (M13 open).
+- **Native mod required.** Machines, generators, energy and tanks only work with the native mod ([INSTALL.md](INSTALL.md)). It runs without a sandbox, with user permissions.
+- **Horizon pin.** Tested only with `fdc87ae`. Newer builds can change the hook API.
+- **No configuration.** Values (tiers, energy use, material values, TNT radius) are fixed Mekanism defaults. Horizon content has no config.
+- **Multiplayer, mod interop (AE2 and others), performance** with many machines, and shader compatibility are not systematically tested.
+- **No transport.** Cables, pipes, tubes and logistics are missing (M07/M08). Energy only flows between adjacent blocks.
+- **Missing mod fluid buckets.** Horizon has no buckets for mod fluids. Only tanks store them.
+- **Native tests do not run with `cargo test`.** The crate `native/mekanism_native/api` depends on Horizon's client and cannot be built without the launcher toolchain. CI only checks content validation and `logic/energy`.
+- **Line-ending warnings** (`LF will be replaced by CRLF`) on `git add` under Windows are harmless.
+- **Inconsistent upstream reference.** TODO and `docs/CHEMISTRY.md` name Mekanism commit `31bb4906`. `docs/TESTLOG.md` names `330b7b4d`. Unify them at the next upstream comparison.
 
-## Maschinen und Generatoren
+## Machines and generators
 
-Für Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification/Injection Chamber, Chemical Oxidizer und Infuser, Chemical Dissolution Chamber, Washer und Crystallizer gilt gemeinsam:
+These apply to all of the following: Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification/Injection Chamber, Chemical Oxidizer and Infuser, Chemical Dissolution Chamber, Washer and Crystallizer.
 
-- Fehlt: Energie-Slot, Upgrades, Side-Configuration, Redstone-Steuerung.
-- Infuse-Inhalt und Energie bleiben beim Abbau nicht am Item (Metallurgic Infuser).
-- Rezeptwechsel und Chunk-Unload sind nicht für jede Maschine getestet.
-- Balkenfarben genähert, GUI-Layout vereinfacht (176x166 statt Mekanisms größerer Oberfläche beim Chemical Infuser).
-- Purification/Injection beziehen Chemie vorerst aus Items (Flint: Sauerstoff, Salz: Chlorwasserstoff). Wasserdampf-Rezepte laufen erst mit einer Maschine, die ihn erzeugt.
-- Chemical Oxidizer/Infuser: keine Chemie-Item-Slots, kein Auto-Eject-Schalter (immer alle Seiten), keine Rezeptpaar-Prüfung beim Einfüllen, keine Pfeil-Animation. Crafting-Rezepte (`mek_data` mit Dynamic Tank) fehlen, bis Dynamic Tank/Personal Storage existieren. Test per `/give`.
-- Item-Outputs mit Chemie-Zweitausgabe fehlen im Rezeptsystem.
-- Erzkette ([ORE_PROCESSING.md](ORE_PROCESSING.md)): Energized Smelter blockiert (Vanilla-Ofen für Staub zu Barren), kein Wasser-Eimer für den Washer, falscher Schlamm im Washer-Eingang blockiert ihn (Horizons `accepts`-Hook kennt Position und anderen Tank nicht).
-- Fluid-Outputs (Electrolytic Separator, Pump) und Item-Outputs mit Chemie-Zweitausgabe fehlen im Rezeptsystem.
-- Machine-Sounds, Tooltips und Crafting-Rezepte ingame nicht überall geprüft ([TESTLOG.md](TESTLOG.md)).
+- Missing: energy slot, upgrades, side configuration, redstone control.
+- Infuse contents and energy do not stay on the item when the block is broken (Metallurgic Infuser).
+- Recipe changes and chunk unload are not tested for every machine.
+- Bar colors are approximated. The GUI layout is simplified (176x166 instead of Mekanism's larger interface for the Chemical Infuser).
+- Purification/Injection take chemicals from items for now (flint: oxygen, salt: hydrogen chloride). Water vapor recipes only work once a machine exists that produces it.
+- Chemical Oxidizer/Infuser: no chemical item slots, no auto-eject switch (always all sides), no recipe-pair check when filling, no arrow animation. Crafting recipes (`mek_data` with Dynamic Tank) are missing until Dynamic Tank/Personal Storage exist. Test with `/give`.
+- Item outputs with a chemical second output are missing in the recipe system.
+- Ore chain ([ORE_PROCESSING.md](ORE_PROCESSING.md)): Energized Smelter is blocked (vanilla furnace for dust to ingot), there is no water bucket for the Washer, and wrong slurry in the Washer input blocks it (Horizon's `accepts` hook does not know the position or the other tank).
+- Fluid outputs (Electrolytic Separator, Pump) and item outputs with a chemical second output are missing in the recipe system.
+- Machine sounds, tooltips and crafting recipes are not checked in-game everywhere ([TESTLOG.md](TESTLOG.md)).
 
 ## Energy Cube
 
-- Seitenweiser Seitenpfad über Horizons `insert_faces` mit echter Quelle nicht getestet (Debug-Blöcke schreiben NBT direkt).
-- Neustart-Test der Seiteneinstellung, Crafting-Rezept ingame und Tooltip mit Energie offen.
-- Tablet stapelt nicht (`max_stack_size` 1): Test offen.
-- Einmaliger, nicht reproduzierbarer Sprung von 252.000 auf 504.000 FE bei Test M01. Vermutlich Item-Energie, keine Duplikation (siehe TESTLOG).
+- The per-side path through Horizon's `insert_faces` is not tested with a real source (debug blocks write NBT directly).
+- Restart test of the side setting, crafting recipe in-game and tooltip with energy are open.
+- Tablet does not stack (`max_stack_size` 1): test open.
+- One-time, non-reproducible jump from 252,000 to 504,000 FE in test M01. Probably item energy, not duplication (see TESTLOG).
 
-## Tanks und Chemie
+## Tanks and chemistry
 
-- Fluid-Anzeige mit **Shaderpack** (Bliss) falsch dargestellt. Ursache liegt in Horizons Shader-Pfad für `draw_fluid_box`, ohne Shader korrekt.
-- Herstellung vieler Fluids/Chemicals fehlt noch (Dissolution Chamber, Washer, Crystallizer, Neutron Activator usw.).
-- **Electric Pump:** pumpt nur Wasser und Lava (kein Schwerwasser über den Filter-Upgrade, keine Upgrades überhaupt), keine Fluid-Container-Slots, keine Redstone-Steuerung, kein Zurücksetzen per Sneak-Rechtsklick (er setzt sich selbst zurück, wenn keine Quelle mehr gefunden wird). Wasser in Waterlogged-Blöcken (Tang, Seegras) wird nicht gepumpt. Tank-Ausgang nur nach oben, wie Mekanism.
-- **Fluidic Plenisher:** nimmt nur Wasser und Lava an (Horizon hat keine Welt-Blöcke für Mekanism-Fluids). Ersetzbare Blöcke sind eine feste Liste (Gras, Farn, Busch, Ranken, Feuer, Leuchtflechte), Horizon nennt kein `canBeReplaced`. Keine Upgrades, kein Redstone, Wasser im Nether verdunstet nicht.
-- **Gas-Burning Generator:** Tank von allen Seiten erreichbar, keine Item-Slots, siehe [GENERATORS.md](GENERATORS.md).
-- Volle Tanks, Durchsatzlimits und Weltneustart-Tests sind nicht vollständig.
+- Fluid display is wrong with a **shader pack** (Bliss). The cause is in Horizon's shader path for `draw_fluid_box`. It is correct without shaders.
+- Production of many fluids/chemicals is still missing (Dissolution Chamber, Washer, Crystallizer, Neutron Activator and others).
+- **Electric Pump:** pumps only water and lava (no heavy water through the filter upgrade, no upgrades at all), no fluid container slots, no redstone control, no reset by sneak-right-click (it resets itself when no source is found any more). Water in waterlogged blocks (kelp, seagrass) is not pumped. Tank output goes only upward, like Mekanism.
+- **Fluidic Plenisher:** accepts only water and lava (Horizon has no world blocks for Mekanism fluids). Replaceable blocks are a fixed list (grass, fern, bush, vines, fire, glow lichen), because Horizon does not expose `canBeReplaced`. No upgrades, no redstone, water in the Nether does not evaporate.
+- **Gas-Burning Generator:** tank reachable from all sides, no item slots, see [GENERATORS.md](GENERATORS.md).
+- Full tanks, throughput limits and world-restart tests are not complete.
 
-## Bins, Personal Chest und Personal Barrel
+## Bins, Personal Chest and Personal Barrel
 
-- **Bins halten nur normale Items.** Items mit Komponenten (Verzauberungen, Namen, Schaden) lehnt der Bin ab. Mekanism speichert den ganzen Stack.
-- **Creative Bin:** Kapazitaet `i32::MAX` statt `Long.MAX_VALUE` (Horizons Item-Zaehler sind 32 Bit).
-- **Fehlt gegenueber Mekanism:** Seiten-Konfiguration und Redstone-Steuerung des Bins; die Sperre wirkt nur beim Sneak-Rechtsklick auf die Front.
-- **Hopper am Bin:** Ein Hopper sieht zwei Slots (Eingang und ein Fenster mit bis zu einem Stack). Ob ein Hopper darunter schnell genug leert, ist nicht gemessen.
-- **Personal Chest/Barrel ohne Security Desk.** Horizon hat keine Spieler-Sicherheit; der Besitzer ist die UUID des Platzierers im Block-Entity-NBT. Geprueft wird beim Rechtsklick und Abbau. Explosionen, Kolben und Mods, die Block-Entities direkt lesen, umgehen das. Operatoren duerfen immer.
-- **Kein eigenes Aussehen im Menue:** nutzt `minecraft:generic_9x6`, ohne Mekanism-Textur.
-- **Chargepad nicht portiert** (Horizon-Grenze): Der Block muss pro Tick die Items aller Spieler darauf laden. `player_tick` und `set_inventory_slot` gaebe es, aber keinen Helfer, der Energie in fremde Items schreibt; Item-Energie liegt als `horizon_energy` in den Daten. Machbar als Folgearbeit.
-- Ingame-Test siehe [TESTLOG.md](TESTLOG.md), Abschnitt M08.
+- **Bins hold only plain items.** The Bin rejects items with components (enchantments, names, damage). Mekanism stores the whole stack.
+- **Creative Bin:** capacity `i32::MAX` instead of `Long.MAX_VALUE` (Horizon's item counters are 32 bit).
+- **Missing compared to Mekanism:** side configuration and redstone control of the Bin. The lock only works with sneak-right-click on the front.
+- **Hopper on the Bin:** a hopper sees two slots (input and a window of up to one stack). Whether a hopper below empties it fast enough is not measured.
+- **Personal Chest/Barrel without Security Desk.** Horizon has no player security. The owner is the placer's UUID in the block entity NBT. It is checked on right-click and on break. Explosions, pistons and mods that read block entities directly bypass it. Operators are always allowed.
+- **No custom look in the menu:** it uses `minecraft:generic_9x6`, without a Mekanism texture.
+- **Chargepad not ported** (Horizon limit): the block must charge the items of all players on it every tick. `player_tick` and `set_inventory_slot` exist, but there is no helper that writes energy into other players' items. Item energy is stored as `horizon_energy` in the data. Doable as follow-up work.
+- For the in-game test, see [TESTLOG.md](TESTLOG.md), section M08.
 
 ## Tools (`mekanismtools`)
 
-Siehe Tabelle in [TOOLS.md](TOOLS.md). Kurz:
+See the table in [TOOLS.md](TOOLS.md). In short:
 
-- **Paxel** ist nur Axt, nicht Schaufel (kein Grasweg). Braucht nativen `item_use_on`-Hook.
-- **Paxel-Rezept** startet unbeschädigt, mittelt die Haltbarkeit der Zutaten nicht.
-- **Schild** zeigt das Vanilla-Modell statt der Mekanism-Textur.
-- **Rüstungs-Trims** ohne Mekanism-Paletten, **kein** Haltbarkeits-Tooltip (`DISPLAY_HP`), keine Mob-Spawn-Ausrüstung, keine Advancements.
-- Ausstehende Tests: Schild blocken, Speer, Pferde-/Nautilus-Rüstung, Amboss-Reparatur, Verzauberung, Neustart, Multiplayer.
+- **Paxel** is only an axe, not a shovel (no grass path). It needs a native `item_use_on` hook.
+- **Paxel recipe** starts undamaged. It does not average the durability of the ingredients.
+- **Shield** shows the vanilla model instead of the Mekanism texture.
+- **Armor trims** have no Mekanism palettes, **no** durability tooltip (`DISPLAY_HP`), no mob spawn equipment, no advancements.
+- Pending tests: shield blocking, spear, horse/nautilus armor, anvil repair, enchanting, restart, multiplayer.
 
 ## Additions (`mekanismadditions`)
 
-Siehe [ADDITIONS.md](ADDITIONS.md). Kurz:
+See [ADDITIONS.md](ADDITIONS.md). In short:
 
-- **Obsidian TNT** explodiert wie Vanilla-TNT (Radius 4 statt 12, feste Zündzeit). Eigene Entität/Explosion fehlt.
-- **Plastic Road** ohne Geschwindigkeitsschub. **Glow/Transparent** ohne Emissive/CTM, ohne Face-Auslassung.
-- **Kein Lava-Fluid-Logging** bei Fences, Slabs und Obsidian TNT.
-- **Fehlende Rezepte:** Plastic-Grundrezept und Glow Panels (brauchen `hdpe_sheet`, M06 Chemie), Pigment-Mixer-Crafting (`hdpe_rod`).
-- **Nicht gebaut:** Baby-Mobs, Balloons, Walkie-Talkies, Spawn Eggs (Entitäten und Netzwerk fehlen in Horizon-Content).
-- Ingame offen: Crafting im Grid, Slick-Rezept in der Enrichment Chamber, Slick-Reibung, Inventar-Items, Neustart/Chunk-Unload.
+- **Obsidian TNT** explodes like vanilla TNT (radius 4 instead of 12, fixed fuse time). A custom entity/explosion is missing.
+- **Plastic Road** has no speed boost. **Glow/Transparent** have no emissive/CTM and no face culling.
+- **No lava fluid logging** for fences, slabs and Obsidian TNT.
+- **Missing recipes:** base Plastic recipe and Glow Panels (need `hdpe_sheet`, M06 chemistry), Pigment Mixer crafting (`hdpe_rod`).
+- **Not built:** baby mobs, balloons, walkie-talkies, spawn eggs (entities and networking are missing in Horizon content).
+- Open in-game: crafting in the grid, Slick recipe in the Enrichment Chamber, Slick friction, inventory items, restart/chunk unload.
 
-## Fortgeschrittene Chemie-Maschinen (M06)
+## Advanced chemistry machines (M06)
 
-Pressurized Reaction Chamber, Isotopic Centrifuge und Solar Neutron Activator sind **ingame ungetestet** (Testplan in [TESTLOG.md](TESTLOG.md)). Centrifuge und Activator sind in Mekanism zwei Blöcke hoch; das zweite Bounding-Teil fehlt hier (siehe [CHEMISTRY.md](CHEMISTRY.md)). Reaction-Rezepte mit Plutonium-/Polonium-Pellets fehlen, bis das Radiation-System existiert.
+Pressurized Reaction Chamber, Isotopic Centrifuge and Solar Neutron Activator are **untested in-game** (test plan in [TESTLOG.md](TESTLOG.md)). In Mekanism, the Centrifuge and the Activator are two blocks high. The second bounding part is missing here (see [CHEMISTRY.md](CHEMISTRY.md)). Reaction recipes with plutonium/polonium pellets are missing until the radiation system exists.
 
-## Noch nicht portiert
+## Not yet ported
 
-Multiblocks (Thermal Evaporation, Turbine, Fission/Fusion-Reaktor, Boiler, SPS u. a.), Kabel und Transporter, Digital Miner, Teleporter, Qio-Speicher, Jetpack/Rüstung mit Modulen (Mekanism Core), Meka-Tool. Aktueller Stand: [TODO.md](../TODO.md).
+Multiblocks (Thermal Evaporation, Turbine, Fission/Fusion Reactor, Boiler, SPS and others), cables and transporters, Digital Miner, Teleporter, QIO storage, Jetpack/armor with modules (Mekanism Core), Meka-Tool. Current status: [TODO.md](../TODO.md).
 
-## Fehler melden
+## Reporting bugs
 
-Als GitHub-Issue mit Horizon-Stand (Commit/Nightly), Native-Build-Name, Mod-Versionen, Schritten zur Reproduktion und Log-Auszug. Siehe [CONTRIBUTING.md](../CONTRIBUTING.md).
+Open a GitHub issue with the Horizon build (commit/nightly), native build name, mod versions, steps to reproduce and a log excerpt. See [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-## Ausrüstung und Spielhilfen (M11)
+## Gear and utilities (M11)
 
-Details und Machbarkeit je Item: [ITEM_HOOKS.md](ITEM_HOOKS.md).
+Details and feasibility per item: [ITEM_HOOKS.md](ITEM_HOOKS.md).
 
-- **Nicht registriert**: Electric Bow, Flamethrower, Jetpack, Free Runners, Scuba, Hazmat, MekaSuit, Meka-Tool, Geiger Counter, Dosimeter, Crafting Formula, Network Reader, Portable QIO Dashboard, HDPE-Elytra. Ein craftbares Item ohne Funktion wäre vorgetäuscht. Gründe: fehlende Systeme (Radiation, Module, QIO, Transmitter, Formulaic Assemblicator), fehlendes `hdpe_sheet`, oder Hooks vorhanden, aber noch nicht gebaut.
-- **Atomic Disassembler**: nur Modi Normal und Vein Mining (Sneak plus Rechtsklick); Slow, Fast und Off fehlen, das Abbautempo ist eine feste Komponente. Energie lädt nur über Cubes und Tablet-Logik von Horizon, kein Ladeslot im Item. Ohne Energie baut er nichts ab.
-- **Canteen**: Auffüllen per Rechtsklick auf einen Tank mit Nutritional Paste (1.000 mB), weil der Nutritional Liquifier (M06 Gruppe 6, ingame ungetestet) nur Vanilla-Nahrung kennt und nicht in Chemical-Items füllt.
-- **Gauge Dropper**: arbeitet auf Block-Tanks und Maschinen mit Fluidtank, nicht auf GUI-Gauges.
-- **Dictionary**: prüft eine generierte Tagliste (Horizon kann Tags nicht auflisten), kennt also keine Tags außerhalb der Content-Mods und weniger Vanilla-Tags.
-- **Canteen**: gibt keine Sättigung; ein getrunkener Hungerpunkt sinkt bei Sättigung 0 wieder wie jeder andere (ob das Original Sättigung gibt, ist nicht geprüft).
-- **Dictionary (Offhand)**: Horizon bietet keinen Lesezugriff auf die Offhand; das Item dort wird erst nach dem nächsten Wechsel erkannt (`on_equip`), nicht direkt nach dem Laden der Welt.
-- **Item-Änderungen** (Energie, Füllstand, Modus) wirken mit bis zu einem Tick Verzug: Use-Hooks dürfen das Inventar nicht schreiben, die Änderung wird im nächsten `inventory_tick` angewendet. Beim Neuaufbau des Stacks gehen andere Komponenten verloren, die Items haben aber keine.
-- **Zahlenwerte** (Kapazitäten, Kosten, Schrittweiten) sind Mekanisms Standardwerte nach Kenntnis, nicht aus dem Java-Quellcode gelesen (Sparse-Checkout ohne `src/main/java`).
+- **Not registered**: Electric Bow, Flamethrower, Jetpack, Free Runners, Scuba, Hazmat, MekaSuit, Meka-Tool, Geiger Counter, Dosimeter, Crafting Formula, Network Reader, Portable QIO Dashboard, HDPE Elytra. A craftable item without a function would be fake. Reasons: missing systems (radiation, modules, QIO, transmitters, Formulaic Assemblicator), missing `hdpe_sheet`, or hooks exist but are not built yet.
+- **Atomic Disassembler**: only the modes Normal and Vein Mining (sneak plus right-click). Slow, Fast and Off are missing. The mining speed is a fixed component. Energy only charges through Horizon's cubes and tablet logic, with no charging slot in the item. Without energy it mines nothing.
+- **Canteen**: refill by right-click on a tank with Nutritional Paste (1,000 mB), because the Nutritional Liquifier (M06 group 6, untested in-game) only knows vanilla food and does not fill chemical items.
+- **Gauge Dropper**: works on block tanks and machines with a fluid tank, not on GUI gauges.
+- **Dictionary**: checks a generated tag list (Horizon cannot list tags). So it knows no tags outside the content mods and fewer vanilla tags.
+- **Canteen**: gives no saturation. A drunk hunger point drops again at saturation 0 like any other (whether the original gives saturation is not checked).
+- **Dictionary (offhand)**: Horizon offers no read access to the offhand. The item there is only recognized after the next swap (`on_equip`), not right after loading the world.
+- **Item changes** (energy, fill level, mode) take effect with up to one tick of delay: use hooks must not write the inventory, so the change is applied in the next `inventory_tick`. When the stack is rebuilt, other components are lost, but these items have none.
+- **Numeric values** (capacities, costs, step sizes) are Mekanism's default values to the best of our knowledge, not read from the Java source (sparse checkout without `src/main/java`).
 
-## Pipes, Tubes, Conductors (M06, ingame ungetestet)
+## Pipes, Tubes, Conductors (M06, untested in-game)
 
-- **Kein Netzwerk**: Kapazität und Rate eines Tiers gelten je Block, nicht je Netz. Lange Leitungen puffern mehr, als Mekanism es täte; der Durchsatz ist die Tier-Rate je Block und Tick.
-- **Keine Seitenmodi**: Pull/Push/Off und der Configurator fehlen. Pipes nehmen nur, was Nachbarn selbst hineinschieben (Tank-Auto-eject nach unten, Maschinen-Outputs, Pumpe nach oben); sie ziehen nicht aus Tanks.
-- **Modell**: Mekanisms OBJ-Modelle (eigener Loader) fehlen in Horizon, die Teile sind Quader; Auswahl- und Kollisionsbox sind nur der Mittelwürfel (Horizon-Shapes hängen an einer Property, nicht an sechs).
-- **Verbindungen** setzt der Tick (`down`..`east`) mit bis zu einem Tick Verzug und einer Prüfung je Nachbar und Tick; viele Pipes können das spürbar machen.
-- **Heat**: nur Conductor zu Conductor und zum Heat Generator; jeder Conductor rechnet für sich in Tick-Reihenfolge statt in einer Netzwerk-Runde.
+- **No network**: capacity and rate of a tier apply per block, not per network. Long lines buffer more than Mekanism would. Throughput is the tier rate per block and tick.
+- **No side modes**: Pull/Push/Off and the Configurator are missing. Pipes only take what neighbors push into them (tank auto-eject downward, machine outputs, pump upward). They do not pull from tanks.
+- **Model**: Mekanism's OBJ models (custom loader) are missing in Horizon. The parts are cuboids. The selection and collision box is only the center cube (Horizon shapes depend on one property, not six).
+- **Connections** are set by the tick (`down`..`east`) with up to one tick of delay and one check per neighbor per tick. Many pipes can make this noticeable.
+- **Heat**: only conductor to conductor and to the Heat Generator. Each conductor calculates on its own in tick order instead of in one network round.

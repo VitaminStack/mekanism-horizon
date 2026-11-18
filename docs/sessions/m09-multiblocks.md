@@ -1,120 +1,120 @@
-# M09 – Multiblocks (Session `m09-multiblocks`)
+# M09 – Multiblocks (session `m09-multiblocks`)
 
-Branch `claude/m09-multiblocks-640bbc`, Basis `main` @ 6a6da54. Ein Commit pro Schritt, Präfix `feat(m09):`.
+Branch `claude/m09-multiblocks-640bbc`, base `main` @ 6a6da54. One commit per step, prefix `feat(m09):`.
 
-## Was portiert wurde
+## What was ported
 
-1. Allgemeines Multiblock-System (reine Logik + Host).
+1. General multiblock system (pure logic + host).
 2. Dynamic Tank, Dynamic Valve, Structural Glass.
-3. Induction Matrix: Casing, Port, vier Zellstufen, vier Providerstufen.
-4. Thermal Evaporation Plant: **nicht portiert** (nur Validator-Regeln, siehe Lücken).
+3. Induction Matrix: Casing, Port, four cell tiers, four provider tiers.
+4. Thermal Evaporation Plant: **not ported** (only validator rules, see gaps).
 
-Boiler und Turbine bleiben unberührt (laut Auftrag).
+Boiler and Turbine stay untouched (as instructed).
 
-### Dateien
+### Files
 
-| Datei | Inhalt |
+| File | Content |
 |---|---|
-| `native/mekanism_native/api/src/multiblock.rs` | Reine Logik: Flood-Fill, Bounding Box, Regeln pro Position, `merge_stored` (10 Tests) |
-| `native/mekanism_native/api/src/dynamic_tank.rs` | Reine Logik: Kapazität, Valve-Austausch, Edit-Modi, Menü-Daten (10 Tests) |
-| `native/mekanism_native/api/src/induction.rs` | Reine Logik: Zellen/Provider-Summen, Port-Fluss, Menü-Daten (10 Tests) |
-| `native/mekanism_native/api/src/multiblocks.rs` | Host: Bildung, Verknüpfung, Revalidierung, Weiterleitung der Hooks |
-| `native/mekanism_native/api/src/dynamic_tanks.rs` | Host: Tank-Inhalt in NBT, Valve ↔ Master, Screen |
-| `native/mekanism_native/api/src/inductions.rs` | Host: Matrix-Energie in NBT, Port ↔ Master, Screen |
-| `native/mekanism_native/api/src/lib.rs` | Nur additiv: `Kind::Multiblock`, Match-Arme, `place_block`/`destroy_block` |
-| `logic/energy/src/lib.rs` | Drei neue `#[path]`-Module für die Tests |
-| `scripts/gen_resources.py` | Additiv: Block "multiblocks (M09)"; generierte Inhalte (Blockstates, Items, Modelle, Texturen, Lang, Rezepte, Loot, Menüs, Tags, `registry.json`) |
+| `native/mekanism_native/api/src/multiblock.rs` | Pure logic: flood fill, bounding box, rules per position, `merge_stored` (10 tests) |
+| `native/mekanism_native/api/src/dynamic_tank.rs` | Pure logic: capacity, valve exchange, edit modes, menu data (10 tests) |
+| `native/mekanism_native/api/src/induction.rs` | Pure logic: cell/provider sums, port flow, menu data (10 tests) |
+| `native/mekanism_native/api/src/multiblocks.rs` | Host: formation, linking, revalidation, forwarding of the hooks |
+| `native/mekanism_native/api/src/dynamic_tanks.rs` | Host: tank contents in NBT, valve ↔ master, screen |
+| `native/mekanism_native/api/src/inductions.rs` | Host: matrix energy in NBT, port ↔ master, screen |
+| `native/mekanism_native/api/src/lib.rs` | Additive only: `Kind::Multiblock`, match arms, `place_block`/`destroy_block` |
+| `logic/energy/src/lib.rs` | Three new `#[path]` modules for the tests |
+| `scripts/gen_resources.py` | Additive: block "multiblocks (M09)"; generated content (blockstates, items, models, textures, lang, recipes, loot, menus, tags, `registry.json`) |
 
-## Werte und ihre Quelle (Upstream-Java)
+## Values and their source (upstream Java)
 
-Upstream-Checkout: `mekanism-upstream-26.3`.
+Upstream checkout: `mekanism-upstream-26.3`.
 
-| Wert | Quelle |
+| Value | Source |
 |---|---|
-| Dynamic Tank Kapazität = Volumen (volle Bounding Box) × 16 000 000 mB (`16_000L * BUCKET_VOLUME`) | `GeneralConfig.dynamicTankFluidPerTank`, `TankMultiblockData` |
-| Auswurfrate 1 024 mB/Tick | `TankMultiblockData` |
-| Edit-Modi Both / Fill / Empty (Standard Both) | `ContainerEditMode` |
-| Valve-Puffer 32 000 mB (Horizon-Tank, pro Tick mit Master getauscht) | Eigene Anpassung an Horizons Fluid-API |
-| Zellkapazitäten 8e9, 64e9, 512e9, 4e12 | `InductionCellTier` |
-| Provider-Leistung 256 000, 2 048 000, 16 384 000, 131 072 000 | `InductionProviderTier` |
-| Kapazität = saturierende Summe der Zellen, Übertragung = Summe der Provider | `MatrixMultiblockData`, `MatrixEnergyContainer` |
-| Mindestens 1 Zelle und 1 Provider | `MatrixValidator.postcheck` |
-| Größe 3..=18 pro Achse | `MultiblockManager` / Validator-Konstanten |
-| Stärke 5/9 (Casing, Valve, Port), 3,5/16 (Zellen, Provider, Glas) | `BlockBasicMultiblock`, `BlockTile` |
-| Rahmen/Flächen/Innenraum-Regeln (Edge nur Frame, Face Frame/Valve/Controller, Inside Air bzw. Interior) | `FormationProtocol`, `CuboidStructureValidator` |
+| Dynamic Tank capacity = volume (full bounding box) × 16 000 000 mB (`16_000L * BUCKET_VOLUME`) | `GeneralConfig.dynamicTankFluidPerTank`, `TankMultiblockData` |
+| Ejection rate 1 024 mB/tick | `TankMultiblockData` |
+| Edit modes Both / Fill / Empty (default Both) | `ContainerEditMode` |
+| Valve buffer 32 000 mB (Horizon tank, exchanged with the master each tick) | Own adaptation to Horizon's fluid API |
+| Cell capacities 8e9, 64e9, 512e9, 4e12 | `InductionCellTier` |
+| Provider output 256 000, 2 048 000, 16 384 000, 131 072 000 | `InductionProviderTier` |
+| Capacity = saturating sum of the cells, transfer = sum of the providers | `MatrixMultiblockData`, `MatrixEnergyContainer` |
+| At least 1 cell and 1 provider | `MatrixValidator.postcheck` |
+| Size 3..=18 per axis | `MultiblockManager` / validator constants |
+| Hardness 5/9 (Casing, Valve, Port), 3.5/16 (cells, providers, glass) | `BlockBasicMultiblock`, `BlockTile` |
+| Frame/face/interior rules (edge only frame, face frame/valve/controller, inside air or interior) | `FormationProtocol`, `CuboidStructureValidator` |
 
-## Entwurf
+## Design
 
-- Eine Struktur ist die verbundene Hülle (Flood-Fill) mit Bounding Box. Ergebnisse: `Formed`, `Invalid(Grund)`, `Unloaded`. `Unloaded` löst nie etwas auf.
-- Der Master hält den gemeinsamen Zustand (NBT-Schlüssel `mekanism_mb_*`). Beim Zerstören eines Masters per Hand geht der Inhalt an ein benachbartes Mitglied; bei Explosionen/Befehlen geht er verloren.
-- Es gibt keine `block_changed`-/`chunk_load`-Hooks. Mitglieder prüfen per Polling in `block_entity_tick`, gestaffelt nach Positions-Hash: ungeformte alle 200 Ticks (und sofort bei `place_block`), geformte Mitglieder ihren Link alle 10 Ticks, der Master seine Struktur alle 20 Ticks.
-- Induction Port: Horizon-Energiepuffer (max. `PORT_BUFFER` = 131 072 000), Anteil pro Tick = Übertragung / Portanzahl. Input leert den Puffer in die Matrix, Output füllt ihn und gibt per `give()` an Mekanism-Nachbarn ab.
+- A structure is the connected shell (flood fill) with a bounding box. Results: `Formed`, `Invalid(reason)`, `Unloaded`. `Unloaded` never dissolves anything.
+- The master holds the shared state (NBT key `mekanism_mb_*`). When a master is destroyed by hand, the contents go to a neighboring member; with explosions/commands they are lost.
+- There are no `block_changed`/`chunk_load` hooks. Members check by polling in `block_entity_tick`, staggered by position hash: unformed ones every 200 ticks (and at once on `place_block`), formed members their link every 10 ticks, the master its structure every 20 ticks.
+- Induction Port: Horizon energy buffer (max. `PORT_BUFFER` = 131 072 000), share per tick = transfer / port count. Input empties the buffer into the matrix, Output fills it and gives to Mekanism neighbors via `give()`.
 
-## Lücken und Blocker
+## Gaps and blockers
 
-- **Thermal Evaporation Plant fehlt.** Validator-Regeln (offene Oberseite, Controller-Anzahl) und `Type::Evaporation`-Stubs sind vorbereitet, Host-Logik fehlt.
-- **Mekanism-Quellen laden Ports nicht per `give()`.** `energy::acceptor` in `energy.rs` ist eine ID-Tabelle (gehört nicht zu dieser Session). Horizon-Kabel nutzen den Puffer. Hinweis an die Lead-Session: Ports in die Tabelle aufnehmen.
-- Structural Glass ist (wie upstream) kein Teil von Tank oder Matrix.
-- Inhalt (Fluid/Energie) liegt im Master. Zellen haben keine Block-Entity. Wird der Master ohne benachbartes Mitglied zerstört, ist der Inhalt weg.
-- Keine Energie-/Item-Slots, kein Redstone-Ausgang, kein `shouldCache`-Verhalten für Zellenenergie.
-- Edit-Modus wirkt nur über den Puffer-Austausch; `accepts_fluid` wird pro Modus nicht erzwungen.
-- Polling statt Ereignisse: Bildung/Auflösung kann bis ca. 10 s dauern. Eine große unvollständige Hülle lässt jedes ungeformte Mitglied alle 200 Ticks neu fluten.
-- Die Eigenschaft `formed` hat keinen Modellunterschied.
-- Ein Valve-Puffer mit anderem Fluid als der Master bleibt hängen.
+- **Thermal Evaporation Plant is missing.** Validator rules (open top, controller count) and `Type::Evaporation` stubs are prepared, host logic is missing.
+- **Mekanism sources do not charge ports via `give()`.** `energy::acceptor` in `energy.rs` is an ID table (not part of this session). Horizon cables use the buffer. Note for the lead session: add ports to the table.
+- Structural Glass is (as upstream) not part of a tank or matrix.
+- Contents (fluid/energy) live in the master. Cells have no block entity. If the master is destroyed without a neighboring member, the contents are gone.
+- No energy/item slots, no redstone output, no `shouldCache` behavior for cell energy.
+- The edit mode acts only through the buffer exchange; `accepts_fluid` is not enforced per mode.
+- Polling instead of events: formation/dissolution can take up to about 10 s. A large incomplete shell makes every unformed member flood again every 200 ticks.
+- The property `formed` has no model difference.
+- A valve buffer with a different fluid than the master gets stuck.
 
-## Nicht kompilierverifiziert
+## Not compile-verified
 
-Der `native-build`-Check ist verboten (Lead-Entscheid). Der native Code folgt vorhandenen kompilierten Mustern, wurde aber **nicht gebaut**. Risikopunkte:
+The `native-build` check is forbidden (lead's decision). The native code follows existing compiled patterns but was **not built**. Risk points:
 
-- `host.level(&dim)` und `LevelRef::is_loaded` / `game_time`.
-- `&*e.id` (Deref der Entity-ID).
-- Borrow-Muster in `form()` mit `own: Option<(Pos, &mut Compound)>`.
-- Typen der `change_mod_block_entity`-Closures.
+- `host.level(&dim)` and `LevelRef::is_loaded` / `game_time`.
+- `&*e.id` (deref of the entity ID).
+- Borrow pattern in `form()` with `own: Option<(Pos, &mut Compound)>`.
+- Types of the `change_mod_block_entity` closures.
 - `Tag::Long`.
-- Literale `ModEnergyBuffer` und `ModFluidTanks`.
+- Literals `ModEnergyBuffer` and `ModFluidTanks`.
 - `ScreenDrawEvent.block`.
-- `event.entity.data` als `Vec<i32>`.
+- `event.entity.data` as `Vec<i32>`.
 
-## Geprüft
+## Checked
 
-| Check | Ergebnis |
+| Check | Result |
 |---|---|
-| `cargo test --manifest-path logic/energy/Cargo.toml` | 162 bestanden, 0 fehlgeschlagen |
-| `python scripts/validate_content.py` | OK, 5737 JSON-Dateien |
-| `python scripts/parity.py --check` | 13029 Einträge, 0 Regressionen, 873 neu erledigt |
-| `cargo horizon-mod build` + `check` (`content/mekanism`) | OK, `mekanism 0.2.0`, 2 045 988 Bytes |
+| `cargo test --manifest-path logic/energy/Cargo.toml` | 162 passed, 0 failed |
+| `python scripts/validate_content.py` | OK, 5737 JSON files |
+| `python scripts/parity.py --check` | 13029 entries, 0 regressions, 873 newly done |
+| `cargo horizon-mod build` + `check` (`content/mekanism`) | OK, `mekanism 0.2.0`, 2 045 988 bytes |
 
-## Ingame-Testliste
+## In-game test list
 
-Alles nur nach manuellem Build durch die Lead-Session.
+All only after a manual build by the lead session.
 
 Dynamic Tank:
-1. Würfel 3×3×3 aus Dynamic Tank, innen leer: nach spätestens ca. 10 s formen sich die Blöcke; Screen zeigt "Capacity 16 000 B × Volumen" (27 → 432 000 B).
-2. Eine Kante mit Dynamic Valve ersetzen: Valve wird nicht angenommen (Kante braucht Frame). Valve in eine Fläche setzen: gültig.
-3. Pipe an Valve anschließen, Wasser einleiten: Füllstand im Screen steigt.
-4. Edit-Modus auf Empty stellen: Valve schiebt (1 024 mB/Tick) in angrenzende Behälter.
-5. Einen Block entfernen: Struktur löst sich, Inhalt bleibt im Master-Cache; neu setzen: Inhalt kehrt zurück.
-6. Master von Hand abbauen: Inhalt geht an ein Nachbarmitglied.
-7. Innenraum mit Block füllen: Struktur wird ungültig.
-8. Größe 19 und 2: ungültig (Grenzen 3..=18).
-9. Chunk entladen/laden: Struktur löst sich nicht auf.
+1. A 3×3×3 cube of Dynamic Tank, empty inside: after at most about 10 s the blocks form; the screen shows "Capacity 16 000 B × volume" (27 → 432 000 B).
+2. Replace one edge with a Dynamic Valve: the valve is not accepted (an edge needs a frame). Put a valve in a face: valid.
+3. Connect a pipe to the valve, feed in water: the fill level in the screen rises.
+4. Set the edit mode to Empty: the valve pushes (1 024 mB/tick) into adjacent containers.
+5. Remove one block: the structure dissolves, the contents stay in the master cache; place it again: the contents return.
+6. Break the master by hand: the contents go to a neighboring member.
+7. Fill the interior with a block: the structure becomes invalid.
+8. Size 19 and 2: invalid (limits 3..=18).
+9. Unload/load the chunk: the structure does not dissolve.
 
 Induction Matrix:
-1. 3×3×3: Casing-Hülle, 1 Port in einer Fläche, 1 Zelle + 1 Provider innen, Rest Luft: formt sich.
-2. Ohne Provider oder ohne Zelle: ungültig (`postcheck`).
-3. Capacity im Screen: Basic 8 G, Advanced 64 G, Elite 512 G, Ultimate 4 T; Transfer entsprechend 256 k … 131,072 M.
-4. Port im Input-Modus: Kabel/Generator füllen Matrix. Port per Button auf Output: Matrix lädt angrenzenden Verbraucher.
-5. Mehrere Ports: Gesamtübertragung teilt sich auf alle Ports.
-6. Mekanism-Energiequelle direkt neben dem Port: lädt **nicht** (bekannte Lücke).
-7. Zelle abbauen: Kapazität sinkt, Energie wird auf Kapazität geklemmt.
+1. 3×3×3: casing shell, 1 port in a face, 1 cell + 1 provider inside, the rest air: it forms.
+2. Without a provider or without a cell: invalid (`postcheck`).
+3. Capacity in the screen: Basic 8 G, Advanced 64 G, Elite 512 G, Ultimate 4 T; transfer accordingly 256 k … 131.072 M.
+4. Port in Input mode: cable/generator fills the matrix. Switch the port to Output with the button: the matrix charges an adjacent consumer.
+5. Several ports: the total transfer is split across all ports.
+6. A Mekanism energy source directly next to the port: does **not** charge (known gap).
+7. Break a cell: capacity drops, energy is clamped to the capacity.
 
 Structural Glass:
-1. Setzen und prüfen, dass er keine Tank-/Matrix-Struktur bildet.
-2. Hülle mit Glas statt Casing: bleibt ungültig (upstream-konform).
+1. Place it and check that it forms no tank/matrix structure.
+2. Shell with glass instead of casing: stays invalid (matches upstream).
 
-## Offene Punkte
+## Open items
 
-- Evaporation Plant (Schritt 4) implementieren.
-- `energy::acceptor` um Induction Port erweitern (Lead, `energy.rs`).
-- Native Kompilierung der neuen Module in einer erlaubten Umgebung prüfen.
-- Optional: Modellvariante für `formed`, Ereignis-basierte Revalidierung, Redstone-Ausgang.
+- Implement the Evaporation Plant (step 4).
+- Extend `energy::acceptor` with the Induction Port (lead, `energy.rs`).
+- Check native compilation of the new modules in an allowed environment.
+- Optional: model variant for `formed`, event-based revalidation, redstone output.

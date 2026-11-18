@@ -1,252 +1,256 @@
-# Mekanism Horizon - Portierungs-TODO
+# Mekanism Horizon - Porting TODO
 
-**Stand:** 09.11.2026  
-**Ziel:** Schrittweise Portierung des aktuellen Mekanism nach Minecraft Horizon, mit Windows/Visual Studio 2026 als Entwicklungsumgebung.
+**As of:** 18.11.2026  
+**Goal:** Port the current Mekanism to Minecraft Horizon step by step, with Windows/Visual Studio 2026 as the development environment.
 
-## Referenz und Arbeitsregeln
+## Reference and working rules
 
-- **Original:** [mekanism/Mekanism, Branch `26.3`](https://github.com/mekanism/Mekanism/tree/26.3), abgeglichen mit Commit [`31bb4906`](https://github.com/mekanism/Mekanism/commit/31bb4906bc6c2ea4a2422d93cd1214df3ea7de4e).
-- **Originalversion aus `gradle.properties`:** Mekanism **10.8.0**, Minecraft **26.3**, NeoForge **26.3.0.101**, `release_type=alpha`. Dies ist eine Entwicklungsbasis, nicht automatisch eine stabile Release-Version.
-- **Horizon-Basis:** [`horizon-rust/horizon` @ `fdc87ae`](https://github.com/horizon-rust/horizon/commit/fdc87aecdbd116bf1e08adcd062fcbaea8c2e2ca) (Nightly 2026-11-08, installiert im Launcher), Native-Hooks-API 411; der Native-Mod wird gegen diesen Commit gebaut und ingame getestet. Pin steht in `native/mekanism_native/horizon-mixin.toml` und `api/Cargo.toml`.
-- **Geplanter Umfang:** Mekanism Core und danach die Original-Unterprojekte **Generators, Tools, Additions**.
-- **Status:** `[x]` bedeutet **bestätigt**. `[ ]` bedeutet offen, auch wenn schon Code/Dateien existieren. Nicht nur wegen eines erfolgreichen Builds abhaken.
-- **Jede Umsetzung:** Originalverhalten und Registry-IDs prüfen; Content (`.hmod`) und native Logik (`.hnmod`) sauber trennen; speichern/neuladen testen; Tests + Ingame-Nachweis im PR dokumentieren.
+- **Original:** [mekanism/Mekanism, branch `26.3`](https://github.com/mekanism/Mekanism/tree/26.3), compared with commit [`31bb4906`](https://github.com/mekanism/Mekanism/commit/31bb4906bc6c2ea4a2422d93cd1214df3ea7de4e).
+- **Original version from `gradle.properties`:** Mekanism **10.8.0**, Minecraft **26.3**, NeoForge **26.3.0.101**, `release_type=alpha`. This is a development base, not automatically a stable release.
+- **Horizon base:** [`horizon-rust/horizon` @ `fdc87ae`](https://github.com/horizon-rust/horizon/commit/fdc87aecdbd116bf1e08adcd062fcbaea8c2e2ca) (nightly 2026-11-08, installed in the launcher), native hooks API 411; the native mod is built against this commit and tested in game. The pin is in `native/mekanism_native/horizon-mixin.toml` and `api/Cargo.toml`.
+- **Planned scope:** Mekanism Core, then the original subprojects **Generators, Tools, Additions**.
+- **Status:** `[x]` means **confirmed**. `[ ]` means open, even if code/files already exist. Do not check an item only because a build succeeded.
+- **Every change:** check original behavior and registry IDs; keep content (`.hmod`) and native logic (`.hnmod`) apart; test save/reload; document tests and in-game proof in the PR.
 
-## Die nächsten 10 konkreten Aufgaben - zuerst diese erledigen
+## Next 10 concrete tasks - do these first
 
-- [x] **N01** Lokalen Energy-Cube-Patch-Zustand prüfen: `git status --short` und `git apply --reverse --check .\mekanism-energy-cube-v0.2.0.patch`. Vorhandene Dateien NICHT überschreiben. *(09.11.2026: Working Tree sauber, Patch-Inhalt ist bereits committet, Patch-Datei existiert nicht mehr.)*
-- [x] **N02** Nach dem Patch `Test-Content.ps1` und `cargo test --manifest-path .\logic\energy\Cargo.toml` erneut erfolgreich ausführen.
-- [x] **N03** `Strg+B`: `.hmod` bauen, automatisch kopieren; `/give @s mekanism:basic_energy_cube` im Spiel testen und Block platzieren. *(09.11.2026: give, platzieren und Drop bestätigt; Loot-Tabellen brauchen Horizon-Format `condition`.)*
-- [x] **N04** Native-Horizon-API-Version/Nightly-Commit bestimmen und `native/mekanism_native/` darauf abstimmen. *(09.11.2026: gepinnt auf Horizon `fdc87ae` (installierter Nightly); Hook-Signaturen nur gegen 99bd9655 (API 413) statisch geprüft. Kompilieren erst in N05.)*
-- [x] **N05** Native-Mod mit dem Horizon Launcher bauen und mit bewusst erteilter Vertrauensfreigabe installieren; Logs prüfen. *(09.11.2026: `scripts/Build-Native.ps1 -TrustNativeCode`, Build `native-fdc87ae-8abc9345573f`, Ingame bestätigt.)*
-- [x] **N06** Beim Platzieren wird eine native Block-Entity mit Energie-Capability angelegt. *(09.11.2026 per Agent Control: alle 5 Cubes haben Block-Entity.)*
-- [x] **N07** Basic Energy Cube: 4.000.000 Kapazität, 4.000 Ein-/Ausgabe-Limit pro Aufruf (Standard aus Original-`EnergyCubeTier`; später konfigurierbar).
-- [x] **N08** Energie mit Test-Hook/-Generator einfuegen und entnehmen; Seiten, Limits, Leer/Voll testen. *(09.11.2026: `debug_energy_source`/`debug_energy_sink` per Agent Control: 4.000/Tick, Deckel bei 4.000.000, Entleeren bis 0. Schreiben die Cube-NBT direkt; Horizons eigener Seiten-Pfad (`insert_faces`) ungetestet.)*
-- [x] **N09** Welt speichern, Horizon beenden und wieder starten: gespeicherte Energie muss erhalten bleiben. *(09.11.2026: `energy: 123456` überlebt Speichern + Neustart.)*
-- [x] **N10** Erfolgreichen Ingame-Test, Build-Log und Screenshots dokumentieren, committen, PR erstellen. *(09.11.2026: Protokoll in `docs/TESTLOG.md`; Screenshots nur im Chat.)*
+- [x] **N01** Check the local Energy Cube patch state: `git status --short` and `git apply --reverse --check .\mekanism-energy-cube-v0.2.0.patch`. Do NOT overwrite existing files. *(09.11.2026: working tree clean, patch content already committed, patch file no longer exists.)*
+- [x] **N02** After the patch, run `Test-Content.ps1` and `cargo test --manifest-path .\logic\energy\Cargo.toml` again successfully.
+- [x] **N03** `Ctrl+B`: build the `.hmod`, copy it automatically; test `/give @s mekanism:basic_energy_cube` in game and place the block. *(09.11.2026: give, place and drop confirmed; loot tables need the Horizon `condition` format.)*
+- [x] **N04** Determine the native Horizon API version/nightly commit and align `native/mekanism_native/` with it. *(09.11.2026: pinned to Horizon `fdc87ae` (installed nightly); hook signatures only checked statically against 99bd9655 (API 413). Compiling only in N05.)*
+- [x] **N05** Build the native mod with the Horizon Launcher and install it with a deliberately granted trust approval; check the logs. *(09.11.2026: `scripts/Build-Native.ps1 -TrustNativeCode`, build `native-fdc87ae-8abc9345573f`, confirmed in game.)*
+- [x] **N06** Placing creates a native block entity with an energy capability. *(09.11.2026 via Agent Control: all 5 cubes have a block entity.)*
+- [x] **N07** Basic Energy Cube: 4,000,000 capacity, 4,000 input/output limit per call (default from the original `EnergyCubeTier`; configurable later).
+- [x] **N08** Insert and extract energy with a test hook/generator; test sides, limits, empty/full. *(09.11.2026: `debug_energy_source`/`debug_energy_sink` via Agent Control: 4,000/tick, cap at 4,000,000, drain to 0. They write the cube NBT directly; Horizon's own side path (`insert_faces`) untested.)*
+- [x] **N09** Save the world, quit Horizon and start it again: stored energy must stay. *(09.11.2026: `energy: 123456` survives save + restart.)*
+- [x] **N10** Document the successful in-game test, build log and screenshots, commit, create a PR. *(09.11.2026: log in `docs/TESTLOG.md`; screenshots only in chat.)*
 
-## M00 - Funktionierende Projektbasis und Qualitaet [P0]
+## M00 - Working project base and quality [P0]
 
-- [x] Eigenes Windows-Repository mit `content/`, `logic/`, `scripts/` eingerichtet.
-- [x] Rust/Cargo unter Windows installiert und vier Energy-Core-Unit-Tests bestanden.
-- [x] Content-Mod per `Strg+B` in Visual Studio 2026 bauen.
-- [x] `.hmod` nach erfolgreichem Build automatisch in `horizon-mods/` kopieren.
-- [x] Osmiumbarren und Osmiumblock im Spiel getestet.
-- [x] Lokale v0.2.0-Änderungen sicher versionieren; Remote und lokal abgleichen. *(09.11.2026: Arbeitsbaum sauber, alle Branches gepusht.)*
-- [x] Horizon-Nightly, Native-Hook-API und Mekanism-Upstream-Commit pinnen.
-- [x] Test- und Buildanleitung für Windows dokumentieren. *(`README-WINDOWS.md`.)*
-- [x] CI: Content-Validierung, Rust-Tests, JSON-Checks; Native-Build wenn reproduzierbar. *(`.github/workflows/ci.yml`; Native-Build nicht in CI, braucht Launcher.)*
-- [x] Lizenz und Copyright der Original-Assets/Codeuebernahmen prüfen und beilegen. *(MIT, `content/mekanism/LICENSE-MEKANISM`.)*
+- [x] Own Windows repository with `content/`, `logic/`, `scripts/` set up.
+- [x] Rust/Cargo installed on Windows and four energy core unit tests pass.
+- [x] Build the content mod with `Ctrl+B` in Visual Studio 2026.
+- [x] Copy the `.hmod` to `horizon-mods/` automatically after a successful build.
+- [x] Osmium ingot and osmium block tested in game.
+- [x] Version the local v0.2.0 changes safely; sync remote and local. *(09.11.2026: working tree clean, all branches pushed.)*
+- [x] Pin the Horizon nightly, native hook API and Mekanism upstream commit.
+- [x] Document the test and build guide for Windows. *(`README-WINDOWS.md`.)*
+- [x] CI: content validation, Rust tests, JSON checks; native build when reproducible. *(`.github/workflows/ci.yml`; native build not in CI, it needs the launcher.)*
+- [x] Check and include the license and copyright of the original assets/code taken over. *(MIT, `content/mekanism/LICENSE-MEKANISM`.)*
 
-## M01 - Basic Energy Cube: erster wirklich funktionierender Block [P0]
+## M01 - Basic Energy Cube: first fully working block [P0]
 
-- [x] Block, Itemmodell, Texture, Loot, Übersetzungen und Rezept stimmen. *(Original-Modell ohne LEDs/Kern, Loot wie Original ohne Explosionsbedingung, Original-Rezept. Ingame: Rezept, Tooltip ok; fehlende `c:`-Tags ergänzt.)*
-- [x] Native Block-Entity beim Platzieren und Entfernen korrekt erzeugen/entfernen.
-- [x] Horizon Energie-Hook (ab API 142) mit `ModEnergyBuffer` anbinden. *(Angebunden; Seiten nur pro Blocktyp, nicht pro Block-Entity.)*
-- [x] Kapazität, Eingabe, Ausgabe und Simulations-Aufrufe korrekt begrenzen. *(Unit-Tests `cube::transfer`; Fremd-Energiequelle ingame nicht verfügbar.)*
-- [x] Alle Seiten/Facing testen; Eingabe/Ausgabe konfigurieren. *(Facing + Seitenkonfig per GUI, getestet 09.11.2026.)*
-- [x] NBT-Persistenz bei Save, Chunk-Unload und Neustart.
-- [x] Energieübergabe ohne Duplikation oder Verlust. *(Eject nur an Mekanism-Cubes; Summe ingame konstant; Unit-Tests `cube::transfer`.)*
-- [x] GUI: Speicherstand, Transferlimit, I/O-Seiten und Status. *(Eigener Screen über Block-Menü `mekanism:energy_cube`.)*
-- [x] Verhalten beim Abbau/Neuplatzieren mit Original vergleichen. *(Item behält Energie + Seiten wie Original.)*
-- [x] Integrationstests + Ingame-Demonstration abschliessen. *(A→B-Übergabe, GUI, Abbau, Chunk-Unload, Neustart ingame, 09.11.2026.)*
+- [x] Block, item model, texture, loot, translations and recipe are correct. *(Original model without LEDs/core, loot as in the original without the explosion condition, original recipe. In game: recipe, tooltip ok; missing `c:` tags added.)*
+- [x] Create/remove the native block entity correctly on place and break.
+- [x] Connect the Horizon energy hook (from API 142) with `ModEnergyBuffer`. *(Connected; sides only per block type, not per block entity.)*
+- [x] Limit capacity, input, output and simulation calls correctly. *(Unit tests `cube::transfer`; foreign energy source not available in game.)*
+- [x] Test all sides/facing; configure input/output. *(Facing + side config via GUI, tested 09.11.2026.)*
+- [x] NBT persistence on save, chunk unload and restart.
+- [x] Energy transfer without duplication or loss. *(Eject only into Mekanism cubes; total constant in game; unit tests `cube::transfer`.)*
+- [x] GUI: stored energy, transfer limit, I/O sides and status. *(Own screen via block menu `mekanism:energy_cube`.)*
+- [x] Compare behavior on break/re-place with the original. *(Item keeps energy + sides as in the original.)*
+- [x] Finish integration tests + in-game demonstration. *(A→B transfer, GUI, break, chunk unload, restart in game, 09.11.2026.)*
 
-**Fertig, wenn:** Der Cube nimmt echte Energie auf, gibt sie ab, kann konfiguriert werden und behaelt den Ladezustand nach Neustart.
+**Done when:** the cube takes real energy, gives it out, can be configured and keeps its charge after a restart.
 
-## M02 - Rohstoffe, Weltgenerierung und Grundrezepte [P1]
+## M02 - Resources, world generation and basic recipes [P1]
 
-- [x] Originale Registry-IDs von Items/Blöcken/Ressourcen inventarisieren. *(Ressourcen-IDs nach Mekanism 26.3 in `scripts/gen_resources.py`, Liste in `scripts/registry.json`.)*
-- [ ] Originaltexturen, Modelle, Blockstates, Sounds und Sprachen mit Lizenzhinweisen integrieren. *(Für Ressourcen per `scripts/import_upstream.py`; MIT-Lizenz in `content/mekanism/LICENSE-MEKANISM`. Block-Sound-Typen wie Original (Stone, Deepslate, Salz = Sand; ingame getestet 09.11.2026). Energy-Cube-Modell per `scripts/import_energy_cube.py`. Sounds: `sounds.json` + `.ogg` der vorhandenen Maschinen und Generatoren (Infuser, Enrichment Chamber, Crusher, Compressor, Combiner, Precision Sawmill, Purification und Injection Chamber, Heat, Solar) per `import_upstream.py` (`SOUNDS`), mit Untertiteln; Horizon spielt Mod-Sound-Events seit API 61, der Native-Mod wiederholt den Clip, solange die Maschine läuft. Sounds inkl. Bio und Wind ingame getestet 09.11.2026. Die übrigen Mekanism-Sound-Events folgen mit ihren Maschinen/Items.)*
-- [x] Osmium-, Tin/Zinn-, Uranium-/Uran- und Fluorite-/Fluorit-Erze inklusive Deepslate-Varianten. *(Plus Blei und Salz.)*
-- [x] Weltgenerierung, Erzverteilung, Drops und Mining-Level (nur neue Chunks) testen. *(Werte aus Original-`OreType`/`WorldConfig`. Kein Glück/Behutsamkeit: Horizon-Loot kennt `apply_bonus`/`match_tool` nicht.)*
-- [x] Ingots, Nuggets, Dusts, Raw Materials, Storage Blocks (z.B. Bronze, Steel, Refined Glowstone, Refined Obsidian).
-- [ ] Steel Casing, Control Circuits (Basic/Advanced/Elite/Ultimate), Alloys und Enriched Materials. *(Registriert. Infusing-Rezepte laufen über den Metallurgic Infuser (Grundstufe aus M05; ingame getestet 09.11.2026: Carbon, Enriched Iron, Steel Dust, Steel Casing, Dump, Tooltips). Elite/Ultimate Circuits und Reinforced/Atomic Alloy: Kette Crusher (Obsidian-/Diamant-Staub) und Enrichment Chamber (Enriched Diamond/Refined Obsidian) implementiert, ingame ungetestet.)*
-- [x] Crafting-, Smelting-, Blasting- und Resource-Tags nach Original-Rezepten. *(Ingame bestätigt 09.11.2026: Steel Ingot im Ofen, Steel Casing, Infuser-Rezept. Vanilla-Rezepte + Tags importiert, dazu `metallurgic_infusing` und Infuse-`chemical_conversion`. Fehlende NeoForge-`c:`-Tags für Vanilla-Items in `gen_resources.py` (`CONVENTION_TAGS`; seit 09.11.2026 alle von importierten Rezepten genannten, z.B. `c:ores/iron`, `c:raw_materials/iron`, `c:dyes/*`). Weitere Maschinenrezepte folgen mit ihren Maschinen.)*
-- [ ] Survival-Test: alle Materialien für erste Maschinen ohne Cheat erhältlich. *(Weg: Infuser craften, Kohle zu Carbon, Eisen zu Enriched Iron, dann Steel Dust, Steel Ingot (Ofen), Steel Casing; Osmium + Redstone zu Basic Circuit. Energie ohne Cheat aus Heat Generator (Kohle) direkt neben der Maschine; ohne Universal Cables nur als Nachbarblock. Ingame ungetestet.)*
+- [x] Inventory the original registry IDs of items/blocks/resources. *(Resource IDs after Mekanism 26.3 in `scripts/gen_resources.py`, list in `scripts/registry.json`.)*
+- [ ] Integrate original textures, models, blockstates, sounds and languages with license notes. *(For resources via `scripts/import_upstream.py`; MIT license in `content/mekanism/LICENSE-MEKANISM`. Block sound types as in the original (stone, deepslate, salt = sand; tested in game 09.11.2026). Energy Cube model via `scripts/import_energy_cube.py`. Sounds: `sounds.json` + `.ogg` of the existing machines and generators (Infuser, Enrichment Chamber, Crusher, Compressor, Combiner, Precision Sawmill, Purification and Injection Chamber, Heat, Solar) via `import_upstream.py` (`SOUNDS`), with subtitles; Horizon plays mod sound events since API 61, the native mod repeats the clip while the machine runs. Sounds incl. Bio and Wind tested in game 09.11.2026. The remaining Mekanism sound events follow with their machines/items.)*
+- [x] Osmium, tin, uranium and fluorite ores including deepslate variants. *(Plus lead and salt.)*
+- [x] Test world generation, ore distribution, drops and mining level (new chunks only). *(Values from the original `OreType`/`WorldConfig`. No Fortune/Silk Touch: Horizon loot does not know `apply_bonus`/`match_tool`.)*
+- [x] Ingots, nuggets, dusts, raw materials, storage blocks (e.g. bronze, steel, refined glowstone, refined obsidian).
+- [ ] Steel Casing, Control Circuits (Basic/Advanced/Elite/Ultimate), alloys and enriched materials. *(Registered. Infusing recipes run through the Metallurgic Infuser (base tier from M05; tested in game 09.11.2026: Carbon, Enriched Iron, Steel Dust, Steel Casing, dump, tooltips). Elite/Ultimate circuits and Reinforced/Atomic Alloy: chain Crusher (obsidian/diamond dust) and Enrichment Chamber (Enriched Diamond/Refined Obsidian) implemented, untested in game.)*
+- [x] Crafting, smelting, blasting and resource tags after the original recipes. *(Confirmed in game 09.11.2026: steel ingot in the furnace, Steel Casing, infuser recipe. Vanilla recipes + tags imported, plus `metallurgic_infusing` and infuse `chemical_conversion`. Missing NeoForge `c:` tags for vanilla items in `gen_resources.py` (`CONVENTION_TAGS`; since 09.11.2026 all named by imported recipes, e.g. `c:ores/iron`, `c:raw_materials/iron`, `c:dyes/*`). More machine recipes follow with their machines.)*
+- [ ] Survival test: all materials for the first machines obtainable without cheats. *(Path: craft the Infuser, coal to Carbon, iron to Enriched Iron, then Steel Dust, Steel Ingot (furnace), Steel Casing; osmium + redstone to Basic Circuit. Energy without cheats from a Heat Generator (coal) directly next to the machine. Untested in game.)*
 
-## M03 - Energie- und Maschinen-Fundament [P0/P1]
+## M03 - Energy and machine foundation [P0/P1]
 
-- [x] Joule/FE-Konvertierung, Overflow-Schutz und Einheiten in UI/API festlegen. *(Entschieden 09.11.2026: 1:1 FE wie Mekanism 26.3, das keine Joule mehr hat (`docs/ENERGY-UNITS.md`). Overflow-Schutz in `energy::Acceptor::accept` mit Unit-Tests; Creative Cube auf `i32::MAX` begrenzt.)*
-- [x] Energie in Items und Blöcken über gemeinsame Capabilities. *(Horizons Energie-API: `item_energy_buffer` für Tablet und Cube-Items, `block_entity_energy` für Cubes und Infuser; ingame getestet 09.11.2026.)*
-- [x] Energy Tablet und alle Energy Cubes: Basic, Advanced, Elite, Ultimate, Creative. *(Getestet 09.11.2026. Platzhalter-Optik; Horizon zeigt keinen Item-Ladebalken; Creative auf i32::MAX begrenzt; gecraftete Cubes übernehmen keine gespeicherte Energie.)*
-- [x] Original-Tier-Werte, Transferlimits und Konfigurationen übernehmen. *(Tier-Werte aus `EnergyCubeTier`, Tablet aus `GearConfig`; nicht konfigurierbar.)*
-- [ ] Universal Cables (vier Tiers), Verbindungsgraph und Nachbar-Updates. *(Blockiert: Horizon-Native-API bietet Mods keine Energie-Helfer (`native_move_energy` ist spielintern).)*
-- [ ] Energieverteilung über Chunks, Server-Ticks und Redstone korrekt.
-- [x] Gemeinsames Block-Entity-, Recipe-, Inventory- und Save/Load-Framework. *(P0-Refactor, ingame getestet 09.11.2026: ein `Kind`-Dispatch für alle Hooks, Maschinen-Tabelle `machine::MACHINES` mit einem Tick/Container/Screen (`process.rs`), Rezept-Cache je Typ (`recipe.rs`), NBT-Helfer für Energie/Fortschritt/Puffer. Tanks (M06) nutzen denselben Dispatch.)*
-- [ ] Lasttest: 100+ Cables und Cubes; keine Energie-Duplikation bei Netz-Reload.
+- [x] Define Joule/FE conversion, overflow protection and units in UI/API. *(Decided 09.11.2026: 1:1 FE like Mekanism 26.3, which has no joules any more (`docs/ENERGY-UNITS.md`). Overflow protection in `energy::Acceptor::accept` with unit tests; Creative Cube capped at `i32::MAX`.)*
+- [x] Energy in items and blocks through shared capabilities. *(Horizon's energy API: `item_energy_buffer` for the tablet and cube items, `block_entity_energy` for cubes and the Infuser; tested in game 09.11.2026.)*
+- [x] Energy Tablet and all Energy Cubes: Basic, Advanced, Elite, Ultimate, Creative. *(Tested 09.11.2026. Placeholder look; Horizon shows no item charge bar; Creative capped at i32::MAX; crafted cubes do not take over stored energy.)*
+- [x] Take over the original tier values, transfer limits and configurations. *(Tier values from `EnergyCubeTier`, tablet from `GearConfig`; not configurable.)*
+- [ ] Universal Cables (four tiers), connection graph and neighbor updates. *(Built in Wave 1 (`docs/sessions/m08-cables-transport.md`): 4 tiers with values from `CableTier`, each cable has its own buffer and evens out with its neighbors every tick, arms as block states. Reaches only Mekanism blocks: Horizon gives mods no energy access to foreign blocks. Open: no shared network, no arm towards generators, full chain generator -> cable -> cube not accepted in game.)*
+- [ ] Energy distribution across chunks, server ticks and redstone correct.
+- [x] Shared block entity, recipe, inventory and save/load framework. *(P0 refactor, tested in game 09.11.2026: one `Kind` dispatch for all hooks, machine table `machine::MACHINES` with one tick/container/screen (`process.rs`), recipe cache per type (`recipe.rs`), NBT helpers for energy/progress/buffers. Tanks (M06) use the same dispatch.)*
+- [ ] Load test: 100+ cables and cubes; no energy duplication on network reload.
 
-## M04 - Energieerzeugung / Generators-Grundstufe [P1]
+## M04 - Energy generation / Generators base tier [P1]
 
-- [x] Heat Generator (Brennstoff, Umgebung und Ausgabeseiten). *(Ingame getestet 09.11.2026: eigener Content-Mod `content/mekanismgenerators` mit Upstream-IDs, Logik in `native/mekanism_native/api/src/generator.rs`. Lava-Tank 1000 mB, 100 mB/t, Lava-Nachbarn 7/Seite, Nether +10, Wärme-/Carnot-Modell wie Original, Energie aus der Front in Cube/Maschine. Nicht portiert: Energie-Slot, Redstone; Wärmeübertragung nur an Thermodynamic Conductors (M06, ingame ungetestet).)*
-- [x] Solar Generator und Advanced Solar Generator. *(Solar Generator ingame getestet 09.11.2026: 2 FE/t Spitze, Biom-Faktor aus Vanilla-Klimatabelle, Tageszeit/Regen nach Vanilla-Formel, Energie nach unten. Advanced Solar ingame getestet 09.11.2026: 12 FE/t Spitze, Multiblock mit Bounding-Blöcken (Säule + 3×3-Paneel), braucht mehr als 4 der 9 Himmelsprüfungen, Speicher 240 FE; Abbau eines Teils baut alles ab, fehlender Platz lässt den Block als Item fallen. Modell: Fuß als Blockmodell, Oberteil vom Native-Mod einen Block höher gezeichnet (Horizon ignoriert das Root-`transform` des Originals), per `scripts/import_generator_models.py`.)*
-- [x] Wind Generator (Höhe/Wetter nach Original). *(Ingame getestet 09.11.2026: 1–5 FE/t linear nach Höhe der Spitze (y 24 bis Weltobergrenze), Spitze muss Himmel sehen, Speicher 100 FE, Multiblock 5 hoch, Sound (Wetter). Modell: Basis als Blockmodell, Turm und Rotor per `scripts/import_generator_models.py` aus dem Blockbench-Original, vom Native-Mod gezeichnet, Rotor dreht sich im Betrieb. Item-Icon: verkleinertes Vollmodell statt Mekanisms Spezial-Renderer. Bildschirm über jeden Bounding-Block (gespiegeltes Menü), Abbau ohne Geisterblock, kein Drop im Kreativmodus: ingame getestet 09.11.2026 (P0-Refactor). Nicht portiert: `c:no_wind`-Dimensionen.)*
-- [x] Bio Generator und Bio Fuel. *(Ingame getestet 09.11.2026: 25 FE/t, 1 mB/t aus 200-mB-Tank, 64 mB je Bio Fuel, Speicher 600 FE, Energie aus der Front, Sound. Bio Fuel aus dem Crusher (alle `crushing/biofuel`-Rezepte), Block of Bio Fuel. Nicht portiert: Befüllen per Fluid-Container/Pipe, Energie-Slot, Redstone; Block of Bio Fuel als Ofen-Brennstoff.)*
-- [x] Gas-Burning Generator. *(Ingame getestet 11.11.2026: 1.000-mB-Chemical-Tank, Hydrogen 2 und Ethene 8 FE je mB, höchstens 10 mB/t nach Füllstand, Speicher 2.000 FE, Energie aus der Front in einen Energy Cube, Sound, GUI. Nicht portiert: Chemie-/Energie-Slots, Tank nur an allen Seiten statt ohne Front (Horizon-Flächen je Blocktyp), Redstone. Details `docs/GENERATORS.md`.)*
-- [ ] GUIs, Energieabgabe, Upgrades und Balancing der Generatoren.
-- [ ] Survival-Test: Generator -> Universal Cable -> Energy Cube -> Maschine.
+- [x] Heat Generator (fuel, environment and output sides). *(Tested in game 09.11.2026: own content mod `content/mekanismgenerators` with upstream IDs, logic in `native/mekanism_native/api/src/generator.rs`. Lava tank 1000 mB, 100 mB/t, lava neighbors 7/side, Nether +10, heat/Carnot model as in the original, energy from the front into a cube/machine. Not ported: energy slot, redstone; heat transfer only to Thermodynamic Conductors.)*
+- [x] Solar Generator and Advanced Solar Generator. *(Solar Generator tested in game 09.11.2026: 2 FE/t peak, biome factor from the vanilla climate table, time of day/rain after the vanilla formula, energy downwards. Advanced Solar tested in game 09.11.2026: 12 FE/t peak, multiblock with bounding blocks (column + 3×3 panel), needs more than 4 of the 9 sky checks, storage 240 FE; breaking one part breaks everything, missing space drops the block as an item. Model: foot as block model, top drawn one block higher by the native mod (Horizon ignores the original's root `transform`), via `scripts/import_generator_models.py`.)*
+- [x] Wind Generator (height/weather as in the original). *(Tested in game 09.11.2026: 1–5 FE/t linear with the height of the tip (y 24 to the world top), tip must see the sky, storage 100 FE, multiblock 5 high, sound (weather). Model: base as block model, tower and rotor via `scripts/import_generator_models.py` from the Blockbench original, drawn by the native mod, rotor turns while running. Item icon: scaled-down full model instead of Mekanism's special renderer. Screen through every bounding block (mirrored menu), break without ghost block, no drop in creative: tested in game 09.11.2026 (P0 refactor). Not ported: `c:no_wind` dimensions.)*
+- [x] Bio Generator and Bio Fuel. *(Tested in game 09.11.2026: 25 FE/t, 1 mB/t from a 200 mB tank, 64 mB per Bio Fuel, storage 600 FE, energy from the front, sound. Bio Fuel from the Crusher (all `crushing/biofuel` recipes), Block of Bio Fuel. Not ported: filling via fluid container/pipe, energy slot, redstone; Block of Bio Fuel as furnace fuel.)*
+- [x] Gas-Burning Generator. *(Tested in game 11.11.2026: 1,000 mB chemical tank, hydrogen 2 and ethene 8 FE per mB, at most 10 mB/t by fill level, storage 2,000 FE, energy from the front into an Energy Cube, sound, GUI. Not ported: chemical/energy slots, tank on all sides instead of all but the front (Horizon faces per block type), redstone. Details in `docs/GENERATORS.md`.)*
+- [ ] GUIs, energy output, upgrades and balancing of the generators.
+- [ ] Survival test: generator -> Universal Cable -> Energy Cube -> machine.
 
-## M05 - Maschinen und erste Processing-Ketten [P1]
+## M05 - Machines and first processing chains [P1]
 
-- [ ] Allgemeines Rezept-System: Inputs, Outputs, Energie je Tick, Fortschritt, Nebenprodukte. *(Teilweise: `recipe::Recipe` liest Item-Input mit Menge, optionalen Chemie-Input und Output für alle Maschinen-Rezepttypen; Energie je Tick und Fortschritt über `machine::step`, ingame getestet 09.11.2026. Seit M05-Teil 2 auch zweiter Item-Input (`extra_input`), Zweitausgabe mit Chance (`secondary_output`) und Chemie pro Tick (`per_tick_usage`); ingame getestet 09.11.2026. Seit M06 auch Purification/Injection (`purifying`, `injecting`; Sauerstoff, Chlorwasserstoff, Wasserdampf je Tick; ingame getestet 10.11.2026). Seit dem Oxidizer/Infuser (M06) auch Chemie-Ausgabe in einen Output-Tank (`Recipe::chemical_output`, `FluidTanks`) und zwei Chemie-Inputs (`recipe::Infusion`); voller Output-Tank pausiert wie ein voller Item-Output. Seit Separator/Rotary auch zwei Chemie-Outputs aus einem Fluid (`recipe::Separation`, `machine::convert`) und Fluid-Tanks (`recipe::Rotation`). Fehlt: Fluid-Outputs der Pumpe und Item-Outputs mit Chemie-Zweitausgabe.)*
-- [ ] Maschinen-Inventare, Menüs, GUI, Upgrades, Auto-Eject, Sided I/O, Redstone-Modi.
-- [x] Metallurgic Infuser und Infusions-Ressourcen. *(Ingame getestet 09.11.2026. Werte aus Original; 8 Infuse-Typen, alle `metallurgic_infusing`-Rezepte. Fehlt: Energie-Slot, Upgrades, Side-Config, Redstone; Infuse/Energie bleiben beim Abbau nicht am Item; Balkenfarben genähert.)*
-- [x] Enrichment Chamber. *(Ingame getestet 09.11.2026: `native/mekanism_native/api/src/machine.rs`, 5 FE/t, 200 Ticks, Speicher 20 FE, alle `mekanism:enriching`-Rezepte, Upstream-Modell mit `active`, Sound. Fehlt wie beim Infuser: Energie-Slot, Upgrades, Side-Config, Redstone.)*
-- [ ] Energized Smelter. *(Blockiert: Horizon gibt Native-Mods keine `minecraft:smelting`-Rezepte; `recipes_of_type` liefert nur Typen außerhalb von `minecraft`, `native_recipes` ist intern.)*
-- [x] Crusher. *(Ingame getestet 09.11.2026: wie Enrichment Chamber, 8 FE/t, Speicher 32 FE, alle `mekanism:crushing`-Rezepte.)*
-- [x] Precision Sawmill. *(Ingame getestet 09.11.2026: 6 Eichenstämme zu 36 Brettern + 1 Sägespäne, Bett zu Brettern + Wolle; Pause, solange die Zweitausgabe nicht passt. 5 FE/t, Speicher 20 FE, alle `mekanism:sawing`-Rezepte, Zweitausgabe nach `secondary_chance`, Sound. Fehlt wie beim Infuser: Energie-Slot, Upgrades, Side-Config, Redstone.)*
-- [x] Osmium Compressor und Combiner. *(Ingame getestet 09.11.2026: Refined-Obsidian-Staub zu Barren, Osmium 1 mB/Tick, Stillstand bei leerem Tank, Osmiumblock passt nicht in den Tank; Rohes Eisen + (Tiefenschiefer-)Bruchstein zu Erz; Pause bei belegtem Output; Inhalt nach Neustart. Compressor: 15 FE/t, Speicher 60 FE, Osmium-Tank 210 mB aus Osmiumbarren (200 mB), 1 mB je Tick, alle `mekanism:compressing`-Rezepte. Combiner: 5 FE/t, zweiter Input unten, alle `mekanism:combining`-Rezepte. Voller Output pausiert jetzt wie im Original, statt den Fortschritt zurückzusetzen (alle Maschinen).)*
-- [ ] Formulation/Assembly: Formulaic Assemblicator und Oredictionificator.
-- [ ] Leere Energie, voller Output, Rezeptwechsel, Save/Load und Chunk-Unload prüfen. *(Teilweise ingame: voller Output pausiert (Combiner, Sawmill), Neustart behält Inhalt, leerer Chemie-Tank hält den Fortschritt (Compressor, Purification, Injection). Offen: Rezeptwechsel, Chunk-Unload.)*
+- [ ] General recipe system: inputs, outputs, energy per tick, progress, byproducts. *(Partly: `recipe::Recipe` reads item input with count, optional chemical input and output for all machine recipe types; energy per tick and progress via `machine::step`, tested in game 09.11.2026. Since M05 part 2 also a second item input (`extra_input`), secondary output with chance (`secondary_output`) and chemical per tick (`per_tick_usage`); tested in game 09.11.2026. Since M06 also purification/injection (`purifying`, `injecting`; oxygen, hydrogen chloride, steam per tick; tested in game 10.11.2026). Since the Oxidizer/Infuser (M06) also chemical output into an output tank (`Recipe::chemical_output`, `FluidTanks`) and two chemical inputs (`recipe::Infusion`); a full output tank pauses like a full item output. Since Separator/Rotary also two chemical outputs from one fluid (`recipe::Separation`, `machine::convert`) and fluid tanks (`recipe::Rotation`). Missing: fluid outputs of the pump and item outputs with a chemical secondary output.)*
+- [ ] Machine inventories, menus, GUI, upgrades, auto-eject, sided I/O, redstone modes. *(Wave 1 (`docs/sessions/m07-machine-framework.md`): energy slot, upgrade slots, redstone modes Disabled/High/Low/Pulse; accepted in game 18.11.2026: Energy Tablet charges the machine, Speed x8, upgrades and energy survive a restart. Blocked: sided I/O and auto-eject per block entity (Horizon sides are static per block type).)*
+- [x] Metallurgic Infuser and infusion resources. *(Tested in game 09.11.2026. Values from the original; 8 infuse types, all `metallurgic_infusing` recipes. Missing: side config; infuse/energy do not stay on the item when broken; bar colors approximated.)*
+- [x] Enrichment Chamber. *(Tested in game 09.11.2026: `native/mekanism_native/api/src/machine.rs`, 5 FE/t, 200 ticks, storage 20 FE, all `mekanism:enriching` recipes, upstream model with `active`, sound.)*
+- [ ] Energized Smelter. *(Blocked: Horizon gives native mods no `minecraft:smelting` recipes; `recipes_of_type` only returns types outside `minecraft`, `native_recipes` is internal.)*
+- [x] Crusher. *(Tested in game 09.11.2026: like the Enrichment Chamber, 8 FE/t, storage 32 FE, all `mekanism:crushing` recipes.)*
+- [x] Precision Sawmill. *(Tested in game 09.11.2026: 6 oak logs to 36 planks + 1 sawdust, bed to planks + wool; pauses while the secondary output does not fit. 5 FE/t, storage 20 FE, all `mekanism:sawing` recipes, secondary output by `secondary_chance`, sound.)*
+- [x] Osmium Compressor and Combiner. *(Tested in game 09.11.2026: refined obsidian dust to ingot, osmium 1 mB/tick, stops with an empty tank, an osmium block does not fit in the tank; raw iron + (deepslate) cobblestone to ore; pauses on an occupied output; content after restart. Compressor: 15 FE/t, storage 60 FE, osmium tank 210 mB from osmium ingots (200 mB), 1 mB per tick, all `mekanism:compressing` recipes. Combiner: 5 FE/t, second input at the bottom, all `mekanism:combining` recipes. A full output now pauses as in the original instead of resetting progress (all machines).)*
+- [x] Oredictionificator. *(Wave 1, accepted in game 18.11.2026: GUI, filter `dusts/bronze` to `dust_bronze`, bronze dust is converted, cobblestone stays in the input, filters survive a restart. Not ported: redstone mode, side config, security, upgrades.)*
+- [ ] Formulaic Assemblicator. *(Block, item, recipes and models registered, no behavior. Blocker: native mods get no vanilla crafting recipes.)*
+- [ ] Check empty energy, full output, recipe change, save/load and chunk unload. *(Partly in game: a full output pauses (Combiner, Sawmill), a restart keeps the content, an empty chemical tank holds the progress (Compressor, Purification, Injection). Open: recipe change, chunk unload.)*
 
-## M06 - Fluids, Chemicals und Rohstoffverarbeitung [P1]
+## M06 - Fluids, chemicals and ore processing [P1]
 
-**Gruppen (je eigener Branch, in dieser Reihenfolge):**
+**Groups (each its own branch, in this order):**
 
-1. `feat/m06-chemistry-foundation` - Chemie-IDs/Registry, Fluids, Chemicals, Fluid Tank, Chemical Tank.
-2. `feat/m06-transport-heat` - Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors, Heat-System.
+1. `feat/m06-chemistry-foundation` - chemical IDs/registry, fluids, chemicals, Fluid Tank, Chemical Tank.
+2. `feat/m06-transport-heat` - Mechanical Pipes, Pressurized Tubes, Thermodynamic Conductors, heat system.
 3. `feat/m06-basic-chemical-machines` - Electric Pump, Fluidic Plenisher, Electrolytic Separator, Chemical Oxidizer, Chemical Infuser, Rotary Condensentrator.
-4. `feat/m06-ore-processing` - Purification Chamber, Chemical Injection Chamber, Dissolution Chamber, Washer, Crystallizer, Erzverarbeitung End-to-End.
+4. `feat/m06-ore-processing` - Purification Chamber, Chemical Injection Chamber, Dissolution Chamber, Washer, Crystallizer, ore processing end to end.
 5. `feat/m06-advanced-chemistry` - Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator.
-6. `feat/m06-nutrition-pigments` - Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine; danach Tank-/Durchsatz-/Neustart-Tests.
+6. `feat/m06-nutrition-pigments` - Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine; then tank/throughput/restart tests.
 
 
-- [x] Chemie-IDs/Registry sowie Netzwerk-/Datapack-Synchronisation planen. *(Plan in `docs/CHEMISTRY.md`, Tabellen per `scripts/gen_chemicals.py` (18 Fluids, 64 Chemicals). Chemicals laufen als `mekanism:chemical/<id>`-Fluids in Horizons Block-Entity-Tanks, Inhalt per Update-Tag zum Client; ingame getestet 09.11.2026 mit Wasserstoff und Sole.)*
-- [ ] Fluids: Water, Steam, Brine, Lithium, Heavy Water, Nutritional Paste etc. *(IDs, Namen und Farben in `chemicals_table.rs`; Tanks speichern und zeigen sie. Offen: Herstellung durch Maschinen, Eimer für Mod-Fluids (Horizon hat keine).)*
-- [ ] Chemicals: Hydrogen, Oxygen, Chlorine, Sulfur-Komponenten, Ethene, Slurries, Pigments, Isotope etc. *(IDs, Namen und Farben in `chemicals_table.rs`; Chemical Tank speichert sie. Oxygen und Hydrogen Chloride füllen Purification/Injection Chamber vorerst aus Items (Flint, Salz), Osmium den Compressor. Offen: Herstellung durch Maschinen.)*
-- [x] Fluid Tank und Chemical Tank (Basic/Advanced/Elite/Ultimate/Creative). *(Ingame getestet 09.11.2026 per `horizon-ctl` (`docs/TESTLOG.md`, M06 Tanks): Füllen, Eimer (Wasser/Lava), Auto-eject nach unten, Dumping/Dumping Excess, Creative bleibt voll, Item behält Inhalt, Flüssigkeit im Glas sichtbar. Tier-Werte per Unit-Test. Nicht portiert: Item-Füll-Slots, Chemie-Side-Config, Edit-Mode, Redstone; Lava-Tank gibt kein Blocklicht; mit Shaderpack falsch dargestellt (Horizon).)*
-- [x] Mechanical Pipes und Pressurized Tubes (vier Tiers). *(Ingame getestet 13.11.2026 (Basis-Kette, Tube mit Wasserstoff, Neustart; „M06 Abnahme“ in `docs/TESTLOG.md`); Durchsatz in große Tanks (125 statt 250 mB/t) und Tube-Arm zu Fluid-Tanks am selben Tag behoben und nachgeprüft; höhere Tiers und Pipe-Ketten ab 200 Blöcken ungetestet. Testplan in `docs/TESTLOG.md` (M06 Transmitter). 8 Blöcke `mekanism:<tier>_mechanical_pipe` / `_pressurized_tube`, Rezepte, Namen, Texturen aus Upstream; Kapazität/Rate je Tier aus `PipeTier`/`TubeTier` (Unit-Test). Logik `transmitter.rs`, Host `transmitters.rs`: je Block ein Horizon-Tank (Pipe Fluids, Tube Chemicals), schiebt je Tick bis zur Rate in Nachbarn mit niedrigerem Füllstand (kein Netzwerk, Kapazität und Rate gelten je Block, nicht je Netz); Arme als Blockzustände `down`..`east`. Blocker/Grenzen: Horizon hat kein Transmitter-Netz, Mekanisms OBJ-Modelle (eigener Loader) sind durch Quader ersetzt, Auswahlbox nur der Mittelwürfel; Pull/Push/Off-Seitenmodi und Configurator fehlen. Siehe `docs/CHEMISTRY.md`.)*
-- [x] Thermodynamic Conductors und Heat-System. *(Ingame getestet 13.11.2026 (Heat Generator mit Lava, zwei Conductors, etwa 323 K nach 200 Ticks, Neustart); höhere Tiers ungetestet; Testplan in `docs/TESTLOG.md`. 4 Blöcke `mekanism:<tier>_thermodynamic_conductor`: Wärmekapazität 1, inverse Leitung 5, Isolation 10/400/8.000/100.000 (`ConductorTier`), Wärme zwischen Nachbarn nach `ITileHeatHandler.simulateAdjacent` (Kalorimetrie) und Verlust an die Luft (`simulateEnvironment`) in `transmitter.rs`; verbindet mit Conductors und dem Heat Generator (nimmt und gibt Wärme über dessen `mekanism_heat`). Grenzen: kein Heat-Netzwerk (jeder Conductor rechnet für sich in Tick-Reihenfolge), keine anderen Wärmequellen/-senken, da Boiler, Fission, Fusion, Resistive Heater u. a. fehlen.)*
-- [x] Electric Pump und Fluidic Plenisher. *(Ingame getestet 11.11.2026 (`docs/TESTLOG.md`): Pump 2 FE/t, Speicher 8 FE, eine Quelle je 19 Ticks, Wasser bleibt (`water_source_conversion`), Lava wird verbraucht, folgt Quellen im Radius 80, gibt 256 mB/t nach oben in einen Fluid Tank; Plenisher 20 Ticks je Block, Breitensuche nach unten, danach Nachfüllen. Logik `pump.rs`, Host `pumps.rs`. Nicht portiert: Upgrades, Schwerwasser-Filter, Item-Slots, Redstone, Sneak-Reset; Grenzen in `docs/KNOWN_ISSUES.md`.)*
-- [x] Electrolytic Separator. *(Ingame getestet 10.11.2026: 4 FE/t (2 x Wasserstoff-Brennwert 2), Speicher 16 FE, ein Durchlauf je Tick, alle `mekanism:separating`-Rezepte (Wasser zu 2 Wasserstoff + 1 Sauerstoff, Sole 10 mB zu Natrium + Chlor), Eingang 24.000 mB, linker/rechter Output je 2.400 mB, Auswurf in alle Nachbarn (1.024 mB/t), voller Output pausiert, Eingang nur Rezept-Fluids. Fluid-Eingang per Tank-API (`block_entity_fluids`): Nachbarn und Pipes füllen ihn; Wasser-Eimer fehlt (Horizon-Hook nur für Tanks). Nicht portiert: Item-Slots (Fluid/Chemie/Energie), Dump-Modi links/rechts, Upgrades, Side-Config, Redstone; Deuterium-Rezept (`mekanismgenerators:deuterium`, `energy_multiplier` 2) folgt mit dem Fusion-/Generators-Chemie-Satz.)*
-- [x] Chemical Oxidizer und Chemical Infuser. *(Ingame getestet 10.11.2026: Oxidizer 15 FE/t, 100 Ticks, alle `mekanism:oxidizing`-Rezepte (Schwefeldioxid 100 mB je Staub), Output-Tank 10.000 mB; Infuser 15 FE/t, ein Durchlauf je Tick, `chemical_infusing` in beide Tank-Reihenfolgen, drei Tanks je 10.000 mB. Chemie liegt in Horizons Block-Entity-Tanks (`fluids`): Nachbar-Tanks und Maschinen füllen die Infuser-Eingänge (`block_entity_accepts_fluid` nach Rezepten), der Output wird in alle Nachbarn ausgeworfen (1.024 mB/t); voller Output pausiert; Inhalt nach Neustart. Fehlt: Chemie-Item-Slots (Tanks per Item füllen/leeren), Energie-Slot, Upgrades, Side-Config/Auto-Eject-Schalter (immer alle Seiten), Redstone, Rezeptpaar-Prüfung beim Einfüllen (Horizons Hook kennt den anderen Tank nicht), Pfeil-Animation im Infuser; Crafting-Rezepte (`mek_data` mit Dynamic Tank) fehlen bis Dynamic Tank/Personal Storage existieren, Test per `/give`. Gaugen-Layout vereinfacht (176x166 statt Mekanisms größerem GUI).)*
-- [x] Rotary Condensentrator. *(Ingame getestet 10.11.2026: 2 FE/t, Speicher 8 FE, ein Durchlauf je Tick, alle `mekanism:rotary`-Rezepte in beide Richtungen, je ein Tank (Chemical links, Fluid rechts) mit 10.000 mB, Modus-Knopf im GUI (Standard Chemical -> Fluid, bleibt nach Neustart), der Output-Tank wirft in Nachbarn aus; Fluid-Ausgabe in Wasser-/Fluid-Tank und Chemie-Ausgabe in Chemical Tank. Blocker/Grenze: Horizons `block_entity_accepts_fluid` und die Tank-Seiten sind statisch, deshalb füllen und entleeren Nachbarn beide Tanks unabhängig vom Modus (Mekanism sperrt den Output-Tank für Einfüllen). Nicht portiert: Item-Slots, Upgrades, Side-Config, Redstone.)*
-- [x] Purification Chamber und Chemical Injection Chamber. *(Ingame getestet 10.11.2026 (`docs/TESTLOG.md`): Eisen zu Klumpen mit Sauerstoff, Schießpulver zu Schwefel mit Chlorwasserstoff, Stillstand bei leerem Tank. Purification 10 FE/t, Injection 15 FE/t, Tank 210 mB, 1 mB je Tick, alle `purifying`-/`injecting`-Rezepte, Klumpen-Items. Chemie vorerst nur aus Items (Flint: Sauerstoff, Salz: Chlorwasserstoff); Wasserdampf-Rezepte laufen erst mit einer Maschine, die ihn herstellt. Fehlt: Energie-Slot, Upgrades, Side-Config, Redstone.)*
-- [x] Chemical Dissolution Chamber, Chemical Washer, Chemical Crystallizer. *(Ingame getestet 11.11.2026 (`docs/TESTLOG.md`): Dissolution 16 FE/t, 100 Ticks, Säure 1 mB je Tick, Erz zu 1.000 mB schmutzigem Schlamm; Washer 5 FE/t, ein Durchlauf je Tick, 5 mB Wasser je mB Schlamm; Crystallizer 15 FE/t, 200 Ticks, 200 mB sauberer Schlamm je Kristall; alle `dissolution`-, `washing`-, `crystallizing`-Rezepte, Tanks je 10.000 mB, Output-Tanks werfen in Nachbarn aus, voller Output pausiert, leere Säure hält den Fortschritt. Neue Items: Kristalle, Splitter, schmutzige Stäube für 7 Metalle; Schlämme standen schon in der Chemie-Tabelle. Fehlt: Chemie-Item-Slots, Energie-Slot, Upgrades, Side-Config, Redstone.)*
-- [x] Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator. *(Implementiert 13.11.2026, ingame getestet 13.11.2026 (Reaction Chamber, Centrifuge, Activator, GUI, Neustart; „M06 Abnahme“ in `docs/TESTLOG.md`; Reaction ohne Energie, Activator in anderen Biomen ungetestet): Reaction 2 FE/t + `energy_required`, Dauer je Rezept, alles-oder-nichts; Centrifuge 8 FE/t, ein Durchlauf je Tick; Activator ohne Energie, Rate nach Biom und Sonne. Neue Items `substrate`, `hdpe_pellet`, Generators-Chemicals Deuterium/Tritium/Fusion Fuel. Grenzen: 2-Block-Höhe von Centrifuge und Activator (Bounding nicht übertragen), Pellet-Rezepte fehlen (Radiation), Energie-Slot, Upgrades, Side-Config, Redstone; Details `docs/CHEMISTRY.md`, Testplan `docs/TESTLOG.md`.)*
-- [x] Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine. *(Umgesetzt, ingame getestet 13.11.2026 (Liquifier, Extractor, Mixer, Painting, Neustart; „M06 Abnahme“ in `docs/TESTLOG.md`; ein einmaliger Verlust von 2 roten Farben im Extractor nicht reproduziert); Unit-Tests in `logic/energy`. Liquifier 8 FE/t, 100 Ticks, Fluid-Tank 10.000 mB Nutritional Paste (Nahrung x 50 mB), 40 Vanilla-Nahrungsrezepte `mekanism:liquification` (Horizon hat keine API, die Nahrungswerte eines Items liest, deshalb eine Liste statt Mekanisms dynamischem Rezept; Mod-Nahrung und Behälter-Rückgabe (Schüssel) fehlen); Pigment Extractor 5 FE/t, 100 Ticks, Pigment-Tank 20.000 mB, 275 `pigment_extracting`-Rezepte; Pigment Mixer 5 FE/t, ein Durchlauf je Tick, Eingänge 1.000 mB, Output 2.000 mB, 16 `pigment_mixing`-Rezepte (Crafting braucht `hdpe_rod`, M06 Advanced Chemistry); Painting Machine 5 FE/t, 200 Ticks, Pigment-Tank 15.000 mB, 288 `painting`-Rezepte (13 Kategorien, `neoforge:difference` im Importer zu Listen aufgelöst), neues Item `dye_base`. Alle laufen über vorhandene Operationen (`Op::Item`, `Op::Infuse`); nicht portiert: Chemie-Item-Slots (Pigment-Items), Energie-Slot, Upgrades, Side-Config, Redstone, Pfeil-Animationen.)*
-- [x] Erzverarbeitung und Mehrfachertraege (bis zu Original-Spitzenwerten) als End-to-End-Kette. *(Ingame getestet 11.11.2026: 1 Eisenerz zu 5 Eisenbarren über Dissolution, Washer, Crystallizer, Injection, Purification, Crusher, Enrichment, Ofen; Beschreibung in `docs/ORE_PROCESSING.md`. Grenzen: Energized Smelter blockiert (Vanilla-Ofen), keine Pipes (Nachbarn/Hand), Schwefelsäure und Wasser per `/data merge` statt aus der vollen Oxidizer/Infuser/Rotary-Kette.)*
-- [ ] Volle Tanks, Durchsatzlimits, Chemie-/Fluid-Verluste und Weltneustarts testen.
+- [x] Plan chemical IDs/registry and network/datapack sync. *(Plan in `docs/CHEMISTRY.md`, tables via `scripts/gen_chemicals.py` (18 fluids, 64 chemicals). Chemicals run as `mekanism:chemical/<id>` fluids in Horizon's block entity tanks, content sent to the client via update tag; tested in game 09.11.2026 with hydrogen and brine.)*
+- [ ] Fluids: water, steam, brine, lithium, heavy water, nutritional paste etc. *(IDs, names and colors in `chemicals_table.rs`; tanks store and show them. Open: production by machines, buckets for mod fluids (Horizon has none).)*
+- [ ] Chemicals: hydrogen, oxygen, chlorine, sulfur components, ethene, slurries, pigments, isotopes etc. *(IDs, names and colors in `chemicals_table.rs`; the Chemical Tank stores them. Oxygen and hydrogen chloride fill the Purification/Injection Chamber from items (flint, salt) for now, osmium the Compressor. Open: production by machines.)*
+- [x] Fluid Tank and Chemical Tank (Basic/Advanced/Elite/Ultimate/Creative). *(Tested in game 09.11.2026 via `horizon-ctl` (`docs/TESTLOG.md`, M06 tanks): filling, buckets (water/lava), auto-eject downwards, Dumping/Dumping Excess, Creative stays full, item keeps its content, fluid visible in the glass. Tier values by unit test. Not ported: item fill slots, chemical side config, edit mode, redstone; a lava tank gives no block light; drawn wrong with a shader pack (Horizon).)*
+- [x] Mechanical Pipes and Pressurized Tubes (four tiers). *(Tested in game 13.11.2026 (base chain, tube with hydrogen, restart; "M06 acceptance" in `docs/TESTLOG.md`); throughput into large tanks (125 instead of 250 mB/t) and tube arm to fluid tanks fixed and rechecked the same day; higher tiers and pipe chains of 200+ blocks untested. 8 blocks `mekanism:<tier>_mechanical_pipe` / `_pressurized_tube`, recipes, names, textures from upstream; capacity/rate per tier from `PipeTier`/`TubeTier` (unit test). Logic `transmitter.rs`, host `transmitters.rs`: one Horizon tank per block (pipe fluids, tube chemicals), pushes up to the rate into neighbors with a lower fill level each tick (no network, capacity and rate apply per block, not per network); arms as block states `down`..`east`. Blockers/limits: Horizon has no transmitter network, Mekanism's OBJ models (own loader) are replaced by boxes; pull/push/off side modes missing. See `docs/CHEMISTRY.md`.)*
+- [x] Thermodynamic Conductors and heat system. *(Tested in game 13.11.2026 (Heat Generator with lava, two conductors, about 323 K after 200 ticks, restart); higher tiers untested. 4 blocks `mekanism:<tier>_thermodynamic_conductor`: heat capacity 1, inverse conduction 5, insulation 10/400/8,000/100,000 (`ConductorTier`), heat between neighbors after `ITileHeatHandler.simulateAdjacent` (calorimetry) and loss to the air (`simulateEnvironment`) in `transmitter.rs`; connects with conductors and the Heat Generator (takes and gives heat through its `mekanism_heat`). Limits: no heat network (each conductor computes on its own in tick order), no other heat sources/sinks, since Boiler, Fission, Fusion, Resistive Heater and others are missing.)*
+- [x] Electric Pump and Fluidic Plenisher. *(Tested in game 11.11.2026 (`docs/TESTLOG.md`): pump 2 FE/t, storage 8 FE, one source per 19 ticks, water stays (`water_source_conversion`), lava is used up, follows sources within radius 80, gives 256 mB/t upwards into a Fluid Tank; Plenisher 20 ticks per block, breadth-first search downwards, then refill. Logic `pump.rs`, host `pumps.rs`. Not ported: upgrades, heavy water filter, item slots, redstone, sneak reset; limits in `docs/KNOWN_ISSUES.md`.)*
+- [x] Electrolytic Separator. *(Tested in game 10.11.2026: 4 FE/t (2 x hydrogen fuel value 2), storage 16 FE, one pass per tick, all `mekanism:separating` recipes (water to 2 hydrogen + 1 oxygen, brine 10 mB to sodium + chlorine), input 24,000 mB, left/right output 2,400 mB each, ejects into all neighbors (1,024 mB/t), a full output pauses, input only recipe fluids. Fluid input through the tank API (`block_entity_fluids`): neighbors and pipes fill it; water bucket missing (Horizon hook only for tanks). Not ported: item slots (fluid/chemical/energy), left/right dump modes, side config; deuterium recipe (`mekanismgenerators:deuterium`, `energy_multiplier` 2) follows with the Fusion/Generators chemical set.)*
+- [x] Chemical Oxidizer and Chemical Infuser. *(Tested in game 10.11.2026: Oxidizer 15 FE/t, 100 ticks, all `mekanism:oxidizing` recipes (sulfur dioxide 100 mB per dust), output tank 10,000 mB; Infuser 15 FE/t, one pass per tick, `chemical_infusing` in both tank orders, three tanks of 10,000 mB each. Chemicals sit in Horizon's block entity tanks (`fluids`): neighbor tanks and machines fill the Infuser inputs (`block_entity_accepts_fluid` by recipe), the output is ejected into all neighbors (1,024 mB/t); a full output pauses; content after restart. Missing: chemical item slots (fill/empty tanks by item), side config/auto-eject switch (always all sides), recipe pair check on filling (Horizon's hook does not know the other tank), arrow animation in the Infuser; crafting recipes (`mek_data` with Dynamic Tank) missing until Dynamic Tank/personal storage exist, test via `/give`. Gauge layout simplified (176x166 instead of Mekanism's larger GUI).)*
+- [x] Rotary Condensentrator. *(Tested in game 10.11.2026: 2 FE/t, storage 8 FE, one pass per tick, all `mekanism:rotary` recipes in both directions, one tank each (chemical left, fluid right) with 10,000 mB, mode button in the GUI (default chemical -> fluid, stays after restart), the output tank ejects into neighbors; fluid output into water/fluid tank and chemical output into a Chemical Tank. Blocker/limit: Horizon's `block_entity_accepts_fluid` and the tank sides are static, so neighbors fill and empty both tanks regardless of the mode (Mekanism locks the output tank against filling). Not ported: item slots, side config.)*
+- [x] Purification Chamber and Chemical Injection Chamber. *(Tested in game 10.11.2026 (`docs/TESTLOG.md`): iron to clumps with oxygen, gunpowder to sulfur with hydrogen chloride, stops with an empty tank. Purification 10 FE/t, Injection 15 FE/t, tank 210 mB, 1 mB per tick, all `purifying`/`injecting` recipes, clump items. Chemicals only from items for now (flint: oxygen, salt: hydrogen chloride); steam recipes run only once a machine makes steam.)*
+- [x] Chemical Dissolution Chamber, Chemical Washer, Chemical Crystallizer. *(Tested in game 11.11.2026 (`docs/TESTLOG.md`): Dissolution 16 FE/t, 100 ticks, acid 1 mB per tick, ore to 1,000 mB dirty slurry; Washer 5 FE/t, one pass per tick, 5 mB water per mB slurry; Crystallizer 15 FE/t, 200 ticks, 200 mB clean slurry per crystal; all `dissolution`, `washing`, `crystallizing` recipes, tanks of 10,000 mB each, output tanks eject into neighbors, a full output pauses, empty acid holds the progress. New items: crystals, shards, dirty dusts for 7 metals; slurries were already in the chemical table. Missing: chemical item slots, side config.)*
+- [x] Pressurized Reaction Chamber, Isotopic Centrifuge, Solar Neutron Activator. *(Implemented 13.11.2026, tested in game 13.11.2026 (Reaction Chamber, Centrifuge, Activator, GUI, restart; "M06 acceptance" in `docs/TESTLOG.md`; Reaction without energy and Activator in other biomes untested): Reaction 2 FE/t + `energy_required`, duration per recipe, all or nothing; Centrifuge 8 FE/t, one pass per tick; Activator without energy, rate by biome and sun. New items `substrate`, `hdpe_pellet`, Generators chemicals deuterium/tritium/fusion fuel. Limits: 2-block height of Centrifuge and Activator (bounding not ported), pellet recipes missing (radiation), side config; details in `docs/CHEMISTRY.md`, test plan in `docs/TESTLOG.md`.)*
+- [x] Nutritional Liquifier, Pigment Extractor, Pigment Mixer, Painting Machine. *(Done, tested in game 13.11.2026 (Liquifier, Extractor, Mixer, Painting, restart; "M06 acceptance" in `docs/TESTLOG.md`; a one-time loss of 2 red dyes in the Extractor not reproduced); unit tests in `logic/energy`. Liquifier 8 FE/t, 100 ticks, fluid tank 10,000 mB Nutritional Paste (food x 50 mB), 40 vanilla food recipes `mekanism:liquification` (Horizon has no API that reads an item's food values, hence a list instead of Mekanism's dynamic recipe; mod food and container return (bowl) missing); Pigment Extractor 5 FE/t, 100 ticks, pigment tank 20,000 mB, 275 `pigment_extracting` recipes; Pigment Mixer 5 FE/t, one pass per tick, inputs 1,000 mB, output 2,000 mB, 16 `pigment_mixing` recipes (crafting needs `hdpe_rod`, M06 Advanced Chemistry); Painting Machine 5 FE/t, 200 ticks, pigment tank 15,000 mB, 288 `painting` recipes (13 categories, `neoforge:difference` resolved to lists in the importer), new item `dye_base`. All run through existing operations (`Op::Item`, `Op::Infuse`); not ported: chemical item slots (pigment items), side config, arrow animations.)*
+- [x] Ore processing and multiple yields (up to the original peak values) as an end-to-end chain. *(Tested in game 11.11.2026: 1 iron ore to 5 iron ingots via Dissolution, Washer, Crystallizer, Injection, Purification, Crusher, Enrichment, furnace; description in `docs/ORE_PROCESSING.md`. Limits: Energized Smelter blocked (vanilla furnace), sulfuric acid and water via `/data merge` instead of the full Oxidizer/Infuser/Rotary chain.)*
+- [ ] Test full tanks, throughput limits, chemical/fluid losses and world restarts.
 
-## M07 - Factories, Upgrades, Automatisierung [P2]
+## M07 - Factories, upgrades, automation [P2]
 
-- [ ] Basic/Advanced/Elite/Ultimate Factories für relevante Processing-Typen.
-- [ ] Parallele Verarbeitung, Slot-Belegung, Upgrade-Mechanik.
-- [ ] Speed, Energy, Muffling und weitere Original-Upgrades.
-- [ ] Tier Installer und Factory-Upgrades.
-- [ ] Configurator: Rotieren, Seitenwahl, Redstone-Modi.
-- [ ] Configuration Card und Network Reader.
-- [ ] Logistical Sorter und produktionsfähige Automation.
-- [ ] Redstone-/Comparator-/Hopper-Kompatibilitaet und Stresstests.
+- [ ] Basic/Advanced/Elite/Ultimate Factories for the relevant processing types. *(Built in Wave 1 (`docs/sessions/m07-factories.md`): 32 factories for Enriching, Crushing, Compressing, Combining, Purifying, Injecting, Infusing, Sawing. Not accepted in game yet; the capacity formula differs from the original.)*
+- [ ] Parallel processing, slot assignment, upgrade mechanics. *(Built with the factories, not accepted in game.)*
+- [ ] Speed, Energy, Muffling and other original upgrades. *(Speed x8 accepted in game 18.11.2026: 1 operation per 20 ticks, buffer 9,500 FE. Energy and Muffling not tested in game. Chemical, Anchor, Filter, Stone Generator and XP upgrades exist only as items without effect.)*
+- [ ] Tier Installer and factory upgrades. *(4 Tier Installers built, not accepted in game.)*
+- [ ] Configurator: rotate, side selection, redstone modes. *(Rotate mode accepted in game 18.11.2026 (machine east/south, cube up). Other modes blocked: Horizon sides are static per block type.)*
+- [ ] Configuration Card and Network Reader.
+- [ ] Logistical Sorter and production-ready automation.
+- [ ] Redstone/comparator/hopper compatibility and stress tests.
 
-## M08 - Logistik, Lager und Spezialmaschinen [P2]
+## M08 - Logistics, storage and special machines [P2]
 
-- [ ] Logistical Transporters (vier Tiers), Restrictive und Diversion Transporter.
-- [ ] Routenfindung, Filter, Prioritaeten, Backpressure und Netzwerk-Reload.
-- [x] Bins (Basic bis Ultimate und Creative): Menge im Block-Entity-NBT (Horizon-Slots enden bei 99), Hopper fuellen/leeren ueber zwei Slots, Rechtsklick vorn legt die Hand ein, Linksklick vorn nimmt 1 Item (Sneak: Stack), Sneak + leere Hand sperrt den Typ (vorn) oder schaltet Auto-Eject (Seiten). Item behaelt den Inhalt, Front zeigt Item und Menge. Kapazitaeten nach `BinTier`, Creative `i32::MAX`. Siehe `native/.../bin.rs`, `bins.rs`.
-- [x] Personal Chest und Personal Barrel: 9x6-Menue, Besitzer = Platzierer (UUID im NBT), Oeffnen und Abbauen nur fuer Besitzer oder Operatoren, Hopper ausgesperrt. Kein Security Desk (Robit/Security Desk offen). Siehe `storage.rs`, `storages.rs`.
-- [ ] Chargepad: nicht portiert. Der Block braucht Spieler-Inventar-Zugriff pro Tick und Item-Energie fremder Items; Horizon bietet dafuer nur `player_tick` und `set_inventory_slot`, aber keinen Item-Energie-Helfer. Siehe `docs/KNOWN_ISSUES.md`.
-- [ ] Digital Miner und Seismic Vibrator.
-- [ ] Teleporter, Portable Teleporter, Teleporter Frames.
-- [ ] Quantum Entangloporter mit Energie, Items, Fluids und Chemicals.
-- [ ] Robit und Security Desk.
+- [ ] Logistical Transporters (four tiers), Restrictive and Diversion Transporter. *(Built in Wave 1 (`docs/sessions/m08-cables-transport.md`). Accepted in game 18.11.2026: arm click sets "Pull", items flow chest to chest. Not tested in game: tier speeds, Restrictive, Diversion with redstone.)*
+- [ ] Route finding, filters, priorities, backpressure and network reload. *(Dijkstra over transporter blocks (512 blocks), restart keeps items in transit (unit tests); no colors, no stack merging.)*
+- [x] Bins (Basic to Ultimate and Creative): amount in the block entity NBT (Horizon slots end at 99), hoppers fill/empty through two slots, right-click on the front puts the hand in, left-click on the front takes 1 item (sneak: stack), sneak + empty hand locks the type (front) or toggles auto-eject (sides). The item keeps its content, the front shows item and amount. Capacities after `BinTier`, Creative `i32::MAX`. See `native/.../bin.rs`, `bins.rs`.
+- [x] Personal Chest and Personal Barrel: 9x6 menu, owner = placer (UUID in NBT), opening and breaking only for the owner or operators, hoppers locked out. No Security Desk (Robit/Security Desk open). See `storage.rs`, `storages.rs`.
+- [ ] Chargepad: not ported. The block needs player inventory access per tick and item energy of foreign items; Horizon only offers `player_tick` and `set_inventory_slot` for that, but no item energy helper. See `docs/KNOWN_ISSUES.md`.
+- [x] Digital Miner. *(Wave 1, accepted in game 18.11.2026: 17 bounding blocks + main block (3×3×2); without a filter and not inverted it mines nothing (as in the original); inverted with radius 2, Y 60 to 63 it mines, uses energy, shows the active model and ejects into the chest 2 behind and 1 above; Silk Touch gives stone instead of cobblestone at 12× energy; settings survive a restart. Not ported: redstone, side config, security, upgrades, XP, anchor.)*
+- [ ] Seismic Vibrator. *(Not built.)*
+- [x] Teleporter, Portable Teleporter, Teleporter Frames. *(Wave 1, accepted in game 18.11.2026: teleport A to B costs energy (-119 FE), too little energy means no teleport; Portable Teleporter teleports (-116 FE); frequencies survive a restart. Channel selection replaces the text entry GUI; GUI labels overlap.)*
+- [ ] Quantum Entangloporter with energy, items, fluids and chemicals. *(Wave 1. Accepted in game 18.11.2026 for items and energy: sharing between members, restarts without duplication, a member whose chunk unloads gives its window back. Fluids, chemicals and members in different dimensions not tested.)*
+- [ ] Robit and Security Desk.
 - [ ] QIO Drive Array, Drives, Dashboard, Importer, Exporter, Redstone Adapter, Portable Dashboard.
-- [ ] Persistenz, Dimensionen und Multiplayer-Berechtigungen testen.
+- [ ] Test persistence, dimensions and multiplayer permissions.
 
-## M09 - Multiblocks und Industrie [P2]
+## M09 - Multiblocks and industry [P2]
 
-- [ ] Allgemeines Multiblock-Struktursystem mit Formung, Abbruch, Chunkgrenzen und Validierung.
-- [ ] Dynamic Tank und Dynamic Valve.
-- [ ] Thermal Evaporation Plant (Controller, Valves, Blocks).
-- [ ] Induction Matrix inkl. Cells/Providers/Ports für alle Tiers.
-- [ ] Thermoelectric Boiler inkl. Heat/Steam-Verarbeitung.
-- [ ] Industrial Turbine: Rotor, Coil, Vent, Saturating Condenser, Logic.
-- [ ] Multiblock-GUI, Statusanzeige, Save/Load und Rebuild testen.
+- [x] General multiblock structure system with forming, breaking, chunk borders and validation. *(Wave 1 (`docs/sessions/m09-multiblocks.md`), accepted in game 18.11.2026: forming, invalid structure without a provider, dissolving and re-forming keep the content, chunk unload keeps the structure. Polling: forming can take up to about 10 s.)*
+- [x] Dynamic Tank and Dynamic Valve. *(Accepted in game 18.11.2026: 432,000 mB capacity, valve in Both mode takes inflow (fixed during acceptance).)*
+- [ ] Thermal Evaporation Plant (controller, valves, blocks). *(Only validator rules prepared, no host logic.)*
+- [x] Induction Matrix incl. cells/providers/ports for all tiers. *(Accepted in game 18.11.2026: 3×4×3 with cell and provider forms (8 G capacity, 256 k transfer); port input from a Creative Cube charges the matrix, port output charges a Basic Cube.)*
+- [ ] Thermoelectric Boiler incl. heat/steam processing.
+- [ ] Industrial Turbine: rotor, coil, vent, Saturating Condenser, logic.
+- [ ] Test multiblock GUI, status display, save/load and rebuild.
 
-## M10 - Reaktoren, Strahlung und Endgame [P3]
+## M10 - Reactors, radiation and endgame [P3]
 
-- [ ] Nuclear Fuel- und Uranium-/Fissile-Recipe-Ketten.
-- [ ] Fission Reactor: Casings, Ports, Logic, Assemblies, Rods, Kühlung.
-- [ ] Radiation-System, Radioactive Waste Barrel, Dosimeter, Hazmat.
-- [ ] Plutonium, Polonium, Pellets und deren Verarbeitung.
-- [ ] Fusion Reactor, Hohlraum, Brennstoff, Laser-Zuendung.
-- [ ] SPS (Supercritical Phase Shifter), Antimatter, Supercharged Coils.
+- [ ] Nuclear fuel and uranium/fissile recipe chains.
+- [ ] Fission Reactor: casings, ports, logic, assemblies, rods, cooling.
+- [ ] Radiation system, Radioactive Waste Barrel, Dosimeter, Hazmat.
+- [ ] Plutonium, polonium, pellets and their processing.
+- [ ] Fusion Reactor, Hohlraum, fuel, laser ignition.
+- [ ] SPS (Supercritical Phase Shifter), antimatter, Supercharged Coils.
 - [ ] Antiprotonic Nucleosynthesizer.
 - [ ] Laser, Laser Amplifier, Laser Tractor Beam.
-- [ ] Stabilitaet, Abschaltung, Unfall-/Sicherheitslogik und Save/Load testen.
+- [ ] Test stability, shutdown, accident/safety logic and save/load.
 
-## M11 - Ausruestung, Items und Spielhilfen [P2/P3]
+## M11 - Gear, items and gameplay aids [P2/P3]
 
-Hook-Prüfung und Machbarkeit je Item: [docs/ITEM_HOOKS.md](docs/ITEM_HOOKS.md). Nativ in `items.rs`/`gear.rs`. Items ohne Funktion werden nicht registriert.
+Hook check and feasibility per item: [docs/ITEM_HOOKS.md](docs/ITEM_HOOKS.md). Native in `items.rs`/`gear.rs`/`worn.rs`. Items without a function are not registered.
 
-- [x] Hook-Audit gegen `fdc87ae` (API 411): Item-Verwendung, Tick im Inventar, Energiepuffer, Item-NBT, Bewegung, Atmen, Tasten. Korrektur: `use_item_on` existiert (API 13), siehe `docs/TOOLS.md`.
-- [x] Atomic Disassembler: Energiepuffer, Abbau, ohne Haltbarkeit, Waffenplus (2.000 FE), Sneak-Modus Normal/Vein, Vein-Mining (Tag `atomic_disassembler_ore`, 128 Blöcke). *(Modi Slow/Fast/Off, Tempoänderung je Modus fehlen: Abbautempo ist statisch.)*
-- [ ] Electric Bow, Flamethrower: machbar (`arrow_loose`, `on_use_tick`, Gas im Item), nicht gebaut.
-- [ ] HDPE-Reinforced Elytra: Blocker, Rezept braucht `mekanism:hdpe_sheet` (M06).
-- [ ] Jetpack, Armored Jetpack, Free Runners, Armored Free Runners, Scuba Equipment: machbar (`inventory_tick`, `entity_set_velocity`, `living_breathe`, `living_incoming_damage`), nicht gebaut; Rüstungswerte brauchen den Java-Quellcode.
-- [ ] Hazmat Suit: Blocker, kein Radiation-System.
-- [ ] MekaSuit (alle Teile), Meka-Tool, Modification Station, Module: Blocker, kein Modulsystem.
-- [x] Canteen (Nutritional Paste, Trinken, Balken; Auffüllen per Rechtsklick auf Tank statt Nutritional Liquifier), Gauge Dropper (Block-Tanks statt GUI-Gauges), Dictionary (Tags nur aus generierter Liste).
-- [ ] Geiger Counter, Dosimeter: Blocker, kein Radiation-System.
-- [ ] Crafting Formula (Formulaic Assemblicator fehlt), Network Reader (Transmitter fehlen), Portable QIO Dashboard (QIO und Polonium-Pellets fehlen): Blocker.
-- [ ] Player-Movement, Item-NBT, Client/Server-Sync und Sicherheit testen. *(Item-NBT, Energie, Vein-Mining, Trinken und Dropper getestet, siehe TESTLOG; Bewegung, LAN und Server offen.)*
+- [x] Hook audit against `fdc87ae` (API 411): item use, tick in the inventory, energy buffer, item NBT, movement, breathing, keys. Correction: `use_item_on` exists (API 13), see `docs/TOOLS.md`.
+- [x] Atomic Disassembler: energy buffer, mining, no durability, weapon bonus (2,000 FE), sneak mode Normal/Vein, vein mining (tag `atomic_disassembler_ore`, 128 blocks). *(Modes Slow/Fast/Off and speed change per mode missing: mining speed is static.)*
+- [x] Flamethrower. *(Wave 1, accepted in game 18.11.2026: uses hydrogen, kills a pig. Hitscan cone instead of a flame entity; Heat mode acts like Combat.)*
+- [ ] Electric Bow. *(Built in Wave 1. Blocker: Horizon draws and shoots only `minecraft:bow` (hard-coded), and the host API has no call to spawn entities or projectiles.)*
+- [ ] HDPE-Reinforced Elytra: blocker, the recipe needs `mekanism:hdpe_sheet` (M06).
+- [x] Free Runners and Scuba equipment. *(Wave 1, accepted in game 18.11.2026: step height 1.1, back to 0.6 after taking them off; Scuba keeps air at 300 under water while oxygen drops, without the mask air falls; enchantments survive energy use.)*
+- [ ] Jetpack, Armored Jetpack, Armored Free Runners. *(Built in Wave 1 (`docs/sessions/m11-gear.md`), not accepted in game. No armor model on the body.)*
+- [ ] Hazmat Suit: blocker, no radiation system.
+- [ ] MekaSuit (all parts), Meka-Tool, Modification Station, modules: blocker, no module system.
+- [x] Canteen (Nutritional Paste, drinking, bar; refill by right-clicking a tank instead of the Nutritional Liquifier), Gauge Dropper (block tanks instead of GUI gauges), Dictionary (tags only from the generated list).
+- [ ] Geiger Counter, Dosimeter: blocker, no radiation system.
+- [ ] Crafting Formula (Formulaic Assemblicator has no behavior), Network Reader, Portable QIO Dashboard (QIO and polonium pellets missing): blocker.
+- [ ] Test player movement, item NBT, client/server sync and security. *(Item NBT, energy, vein mining, drinking and dropper tested, see TESTLOG; movement, LAN and server open.)*
 
-## M12 - Unterprojekte komplettieren [P2/P3]
+## M12 - Complete the subprojects [P2/P3]
 
 ### Mekanism: Generators
-Abgleich mit Upstream 26.3 (`31bb4906`) in `docs/GENERATORS.md`.
-- [x] Heat, Solar, Advanced Solar, Wind und Bio Generator (nativ, M04).
-- [x] Solar Panel, Turbine Blade, Hohlraum (Items), Turbine Casing/Rotor, Fission Reactor Casing, Fission Fuel Assembly, Control Rod Assembly, Fusion Reactor Frame, Reactor Glass, Laser Focus Matrix, Electromagnetic Coil, Rotational Complex, Saturating Condenser (Blöcke ohne Logik): Modelle, Texturen, Loot, Lang und Rezepte.
-- [x] `mekanismgenerators`-Namespace, Mod-Manifest und Abhängigkeit zu `mekanism` geprüft (Manifest hat kein Abhängigkeitsfeld).
-- [ ] Industrial Turbine, Fission Reactor, Fusion Reactor (Multiblock-Formung, Controller, Valves, Vents, Ports, Logic Adapter, GUIs): Blocker, braucht nativen Multiblock-Code (M09/M10). Turbine Blade lässt sich noch nicht in den Rotor stecken.
-- [x] Gas-Burning Generator (nativ, M04; `mekanism:electrolytic_core` ist craftbar).
-- [ ] Chemikalien/Fluide Deuterium, Tritium, Fusion Fuel, Bioethanol samt Eimern und Rezepten (Rotary, Separator, Neutron Activator): Blocker, Chemie-Tisch kennt nur `mekanism`, Horizon nur Vanilla-Fluide.
-- [ ] Fusion Reactor Frame ist nicht craftbar, bis `#c:pellets/polonium` existiert (M07). Module (Geothermal, Solar Recharging Unit): Modulsystem fehlt.
+Comparison with upstream 26.3 (`31bb4906`) in `docs/GENERATORS.md`.
+- [x] Heat, Solar, Advanced Solar, Wind and Bio Generator (native, M04).
+- [x] Solar Panel, Turbine Blade, Hohlraum (items), Turbine Casing/Rotor, Fission Reactor Casing, Fission Fuel Assembly, Control Rod Assembly, Fusion Reactor Frame, Reactor Glass, Laser Focus Matrix, Electromagnetic Coil, Rotational Complex, Saturating Condenser (blocks without logic): models, textures, loot, lang and recipes.
+- [x] `mekanismgenerators` namespace, mod manifest and dependency on `mekanism` checked (the manifest has no dependency field).
+- [ ] Industrial Turbine, Fission Reactor, Fusion Reactor (multiblock forming, controller, valves, vents, ports, logic adapter, GUIs): blocker, needs native multiblock code (M09/M10). Turbine Blade cannot be put into the rotor yet. *(Wave 1 added Turbine Valve/Vent, Fission Reactor Port/Logic Adapter, Fusion Reactor Controller/Port/Logic Adapter as plain blocks without function.)*
+- [x] Gas-Burning Generator (native, M04; `mekanism:electrolytic_core` is craftable).
+- [ ] Chemicals/fluids deuterium, tritium, fusion fuel, bioethanol with buckets and recipes (Rotary, Separator, Neutron Activator): blocker, the chemical table only knows `mekanism`, Horizon only vanilla fluids.
+- [ ] Fusion Reactor Frame is not craftable until `#c:pellets/polonium` exists (M07). Modules (Geothermal, Solar Recharging Unit): module system missing.
 
 ### Mekanism: Tools
-- [x] Paxels aus Wood, Stone, Copper, Iron, Gold, Diamond, Netherite (Axt-Aktion; Schaufel-Aktion fehlt, siehe `docs/TOOLS.md`).
-- [x] Tool-/Armor-Sets aus Bronze, Lapis, Osmium, Steel, Refined Glowstone, Refined Obsidian (inkl. Spear, Shield, Horse und Nautilus Armor).
-- [x] Haltbarkeit, Mining, Verzauberung, Reparatur und alle Rezepte.
-- [x] `mekanismtools`-Namespace und Assets prüfen.
-- [ ] Paxel als Schaufel (braucht nativen `use_on`-Hook), Schild-Textur, Haltbarkeits-Tooltip, Mob-Ausrüstung: Blocker in `docs/TOOLS.md`.
+- [x] Paxels of wood, stone, copper, iron, gold, diamond, netherite (axe action; shovel action missing, see `docs/TOOLS.md`).
+- [x] Tool/armor sets of bronze, lapis, osmium, steel, refined glowstone, refined obsidian (incl. spear, shield, horse and nautilus armor).
+- [x] Durability, mining, enchanting, repair and all recipes.
+- [x] Check the `mekanismtools` namespace and assets. *(Wave 1: shield textures, trim palette and all upstream lang keys added; nothing `missing` any more in parity.)*
+- [ ] Paxel as a shovel (needs a native `use_on` hook), shield texture, durability tooltip, mob equipment: blockers in `docs/TOOLS.md`.
 
 ### Mekanism: Additions
-- [x] Plastikvarianten: Slick, Glow, Reinforced, Transparent, Roads, Stairs, Slabs, Fences, Gates in allen 18 Farben (271 Blöcke, `content/mekanismadditions`, siehe `docs/ADDITIONS.md`).
-- [x] Glow Panels und Obsidian TNT (Obsidian TNT explodiert wie Vanilla-TNT, siehe unten).
-- [ ] Plastic-Grundrezept und Glow-Panel-Rezept: brauchen `mekanism:hdpe_sheet` (M06); Painting-Machine-Rezepte (`mekanism:painting`, Umfärben) sind seit M06 Gruppe 6 importiert (ingame ungetestet); Plastic und Glow Panels warten auf `hdpe_sheet`.
-- [ ] Obsidian TNT mit Radius 12 und Zündzeit: Blocker, eigene Entität/Explosion braucht nativen Code. Plastic Road ohne Geschwindigkeitsschub (`stepOn`), keine CTM/Emissive-Texturen, kein Lava-Fluid-Logging.
-- [ ] Balloons, Walkie-Talkies, Baby-Mobs und Spawn Eggs: nur untersucht, nicht gebaut. Horizon-Content kennt `entity_type` (Vanilla-Vorlage + Attribute), aber keine eigene KI, Modelle, Biom-Spawns, Entity-Interaktion oder Netzwerk. Braucht nativen Code, siehe `docs/ADDITIONS.md`.
-- [x] `mekanismadditions`-Namespace, Modelle (je Farbe vorgefärbt) und Assets.
+- [x] Plastic variants: Slick, Glow, Reinforced, Transparent, roads, stairs, slabs, fences, gates in all 18 colors (271 blocks, `content/mekanismadditions`, see `docs/ADDITIONS.md`).
+- [x] Glow Panels and Obsidian TNT (Obsidian TNT explodes like vanilla TNT, see below).
+- [ ] Plastic base recipe and Glow Panel recipe: need `mekanism:hdpe_sheet` (M06); Painting Machine recipes (`mekanism:painting`, recoloring) are imported since M06 group 6, recoloring at the crafting table since Wave 1 (untested in game); plastic and Glow Panels wait for `hdpe_sheet`.
+- [ ] Obsidian TNT with radius 12 and fuse time: blocker, its own entity/explosion needs native code. Plastic Road without speed boost (`stepOn`), no CTM/emissive textures, no lava fluid logging.
+- [ ] Balloons, Walkie-Talkies, baby mobs and spawn eggs: only researched, not built. Horizon content knows `entity_type` (vanilla template + attributes), but no own AI, models, biome spawns, entity interaction or network. Needs native code, see `docs/ADDITIONS.md`.
+- [x] `mekanismadditions` namespace, models (pre-colored per color) and assets.
 
-## M13 - Paritaet, Integration, Performance und Releases [fortlaufend]
+## M13 - Parity, integration, performance and releases [ongoing]
 
-- [x] Maschinenlesbare Liste `Original-ID -> Horizon-ID -> Status` pflegen. *(`python scripts/parity.py --upstream <Mekanism-Checkout>` schreibt `docs/parity.json` (Items, Blöcke, Rezepte, Tags, Modelle, Texturen, Lang-Keys, Loot; Status done/partial/blocked/missing) und `docs/PARITY.md` (Zähler je Mod/Kategorie, größte Lücken). Nach jedem Port-Schritt neu erzeugen und committen; `blocked` kommt aus den TODO-Blockern in `BLOCKERS` im Skript.)*
-- [x] Originalrezept-/Tag-/Asset-Abgleich automatisieren und Regressionen finden. *(`python scripts/parity.py --check` wertet die eingecheckte `docs/parity.json` gegen `content/` aus, ohne Upstream-Checkout, und endet mit Exit 1, wenn ein früher `done` markierter Eintrag verschwindet; läuft als CI-Schritt „Parity regression check“.)*
-- [ ] Testmatrix für jede Maschine: Rezepte, Energie, Fluids, Chemicals, GUI, Seiteneinstellungen.
-- [ ] Testmatrix für jede Block-Entity: Abbauen, Chunk-Unload, Neustart, neue Version, Multiplayer.
-- [ ] Performance: 1, 100, 1.000 aktive Maschinen; Energie- und Transportnetze.
-- [ ] Vollstaendigen Survival-Playthrough vom Osmium bis ins Endgame spielen.
-- [ ] AE2-Horizon- und weitere Technikmod-Interoperabilitaet mit klaren APIs testen.
-- [ ] Savegame-Migrationen, ID-Stabilitaet und Upgrade-Pfade dokumentieren.
-- [ ] GUI, Shader-Kompatibilitaet, deutsche/englische Übersetzung und Barrierefreiheit testen.
-- [x] README, Installationsanleitung (Windows, Content+Native), CHANGELOG, Known Issues erstellen. *(10.11.2026: `docs/INSTALL.md`, `CHANGELOG.md` (PR #1 bis #16), `docs/KNOWN_ISSUES.md`, `CONTRIBUTING.md`; README verlinkt sie.)*
-- [ ] Lizenz, Copyright und Asset-Attribution der Originaldateien vor Releases prüfen. *(Prüfung 10.11.2026 in `docs/LICENSES.md`: alles MIT, `LICENSE-MEKANISM` je Mod vorhanden; offen: Attribution in README/Mod-Beschreibung, Inhaber `SozialHilfe`/`VitaminStack`, Drittbeiträge, Horizon-Lizenz, Abgleich vor Release.)*
-- [ ] CI-Builds, Release-Artefakte, Hashes und Test-Beta dokumentieren.
-- [ ] Upstream-26.3-Änderungen regelmäßig vergleichen und diese Liste aktualisieren.
+- [x] Maintain a machine-readable list `original ID -> Horizon ID -> status`. *(`python scripts/parity.py --upstream <Mekanism checkout>` writes `docs/parity.json` (items, blocks, recipes, tags, models, textures, lang keys, loot; status done/partial/blocked/missing) and `docs/PARITY.md` (counts per mod/category, largest gaps). Regenerate and commit after each port step; `blocked` comes from the TODO blockers in `BLOCKERS` in the script.)*
+- [x] Automate the original recipe/tag/asset comparison and find regressions. *(`python scripts/parity.py --check` evaluates the checked-in `docs/parity.json` against `content/` without an upstream checkout and exits with 1 if an entry marked `done` earlier disappears; runs as the CI step "Parity regression check".)*
+- [ ] Test matrix for every machine: recipes, energy, fluids, chemicals, GUI, side settings.
+- [ ] Test matrix for every block entity: break, chunk unload, restart, new version, multiplayer.
+- [ ] Performance: 1, 100, 1,000 active machines; energy and transport networks.
+- [ ] Play a full survival playthrough from osmium to the endgame.
+- [ ] Test AE2-Horizon and other tech mod interoperability with clear APIs.
+- [ ] Document savegame migrations, ID stability and upgrade paths.
+- [ ] Test GUI, shader compatibility, German/English translation and accessibility.
+- [x] Create README, installation guide (Windows, content+native), CHANGELOG, Known Issues. *(10.11.2026: `docs/INSTALL.md`, `CHANGELOG.md` (PR #1 to #16), `docs/KNOWN_ISSUES.md`, `CONTRIBUTING.md`; the README links them. 18.11.2026: repository documentation translated to English.)*
+- [ ] Check license, copyright and asset attribution of the original files before releases. *(Check 10.11.2026 in `docs/LICENSES.md`: all MIT, `LICENSE-MEKANISM` present per mod; open: attribution in README/mod description, owners `SozialHilfe`/`VitaminStack`, third-party contributions, Horizon license, comparison before release.)*
+- [ ] Document CI builds, release artifacts, hashes and test beta.
+- [ ] Compare upstream 26.3 changes regularly and update this list.
 
-## Definition of Done (für jede einzelne Funktion)
+## Definition of Done (for every single feature)
 
-- [ ] Mit dokumentiertem Horizon-Build und passender API-Version erfolgreich gebaut.
-- [ ] Automatisierte Tests und Originalverhalten nachvollziehbar verglichen.
-- [ ] Ingame mit echten Survival-Inputs und Outputs getestet.
-- [ ] Speicherstand nach Save, Chunk-Reload und Neustart korrekt.
-- [ ] Keine Duplizierung, fehlenden Drops oder offensichtliche Performance-/Multiplayer-Fehler.
-- [ ] Code, Log/Screenshot, README/CHANGELOG und Commit/PR vorhanden.
+- [ ] Built successfully with a documented Horizon build and a matching API version.
+- [ ] Automated tests and original behavior compared traceably.
+- [ ] Tested in game with real survival inputs and outputs.
+- [ ] Save state correct after save, chunk reload and restart.
+- [ ] No duplication, missing drops or obvious performance/multiplayer bugs.
+- [ ] Code, log/screenshot, README/CHANGELOG and commit/PR present.
 
-> Eine Phase ist nur fertig, wenn ihre Abnahmebedingungen erfüllt sind. Ein Block, der im Inventar erscheint, ist noch keine funktionierende Maschine. Es ist auch nicht garantiert, dass Horizon heute schon alle benoetigten nativen APIs anbietet; API-Luecken werden als eigene Issues dokumentiert.
+> A phase is only done when its acceptance conditions are met. A block that shows up in the inventory is not a working machine yet. It is also not guaranteed that Horizon already offers all needed native APIs today; API gaps are documented as their own issues.
 
-## Quellverweise
+## Sources
 
-- [Originalversion `gradle.properties`](https://github.com/mekanism/Mekanism/blob/26.3/gradle.properties)
+- [Original version `gradle.properties`](https://github.com/mekanism/Mekanism/blob/26.3/gradle.properties)
 - [Original Blocks](https://github.com/mekanism/Mekanism/blob/26.3/src/main/java/mekanism/common/registries/MekanismBlocks.java)
 - [Original Items](https://github.com/mekanism/Mekanism/blob/26.3/src/main/java/mekanism/common/registries/MekanismItems.java)
 - [Original Block Types](https://github.com/mekanism/Mekanism/blob/26.3/src/main/java/mekanism/common/registries/MekanismBlockTypes.java)
@@ -255,4 +259,4 @@ Abgleich mit Upstream 26.3 (`31bb4906`) in `docs/GENERATORS.md`.
 - [Tools Items](https://github.com/mekanism/Mekanism/blob/26.3/src/tools/java/mekanism/tools/common/registries/ToolsItems.java)
 - [Additions Blocks](https://github.com/mekanism/Mekanism/blob/26.3/src/additions/java/mekanism/additions/common/registries/AdditionsBlocks.java)
 - [Horizon Native Mod API](https://github.com/horizon-rust/horizon/blob/main/docs/native-mods.md)
-- [Horizon Content-Mod-Dokumentation](https://github.com/horizon-rust/horizon/blob/main/docs/mods.md)
+- [Horizon content mod documentation](https://github.com/horizon-rust/horizon/blob/main/docs/mods.md)

@@ -1,48 +1,48 @@
-# Lizenzen und Attribution
+# Licenses and Attribution
 
-Prüfung vom 10.11.2026 (TODO M13: „Lizenz, Copyright und Asset-Attribution vor Releases prüfen“). Keine Rechtsberatung. Ergebnis: Die Grundlage ist sauber (alles MIT), aber es gibt Lücken, die vor einem Release geschlossen werden sollten.
+Check of 10.11.2026 (TODO M13: "check license, copyright and asset attribution before releases"). This is not legal advice. Result: the base is clean (everything MIT), but there are gaps that should be closed before a release.
 
-## Was vorhanden ist
+## What exists
 
-| Datei / Bereich | Lizenz | Befund |
+| File / area | License | Finding |
 |---|---|---|
-| `LICENSE` (Repository-Wurzel) | MIT, `Copyright (c) 2026 SozialHilfe` | vorhanden |
-| `content/mekanism/LICENSE-MEKANISM` | MIT, `Copyright (c) 2017-2025 Aidan C. Brady` | vorhanden |
-| `content/mekanismgenerators/LICENSE-MEKANISM` | identisch (per `cmp` geprüft) | vorhanden |
-| `content/mekanismtools/LICENSE-MEKANISM` | identisch | vorhanden |
-| `content/mekanismadditions/LICENSE-MEKANISM` | identisch | vorhanden |
-| `logic/energy/Cargo.toml`, `native/mekanism_native/api/Cargo.toml` | `license = "MIT"` | vorhanden |
+| `LICENSE` (repository root) | MIT, `Copyright (c) 2026 SozialHilfe` | present |
+| `content/mekanism/LICENSE-MEKANISM` | MIT, `Copyright (c) 2017-2025 Aidan C. Brady` | present |
+| `content/mekanismgenerators/LICENSE-MEKANISM` | identical (checked with `cmp`) | present |
+| `content/mekanismtools/LICENSE-MEKANISM` | identical | present |
+| `content/mekanismadditions/LICENSE-MEKANISM` | identical | present |
+| `logic/energy/Cargo.toml`, `native/mekanism_native/api/Cargo.toml` | `license = "MIT"` | present |
 
-Mekanism steht unter MIT, daher ist die Weitergabe von Code, Texturen, Modellen und Sounds daraus erlaubt, solange Copyright-Hinweis und Lizenztext mitgehen. Die vier `LICENSE-MEKANISM` liegen im Quellordner jeder Content-Mod.
+Mekanism is under the MIT license, so passing on code, textures, models and sounds from it is allowed, as long as the copyright notice and license text go with them. The four `LICENSE-MEKANISM` files are in the source folder of each content mod.
 
-## Herkunft der Inhalte je Content-Mod
+## Origin of the content per content mod
 
-| Mod | Aus Mekanism übernommen (Skript) | Eigen |
+| Mod | Taken from Mekanism (script) | Own |
 |---|---|---|
-| `mekanism` | Texturen (188 PNG), Modelle, Blockstates, Rezepte, Tags, Namen, 10 Sounds (`import_upstream.py`, `import_energy_cube.py`) | Registry-Deklarationen, Loot, Worldgen (`gen_resources.py`), Debug-Blöcke |
-| `mekanismgenerators` | Modelle, Texturen (8 PNG), 4 Sounds (`import_upstream.py`, `import_generator_models.py`) | Registry, Loot |
-| `mekanismtools` | Texturen (121 PNG), Equipment-Assets, Rezepte, Tags, Namen (`gen_tools.py`) | Material-Tabellen aus Mekanisms Standardwerten, Komponenten |
-| `mekanismadditions` | Modelle, Blockstates, Loot, Rezepte, Tags, Namen; Texturen aus Upstream-Graustufen **vorgefärbt** (`gen_additions.py`, Pillow) | Block-Deklarationen |
-| `native/mekanism_native`, `logic/energy` | Werte (Tier-Kapazitäten, Rezeptzeiten, Energiekosten) nach Mekanism-Quelltext; Rust-Code selbst geschrieben | alles Code |
+| `mekanism` | Textures (188 PNG), models, blockstates, recipes, tags, names, 10 sounds (`import_upstream.py`, `import_energy_cube.py`) | Registry declarations, loot, worldgen (`gen_resources.py`), debug blocks |
+| `mekanismgenerators` | Models, textures (8 PNG), 4 sounds (`import_upstream.py`, `import_generator_models.py`) | Registry, loot |
+| `mekanismtools` | Textures (121 PNG), equipment assets, recipes, tags, names (`gen_tools.py`) | Material tables from Mekanism's default values, components |
+| `mekanismadditions` | Models, blockstates, loot, recipes, tags, names; textures **pre-colored** from upstream grayscale (`gen_additions.py`, Pillow) | Block declarations |
+| `native/mekanism_native`, `logic/energy` | Values (tier capacities, recipe times, energy costs) after the Mekanism source code; the Rust code itself is written from scratch | all code |
 
-## Lücken und Empfehlungen
+## Gaps and recommendations
 
-1. **Kein Mekanism-Hinweis im Wurzel-`LICENSE`, `README` und in den Mod-Archiven.** `LICENSE-MEKANISM` liegt nur im Quellordner. Ob `cargo horizon-mod build` die Datei in die `.hmod` packt, ist nicht geprüft. Prüfen und notfalls Hinweis in `description` bzw. Release-Notizen aufnehmen. Ein `NOTICE`/„Danksagung“-Abschnitt in `README.md` fehlt (README nennt Mekanism nur als Vorlage).
-2. **Copyright-Zeitraum.** Die kopierte Lizenz nennt `2017-2025`. Upstream-Branch 26.3 kann ein neueres Jahr tragen. Beim nächsten Upstream-Abgleich `LICENSE` neu kopieren (`import_upstream.py` liest sie aus dem Checkout) und vergleichen.
-3. **Inhaberangaben uneinheitlich.** `LICENSE` nennt `SozialHilfe`, `horizon-mod.toml` und das GitHub-Repository `VitaminStack`. Inhaber klären und einheitlich eintragen.
-4. **Drittbeiträge in Mekanism.** Mekanism-Assets stammen teils von Mitwirkenden (Texturen, Sounds, Modelle). Das Mekanism-Repository deklariert MIT für das Gesamtprojekt. Pro-Datei-Herkunft (z. B. Sounds, Blockbench-Modelle der Generatoren) ist hier nicht einzeln belegt. Vor einem Release die Upstream-Hinweise zu Assets prüfen (README/Credits/`docs`) und bei abweichenden Lizenzen die Datei entfernen oder ersetzen.
-5. **Abgeleitete Texturen.** Die Additions-Texturen sind farbige Ableitungen. Das ist unter MIT zulässig, sollte aber im Mod-Hinweis als „abgeleitet aus Mekanism-Texturen“ stehen.
-6. **Fehlende Attribution im Spiel.** Weder Mod-Beschreibungen (`horizon-mod.toml`) noch die Mod-Liste nennen Mekanism-Autoren. Die Beschreibung sagt „Unofficial“. Empfehlung: Satz „Basiert auf Mekanism (MIT, Aidan C. Brady und Mitwirkende)“ ergänzen.
-7. **Horizon-Abhängigkeit.** `native/.../api/Cargo.toml` bindet `horizon-client` aus `horizon-rust/horizon` ein. Deren Lizenz ist hier nicht geprüft. Für Release-Artefakte, die Horizon-Quellcode enthalten oder daraus gebaut sind, die Horizon-Lizenz prüfen.
-8. **Horizon-Entwürfe.** `docs/upstream/*.md` sind eigene Textentwürfe für Horizon, keine Kopien. Unkritisch.
-9. **Marken.** „Mekanism“ ist der Projektname des Originals. Der Port ist inoffiziell (README sagt das). Beibehalten und in Release-Seiten wiederholen.
-10. **Rust-Abhängigkeiten.** `logic/energy` hat eine `Cargo.lock`. Abhängigkeitslizenzen nicht ausgewertet (z. B. mit `cargo deny` / `cargo license` prüfen).
+1. **No Mekanism notice in the root `LICENSE`, `README` and in the mod archives.** `LICENSE-MEKANISM` is only in the source folder. Whether `cargo horizon-mod build` packs the file into the `.hmod` is not checked. Check it and, if needed, add a notice in `description` or in the release notes. A `NOTICE`/"credits" section in `README.md` is missing (README names Mekanism only as a template).
+2. **Copyright period.** The copied license says `2017-2025`. The upstream branch 26.3 may carry a newer year. At the next upstream comparison, copy `LICENSE` again (`import_upstream.py` reads it from the checkout) and compare.
+3. **Owner names are inconsistent.** `LICENSE` names `SozialHilfe`, `horizon-mod.toml` and the GitHub repository name `VitaminStack`. Clarify the owner and enter it consistently.
+4. **Third-party contributions in Mekanism.** Some Mekanism assets come from contributors (textures, sounds, models). The Mekanism repository declares MIT for the whole project. The per-file origin (e.g. sounds, Blockbench models of the generators) is not documented individually here. Before a release, check the upstream notes on assets (README/credits/`docs`) and, for deviating licenses, remove or replace the file.
+5. **Derived textures.** The Additions textures are colored derivatives. This is allowed under MIT, but the mod notice should say "derived from Mekanism textures".
+6. **Missing attribution in the game.** Neither the mod descriptions (`horizon-mod.toml`) nor the mod list name the Mekanism authors. The description says "Unofficial". Recommendation: add the sentence "Based on Mekanism (MIT, Aidan C. Brady and contributors)".
+7. **Horizon dependency.** `native/.../api/Cargo.toml` pulls in `horizon-client` from `horizon-rust/horizon`. Its license is not checked here. For release artifacts that contain Horizon source code or are built from it, check the Horizon license.
+8. **Horizon drafts.** `docs/upstream/*.md` are own text drafts for Horizon, not copies. Not critical.
+9. **Trademarks.** "Mekanism" is the project name of the original. The port is unofficial (README says so). Keep that and repeat it on release pages.
+10. **Rust dependencies.** `logic/energy` has a `Cargo.lock`. Dependency licenses are not evaluated (check e.g. with `cargo deny` / `cargo license`).
 
-## Checkliste vor einem Release
+## Checklist before a release
 
-- [ ] Inhaber im `LICENSE` klären (Punkt 3).
-- [ ] `LICENSE-MEKANISM` gegen aktuellen Upstream abgleichen (Punkt 2).
-- [ ] Prüfen, ob die Lizenzdatei in der `.hmod` landet, sonst beilegen (Punkt 1).
-- [ ] Attribution in README und Mod-Beschreibungen ergänzen (Punkte 1, 6).
-- [ ] Asset-Herkunft stichprobenartig gegen Upstream prüfen (Punkt 4).
-- [ ] Horizon-Lizenz und Rust-Abhängigkeiten prüfen (Punkte 7, 10).
+- [ ] Clarify the owner in `LICENSE` (point 3).
+- [ ] Compare `LICENSE-MEKANISM` against the current upstream (point 2).
+- [ ] Check whether the license file ends up in the `.hmod`, otherwise add it (point 1).
+- [ ] Add attribution in README and mod descriptions (points 1, 6).
+- [ ] Spot-check the asset origin against upstream (point 4).
+- [ ] Check the Horizon license and Rust dependencies (points 7, 10).

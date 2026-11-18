@@ -1,41 +1,41 @@
-# Mekanism: Generators, Abgleich mit Upstream (M12)
+# Mekanism: Generators, comparison with upstream (M12)
 
-Vergleich von `content/mekanismgenerators` mit Mekanism Generators 26.3 (Upstream-Commit `31bb4906`). Alle Assets, Rezepte und Tags kommen aus `scripts/import_upstream.py` und `scripts/import_generator_models.py`; die Registrierung steht in `scripts/gen_resources.py` (Abschnitt Generators).
+Comparison of `content/mekanismgenerators` with Mekanism Generators 26.3 (upstream commit `31bb4906`). All assets, recipes and tags come from `scripts/import_upstream.py` and `scripts/import_generator_models.py`; registration is in `scripts/gen_resources.py` (Generators section).
 
-Reihenfolge nach Änderungen: `gen_resources.py`, `import_upstream.py <Mekanism>`, `import_generator_models.py <Mekanism>`, `scripts/Build-Content.ps1`.
+Order after changes: `gen_resources.py`, `import_upstream.py <Mekanism>`, `import_generator_models.py <Mekanism>`, `scripts/Build-Content.ps1`.
 
-## Übernommen (Content, ohne Funktion außer dem Block selbst)
+## Taken over (content, no function except the block itself)
 
-| Upstream-ID | Stand |
+| Upstream ID | Status |
 |---|---|
-| `heat_generator`, `solar_generator`, `bio_generator`, `advanced_solar_generator`, `wind_generator` | funktionieren (nativ, M04), Rezepte, Modelle, Loot, Lang |
-| `gas_burning_generator` | funktioniert (nativ, M04): 1.000-mB-Chemical-Tank (Horizon-Block-Entity-Tank), Brennwerte aus `chemical_attribute_fuel` (Hydrogen 2, Ethene 8 FE je mB, max. 10 mB/t), Speicher 2.000 FE, Energie aus der Front, GUI mit Gauge, Energiebalken und Brennrate, Sound `tile.generator.gas`. Rezept braucht `mekanism:electrolytic_core` (neu craftbar) |
-| `solar_panel` | Item, Rezept |
-| `turbine_blade`, `hohlraum` | nur Item, Rezept (Hohlraum: Metallurgic Infuser, Rezept im Namespace `mekanismgenerators`); Hohlraum speichert keine Chemikalien |
-| `turbine_casing`, `turbine_rotor` (Modell `fence_post`), `fission_reactor_casing`, `fusion_reactor_frame`, `reactor_glass`, `laser_focus_matrix`, `electromagnetic_coil`, `rotational_complex`, `saturating_condenser`, `fission_fuel_assembly`, `control_rod_assembly` | nur Block: Modell, Textur, Loot, Lang, Rezept. Ohne Block-Entity und ohne Multiblock-Logik. Turbine Blade lässt sich nicht in den Rotor stecken |
+| `heat_generator`, `solar_generator`, `bio_generator`, `advanced_solar_generator`, `wind_generator` | work (native, M04), recipes, models, loot, lang |
+| `gas_burning_generator` | works (native, M04): 1,000 mB chemical tank (Horizon block entity tank), fuel values from `chemical_attribute_fuel` (Hydrogen 2, Ethene 8 FE per mB, max. 10 mB/t), storage 2,000 FE, energy from the front, GUI with gauge, energy bar and burn rate, sound `tile.generator.gas`. Recipe needs `mekanism:electrolytic_core` (now craftable) |
+| `solar_panel` | item, recipe |
+| `turbine_blade`, `hohlraum` | item only, recipe (Hohlraum: Metallurgic Infuser, recipe in the namespace `mekanismgenerators`); Hohlraum stores no chemicals |
+| `turbine_casing`, `turbine_rotor` (model `fence_post`), `fission_reactor_casing`, `fusion_reactor_frame`, `reactor_glass`, `laser_focus_matrix`, `electromagnetic_coil`, `rotational_complex`, `saturating_condenser`, `fission_fuel_assembly`, `control_rod_assembly` | block only: model, texture, loot, lang, recipe. No block entity and no multiblock logic. Turbine Blade cannot be put into the rotor |
 
-Block-Stärken wie upstream: Casings/Frame/Glas 5 / 9, übrige 3,5 / 16, Laser Focus Matrix 3,5 / 4,8.
+Block strengths as upstream: casings/frame/glass 5 / 9, the rest 3.5 / 16, Laser Focus Matrix 3.5 / 4.8.
 
-## Blockiert oder aufgeschoben (braucht nativen Code)
+## Blocked or postponed (needs native code)
 
-| Upstream-ID | Grund |
+| Upstream ID | Reason |
 |---|---|
-| Industrial Turbine (Multiblock) mit `turbine_valve`, `turbine_vent` | Formung, Dampf, Rotor-/Blattzahl, Kondensatoren, Energieabgabe. Valve und Vent noch nicht registriert, weil ohne Multiblock ohne Funktion |
-| Fission Reactor mit `fission_reactor_port`, `fission_reactor_logic_adapter` | Multiblock, Kühlmittel/Brennstoff/Abfall, Hitze, GUI |
-| Fusion Reactor mit `fusion_reactor_controller`, `fusion_reactor_port`, `fusion_reactor_logic_adapter` | Multiblock, Plasma, Laser, Hohlraum-Zündung. Der Rahmen ist craftbar nur, wenn `#c:pellets/polonium` existiert (fehlt, M07/Radioaktivität) |
-| Chemikalien `deuterium`, `tritium`, `fusion_fuel`, Rezept `chemical_infusing/fusion_fuel` | Chemikalien nur im nativen Chemie-Tisch (`gen_chemicals.py` kennt nur den Namespace `mekanism`); Tritium/Deuterium-Rezepte brauchen Rotary Condensentrator, Electrolytic Separator, Solar Neutron Activator |
-| Eimer und Fluide `bioethanol`, `deuterium`, `tritium`, `fusion_fuel` | Horizon kennt nur Vanilla-Fluide (siehe `docs/CHEMISTRY.md`) |
-| Module `geothermal_generator_unit`, `solar_recharging_unit` | Mekanism-Modulsystem fehlt |
-| Superheating Element (Blockstate upstream, kein Registrierungseintrag) | nicht registriert |
-| Schadensarten (`damage_type`), Advancements, EMI-Aliase | nicht übernommen (nativ bzw. ohne Gegenstück); die Strukturtags für die Multiblock-Prüfung kopiert der Importer mit |
+| Industrial Turbine (multiblock) with `turbine_valve`, `turbine_vent` | Forming, steam, rotor/blade count, condensers, energy output. Valve and Vent are not registered yet because they have no function without the multiblock |
+| Fission Reactor with `fission_reactor_port`, `fission_reactor_logic_adapter` | Multiblock, coolant/fuel/waste, heat, GUI |
+| Fusion Reactor with `fusion_reactor_controller`, `fusion_reactor_port`, `fusion_reactor_logic_adapter` | Multiblock, plasma, laser, Hohlraum ignition. The frame is craftable only if `#c:pellets/polonium` exists (missing, M07/radioactivity) |
+| Chemicals `deuterium`, `tritium`, `fusion_fuel`, recipe `chemical_infusing/fusion_fuel` | Chemicals only in the native chemistry table (`gen_chemicals.py` knows only the namespace `mekanism`); Tritium/Deuterium recipes need Rotary Condensentrator, Electrolytic Separator, Solar Neutron Activator |
+| Buckets and fluids `bioethanol`, `deuterium`, `tritium`, `fusion_fuel` | Horizon knows only vanilla fluids (see `docs/CHEMISTRY.md`) |
+| Modules `geothermal_generator_unit`, `solar_recharging_unit` | Mekanism module system is missing |
+| Superheating Element (blockstate upstream, no registration entry) | not registered |
+| Damage types (`damage_type`), advancements, EMI aliases | not taken over (native, or no counterpart); the importer copies the structure tags for the multiblock check |
 
-Namespace und Abhängigkeit: Der Mod `mekanismgenerators` nutzt Texturen (`mekanism:block/models/ports`), Tags und Rezeptzutaten aus `mekanism`; `mekanism` muss mitgeladen sein. Das Manifest hat kein Abhängigkeitsfeld, nur den Hinweis in der Beschreibung. Beide Mods in `horizon-mods.txt` einschalten.
+Namespace and dependency: The mod `mekanismgenerators` uses textures (`mekanism:block/models/ports`), tags and recipe ingredients from `mekanism`; `mekanism` must be loaded too. The manifest has no dependency field, only a note in the description. Enable both mods in `horizon-mods.txt`.
 
-## Gas-Burning Generator (nativ)
+## Gas-Burning Generator (native)
 
-Logik in `generator.rs` (`gas_tick`, Tabelle `GAS_FUELS`), Host-Seite in `generators.rs`. Brennstoff ist, was Upstream über das Daten-Map `chemical_attribute_fuel` listet: Hydrogen (Energiedichte 2) und Ethene (8), je höchstens 10 mB je Tick. Je Tick werden `min(ceil(10 x Füllstand), Vorrat)` mB verbrannt, begrenzt durch den freien Energiespeicher (2.000 FE); verbraucht wird `ceil(Energie / Dichte)` mB.
+Logic in `generator.rs` (`gas_tick`, table `GAS_FUELS`), host side in `generators.rs`. Fuel is what upstream lists through the data map `chemical_attribute_fuel`: Hydrogen (energy density 2) and Ethene (8), at most 10 mB per tick each. Each tick, `min(ceil(10 x fill level), supply)` mB are burned, limited by the free energy storage (2,000 FE); `ceil(energy / density)` mB are used.
 
-Nicht portiert, Horizon-Grenzen:
-- Der Tank ist von allen Seiten erreichbar (Mekanism: alle außer der Front), weil Horizons Flächen je Blocktyp gelten, nicht je Blickrichtung. Er nimmt nur Brennstoffe an (`block_entity_accepts_fluid`).
-- Kein Chemie-Item-Slot (Chemical Tank Items füllen/leeren), kein Energie-Slot, keine Redstone-Steuerung.
-- Weitere Brennstoffe anderer Mods (Datenmap) fehlen; die Tabelle ist fest.
+Not ported, Horizon limits:
+- The tank is reachable from all sides (Mekanism: all except the front) because Horizon's faces apply per block type, not per facing. It accepts only fuels (`block_entity_accepts_fluid`).
+- No chemical item slot (filling/emptying Chemical Tank items), no energy slot, no redstone control.
+- Fuels from other mods (data map) are missing; the table is fixed.

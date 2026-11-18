@@ -1,128 +1,128 @@
-# M08 – Spezialmaschinen (Session-Doku)
+# M08 – Special machines (session doc)
 
-Branch `claude/m08-special-machines-fb6601`. Upstream-Referenz: Mekanism 26.3 (`src/main/java/mekanism/common/...`).
-Mekanism ist MIT-lizenziert; der Hinweis bleibt erhalten.
+Branch `claude/m08-special-machines-fb6601`. Upstream reference: Mekanism 26.3 (`src/main/java/mekanism/common/...`).
+Mekanism is MIT-licensed; the notice is kept.
 
-**Wichtig:** Der Native-Build war in dieser Session nicht erlaubt. Nur die Horizon-freien Module wurden
-kompiliert und getestet (`cargo test --manifest-path logic/energy/Cargo.toml`, 149 Tests ok).
-Alle Host-Module sind **nicht compile-verifiziert** (siehe unten).
+**Important:** The native build was not allowed in this session. Only the Horizon-free modules were
+compiled and tested (`cargo test --manifest-path logic/energy/Cargo.toml`, 149 tests ok).
+All host modules are **not compile-verified** (see below).
 
 ## Commits
 
-| Commit | Inhalt |
+| Commit | Content |
 |---|---|
 | `7c3da58` | Oredictionificator |
-| `0bb896d` | Formulaic Assemblicator + Crafting Formula (nur Registrierung) |
+| `0bb896d` | Formulaic Assemblicator + Crafting Formula (registration only) |
 | `dc3ac70` | Digital Miner |
 
-Seismic Vibrator und Seismic Reader (Aufgabe 4, optional) wurden **nicht** begonnen.
+Seismic Vibrator and Seismic Reader (task 4, optional) were **not** started.
 
 ## 1. Oredictionificator
 
-Module: `oredict.rs` (Horizon-frei, 7 Tests), `oredicts.rs` (Host), `oredict_tags.rs` (generiert aus
-`scripts/gen_oredict_tags.py`), Router `special.rs`.
+Modules: `oredict.rs` (Horizon-free, 7 tests), `oredicts.rs` (host), `oredict_tags.rs` (generated from
+`scripts/gen_oredict_tags.py`), router `special.rs`.
 
-| Wert | Quelle |
+| Value | Source |
 |---|---|
-| Kein Energiebedarf | `TileEntityOredictionificator` |
-| Slots Eingang (56,115), Ausgang (164,115); GUI 236x230, Inventar bei (38,148) | `GuiOredictionificator` |
-| Erlaubte Tag-Präfixe `c:` + `ingots/ ores/ dusts/ nuggets/ storage_blocks/ raw_materials/` | `GeneralConfig.java:229-230` |
-| Pro Tick werden min(Anzahl, freier Platz) umgewandelt | `TileEntityOredictionificator.tickServer` |
+| No energy need | `TileEntityOredictionificator` |
+| Slots input (56,115), output (164,115); GUI 236x230, inventory at (38,148) | `GuiOredictionificator` |
+| Allowed tag prefixes `c:` + `ingots/ ores/ dusts/ nuggets/ storage_blocks/ raw_materials/` | `GeneralConfig.java:229-230` |
+| Each tick min(count, free space) items are converted | `TileEntityOredictionificator.tickServer` |
 
-Abweichungen:
-- Max. 8 Filter, 3 sichtbar; Tag und Ausgabe werden per Zyklus-Buttons gewählt (Horizon hat keine Texteingabe im Screen).
-- Eingangs-Match hybrid: generierte Tag-Tabelle ODER `server_item_in_tag` (siehe Blocker 1).
-- Tags anderer Mods unter `c:` sind nicht filterbar, wenn sie nicht in der Tabelle stehen.
-- Nicht portiert: Redstone-Modus, Seitenkonfiguration, Security, Upgrades.
+Differences:
+- Max. 8 filters, 3 visible; tag and output are chosen with cycle buttons (Horizon has no text input in screens).
+- Input matching is hybrid: generated tag table OR `server_item_in_tag` (see blocker 1).
+- Tags of other mods under `c:` cannot be filtered if they are not in the table.
+- Not ported: redstone mode, side configuration, security, upgrades.
 
 ## 2. Formulaic Assemblicator + Crafting Formula
 
-Nur registriert: Block, Item, Rezepte, Modelle, Lang. **Kein Verhalten** (Blocker 2).
+Registered only: block, item, recipes, models, lang. **No behavior** (blocker 2).
 
 ## 3. Digital Miner
 
-Module: `miner.rs` (Horizon-frei, 10 Tests), `miners.rs` (Host), Verdrahtung in `special.rs`, `energy.rs`, `lib.rs`.
+Modules: `miner.rs` (Horizon-free, 10 tests), `miners.rs` (host), wiring in `special.rs`, `energy.rs`, `lib.rs`.
 
-| Wert | Quelle |
+| Value | Source |
 |---|---|
-| Standard: Radius 10, minY 0, maxY 60 | `TileEntityDigitalMiner` |
+| Default: radius 10, minY 0, maxY 60 | `TileEntityDigitalMiner` |
 | maxRadius 32, silkMultiplier 12, ticksPerMine 80 | `GeneralConfig` |
-| Basisverbrauch 40 FE/Tick | `UsageConfig` (digitalMiner) |
-| Verbrauch/Tick: `ceil(base * (silk?12:1) * (1+max(0,(r-10)/22)) * (1+max(0,(maxY-minY-60)/(weltHöhe-1-60))))` | `MinerEnergyContainer.updateMinerEnergyPerTick` |
-| Suchreihenfolge: x schnellster, dann z, dann y; Startecke `(x-r, minY, z-r)` | `ThreadMinerSearch` / `TileEntityDigitalMiner` |
-| Abbau: nach Chunk in Fundreihenfolge, höchster Index zuerst; ein Block je 80 Ticks | `TileEntityDigitalMiner.tickServer` |
-| Auswurf alle 10 Ticks, durch die Zelle oben-hinten in den Behälter dahinter | `TileEntityDigitalMiner` |
-| 27 Slots bei (8+x*18, 92+y*18) | `GuiDigitalMiner` |
-| Fußabdruck x/z -1..1, y 0..1 (17 Bounding-Blöcke) | `BlockDigitalMiner` / `Attributes` |
-| Radius 0..32; minY in [Weltmin, maxY]; maxY in [minY, Weltmax] | `TileEntityDigitalMiner.setRadius/setMinY/setMaxY` |
-| `miner_blacklist`-Tag ist upstream leer | Datenpack |
+| Base usage 40 FE/tick | `UsageConfig` (digitalMiner) |
+| Usage/tick: `ceil(base * (silk?12:1) * (1+max(0,(r-10)/22)) * (1+max(0,(maxY-minY-60)/(worldHeight-1-60))))` | `MinerEnergyContainer.updateMinerEnergyPerTick` |
+| Search order: x fastest, then z, then y; start corner `(x-r, minY, z-r)` | `ThreadMinerSearch` / `TileEntityDigitalMiner` |
+| Mining: by chunk in discovery order, highest index first; one block per 80 ticks | `TileEntityDigitalMiner.tickServer` |
+| Ejection every 10 ticks, through the top-back cell into the container behind it | `TileEntityDigitalMiner` |
+| 27 slots at (8+x*18, 92+y*18) | `GuiDigitalMiner` |
+| Footprint x/z -1..1, y 0..1 (17 bounding blocks) | `BlockDigitalMiner` / `Attributes` |
+| Radius 0..32; minY in [worldMin, maxY]; maxY in [minY, worldMax] | `TileEntityDigitalMiner.setRadius/setMinY/setMaxY` |
+| `miner_blacklist` tag is empty upstream | Datapack |
 
-Abweichungen:
-- Statischer Puffer 100 000 FE (upstream dynamisch, 4 x Verbrauch).
-- Filter = Items in 9 Filter-Slots + eine Tag-Auswahl (8 Block-Tags), keine Filter-GUI mit Replace-Target/Ausgabe.
-- Werkzeug zum Abbauen: Netherite-Spitzhacke (Silk Touch bei aktivem Silk), upstream voll geladener Atomic Disassembler.
-- Suchzustand und Overflow werden nicht gespeichert; nach Neustart wird neu gesucht.
-- Einstellungen sind gesperrt, solange der Miner läuft.
-- Hopper ziehen oben und seitlich.
-- Nicht portiert: Redstone, Seitenkonfiguration, Security, Upgrades, XP, Anker, Filter auf dem gedroppten Item.
-- Unzerstörbare Blöcke per Liste (keine Härte-API).
-- Rechtsklick auf einen Bounding-Block des Miners wird abgebrochen (kein Aufruf zum Öffnen des Menüs eines anderen Blocks).
-- Blockstate: `mekanism:holiday_selector` entfernt (Horizon kennt den Typ nicht); `active` ist eine Boolean-Property und wird in `miners::tick` nur bei Änderung gesetzt.
+Differences:
+- Static buffer 100,000 FE (upstream dynamic, 4 x usage).
+- Filter = items in 9 filter slots + one tag choice (8 block tags), no filter GUI with replace target/output.
+- Tool for mining: netherite pickaxe (Silk Touch when Silk is active), upstream a fully charged Atomic Disassembler.
+- Search state and overflow are not saved; after a restart it searches again.
+- Settings are locked while the miner is running.
+- Hoppers pull from the top and the sides.
+- Not ported: redstone, side configuration, security, upgrades, XP, anchor, filter on the dropped item.
+- Unbreakable blocks via a list (no hardness API).
+- Right-click on a bounding block of the miner is canceled (no call to open the menu of another block).
+- Blockstate: `mekanism:holiday_selector` removed (Horizon does not know the type); `active` is a boolean property and is set in `miners::tick` only on change.
 
-## Blocker (aus dem Quelltext belegt)
+## Blockers (proven from the source)
 
-1. **Keine Tag-Auflistung im Host.** Nur Mitgliedschaftstests (`server_item_in_tag`, `block_name_in_tag`). Daher generierte Tabelle.
-2. **Vanilla-Crafting-Rezepte nicht erreichbar.** `native_recipes_of_type` liefert nur `recipes().custom.get(kind)`
-   (`crates/horizon-client/src/game/native_hooks.rs:11288-11293`). `custom_type` (`crafting.rs:1333-1337`) behält nur Typen
-   mit `:` und ohne Präfix `minecraft:`. Der Loader (`crafting.rs:1546-1559`) leitet `minecraft:crafting_*` in `crafting`,
-   das nicht exponiert ist. `native_recipes` (`native_hooks.rs:11359`) ist nicht im Host-Trait; `docs/native-mods.md:4999-5001`
-   führt `recipes` unter "noch nicht im Trait". Der Formulaic Assemblicator kann also keine Rezepte auflösen.
-3. Screens kennen nur `host.text` und `host.fill`, keine Stringübergabe; Namen werden aus Compile-Time-Tabellen dekodiert.
-4. Screen-Hooks erhalten kein `pos`; GUI-Zustand wird als `i32`-Daten (16-Bit-Wire) kodiert, 32-Bit-Werte über `cube::encode_amount`.
+1. **No tag listing in the host.** Only membership tests (`server_item_in_tag`, `block_name_in_tag`). Hence the generated table.
+2. **Vanilla crafting recipes are not reachable.** `native_recipes_of_type` returns only `recipes().custom.get(kind)`
+   (`crates/horizon-client/src/game/native_hooks.rs:11288-11293`). `custom_type` (`crafting.rs:1333-1337`) keeps only types
+   with `:` and without the prefix `minecraft:`. The loader (`crafting.rs:1546-1559`) routes `minecraft:crafting_*` into `crafting`,
+   which is not exposed. `native_recipes` (`native_hooks.rs:11359`) is not in the host trait; `docs/native-mods.md:4999-5001`
+   lists `recipes` under "not yet in the trait". So the Formulaic Assemblicator cannot resolve recipes.
+3. Screens know only `host.text` and `host.fill`, no string passing; names are decoded from compile-time tables.
+4. Screen hooks get no `pos`; GUI state is encoded as `i32` data (16-bit wire), 32-bit values via `cube::encode_amount`.
 
-## Nicht compile-verifiziert
+## Not compile-verified
 
-Nur Horizon-freie Logik wurde kompiliert/getestet. Nicht kompiliert:
+Only Horizon-free logic was compiled/tested. Not compiled:
 - `native/mekanism_native/api/src/oredicts.rs`
 - `native/mekanism_native/api/src/miners.rs`
 - `native/mekanism_native/api/src/special.rs`
-- Neue Arme in `lib.rs` (`block_entity_container`, `container_accepts`, `block_entity_energy`, `block_entity_tick`, `state_for_placement`, `screen`, `screen_draw`, `screen_click`, `menu_button`, `right_click_block`, `destroy_block`, `place_block`)
-- Erweiterung `acceptor()` in `energy.rs`
-- Das generierte `oredict_tags.rs` (nur als Horizon-freies Modul in `logic/energy` kompiliert)
+- New arms in `lib.rs` (`block_entity_container`, `container_accepts`, `block_entity_energy`, `block_entity_tick`, `state_for_placement`, `screen`, `screen_draw`, `screen_click`, `menu_button`, `right_click_block`, `destroy_block`, `place_block`)
+- Extension of `acceptor()` in `energy.rs`
+- The generated `oredict_tags.rs` (compiled only as a Horizon-free module in `logic/energy`)
 
-## Ausgeführte Prüfungen
+## Checks run
 
-- `python scripts/validate_content.py`: OK (5653 JSON-Dateien)
+- `python scripts/validate_content.py`: OK (5653 JSON files)
 - `cargo test --manifest-path logic/energy/Cargo.toml`: 149 passed
-- `python scripts/parity.py --check`: 0 Regressionen
+- `python scripts/parity.py --check`: 0 regressions
 - `cargo horizon-mod build` + `check` in `content/mekanism`: ok (`mekanism 0.2.0`, API 0.2, content only)
 
-## Ingame-Testliste
+## In-game test list
 
 Oredictionificator:
-1. Platzieren, Menü öffnet (236x230). Inventar sitzt unter dem Gerät.
-2. Filter anlegen, Tag und Ausgabe durchschalten, Scroll bei >3 Filtern.
-3. Eisenbarren-Ingot-Tag: Eingang `minecraft:iron_ingot` wird zum gewählten Ausgabeitem; Stackgröße bleibt, wird pro Tick begrenzt durch Platz.
-4. Hopper schiebt nur passende Items ein. Deaktivierter Filter wandelt nicht.
-5. Filter überleben Neustart/Chunk-Reload.
+1. Place it, the menu opens (236x230). The inventory sits below the device.
+2. Create a filter, cycle tag and output, scroll with more than 3 filters.
+3. Iron ingot tag: input `minecraft:iron_ingot` becomes the chosen output item; stack size stays, limited per tick by space.
+4. A hopper pushes in only matching items. A disabled filter does not convert.
+5. Filters survive restart/chunk reload.
 
-Formulaic Assemblicator: Block und Crafting Formula erscheinen im Kreativ-Inventar mit Modell und Namen. Kein Verhalten erwartet.
+Formulaic Assemblicator: block and Crafting Formula appear in the creative inventory with model and names. No behavior expected.
 
 Digital Miner:
-1. Platzieren: 17 Bounding-Blöcke entstehen, Platzieren bei Hindernis wird abgelehnt. Abbau des Hauptblocks und eines Bounding-Blocks entfernt alle.
-2. Menü öffnen (Hauptblock). Radius/minY/maxY per Buttons ändern, Grenzen 0..32 und Weltgrenzen.
-3. Energie per Kabel/Cube einspeisen; Verbrauch pro Tick prüfen (Radius 10, Höhe 60: 40 FE/Tick; Silk: 480 FE/Tick; Radius 32: 40*(1+22/22)=80).
-4. Start: Suche läuft, danach ein Block je 80 Ticks, höchster Index zuerst; Modell wechselt auf `active`.
-5. Filter-Slot mit Item bzw. Tag-Auswahl: nur passende Blöcke werden abgebaut (bzw. invers).
-6. Silk Touch: Erzblock droppt sich selbst.
-7. Auswurf: Behälter hinter dem Miner, oben-hinten Zelle, alle 10 Ticks.
-8. Volles Inventar: Overflow blockiert den Abbau, danach Weiterlauf.
-9. Einstellungen sind gesperrt, solange er läuft.
-10. Welt neu laden: Suche beginnt neu, Einstellungen und Filter bleiben.
+1. Place it: 17 bounding blocks appear, placing it against an obstacle is rejected. Breaking the main block or a bounding block removes all.
+2. Open the menu (main block). Change radius/minY/maxY with buttons, limits 0..32 and world limits.
+3. Feed energy by cable/cube; check usage per tick (radius 10, height 60: 40 FE/tick; Silk: 480 FE/tick; radius 32: 40*(1+22/22)=80).
+4. Start: the search runs, then one block per 80 ticks, highest index first; the model switches to `active`.
+5. Filter slot with an item or tag choice: only matching blocks are mined (or the inverse).
+6. Silk Touch: an ore block drops itself.
+7. Ejection: container behind the miner, top-back cell, every 10 ticks.
+8. Full inventory: overflow blocks mining, then it continues.
+9. Settings are locked while it is running.
+10. Reload the world: the search starts again, settings and filters stay.
 
-## Offene Punkte
+## Open items
 
-- Native-Build und Ingame-Test stehen aus; erst danach ist Host-Code verifiziert.
-- Formulaic Assemblicator braucht eine Host-API für Crafting-Rezepte.
-- Seismic Vibrator und Seismic Reader fehlen.
-- Dynamischer Energiepuffer, Filter-GUI mit Replace-Target, Upgrades, Redstone, Seitenkonfiguration fehlen.
+- Native build and in-game test are pending; host code is verified only after them.
+- The Formulaic Assemblicator needs a host API for crafting recipes.
+- Seismic Vibrator and Seismic Reader are missing.
+- Dynamic energy buffer, filter GUI with replace target, upgrades, redstone, side configuration are missing.
