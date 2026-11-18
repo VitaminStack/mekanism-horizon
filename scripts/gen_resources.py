@@ -407,8 +407,9 @@ for pid in ('electric_pump', 'fluidic_plenisher'):
 # the neighbours the block joins (set by the native mod). Mekanism's own models are OBJ models behind a
 # custom loader, so the blockstates are plain multipart ones over cuboids: a centre cube (large 6 px for
 # pipes, small 4 px for tubes and conductors) and one arm per side, textured from the upstream
-# `block/models/multipart/<id>(_vertical).png`. Selection and collision boxes are the centre cube only
-# (Horizon shapes depend on one property, not on six). Strength 3.5 / 16 as BlockTransmitter.
+# `block/models/multipart/<id>(_vertical).png`. Selection and collision boxes are the centre cube plus
+# the joined arms, one entry per combination of the six properties (Horizon shape boxes are in blocks,
+# 0..1, not pixels). Strength 3.5 / 16 as BlockTransmitter.
 # kind -> centre min: cables are small (4 px) like tubes, transporters large (6 px) like pipes.
 TRANSMITTER_KINDS = {'mechanical_pipe': 5, 'pressurized_tube': 6, 'thermodynamic_conductor': 6,
                      'universal_cable': 6, 'logistical_transporter': 5}
@@ -426,26 +427,41 @@ def cuboid(lo, hi, side_tex, end_tex):
     return {'from': lo, 'to': hi, 'faces': faces}
 
 
-def arm(dir_, lo, hi):
-    """The arm toward `dir_`: from the centre cube (`lo`..`hi`) to the block edge."""
+def arm_bounds(dir_, lo, hi):
+    """The arm toward `dir_`, in pixels: from the centre cube (`lo`..`hi`) to the block edge."""
     a, b = list(lo), list(hi)
     axis, sign = {'down': (1, -1), 'up': (1, 1), 'north': (2, -1), 'south': (2, 1), 'west': (0, -1), 'east': (0, 1)}[dir_]
     if sign < 0:
         a[axis], b[axis] = 0, lo[axis]
     else:
         a[axis], b[axis] = hi[axis], 16
-    return cuboid(a, b, '#side', '#center')
+    return a, b
+
+
+def arm(dir_, lo, hi):
+    """The model element of the arm toward `dir_`."""
+    return cuboid(*arm_bounds(dir_, lo, hi), '#side', '#center')
+
+
+def transmitter_shapes(lo, hi):
+    """Shapes keyed by all six arm properties: the centre cube and each joined arm, in blocks."""
+    values = {}
+    for mask in range(64):
+        joined = [bool(mask >> i & 1) for i in range(6)]
+        boxes = [lo + hi] + [sum(arm_bounds(d, lo, hi), []) for d, j in zip(ARM_NAMES, joined) if j]
+        values[','.join(str(j).lower() for j in joined)] = [[v / 16 for v in b] for b in boxes]
+    return {'properties': ARM_NAMES, 'values': values}
 
 
 for tid in TRANSMITTER_IDS:
     lo_v = TRANSMITTER_SINGLES.get(tid) or TRANSMITTER_KINDS[next(k for k in TRANSMITTER_KINDS if tid.endswith(k))]
     lo, hi = [lo_v] * 3, [16 - lo_v] * 3
-    box = [lo + hi]
+    shapes = transmitter_shapes(lo, hi)
     block(tid, 'minecraft:iron_block', 3.5, 16.0, extra={
         'state_properties': {d: {'type': 'boolean'} for d in ARM_NAMES},
         'default_state': {d: 'false' for d in ARM_NAMES},
-        'shapes': {'property': 'up', 'values': {'true': box, 'false': box}, 'default': box},
-        'collision_shapes': {'property': 'up', 'values': {'true': box, 'false': box}, 'default': box},
+        'shapes': shapes,
+        'collision_shapes': shapes,
     }, sounds=STONE, occludes=False)
     textures = {'center': f'{TEX}/{tid}', 'side': f'{TEX}/{tid}_vertical', 'particle': f'{TEX}/{tid}'}
     put(f'assets/{NS}/models/block/transmitter/{tid}_center.json',

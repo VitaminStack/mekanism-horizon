@@ -117,7 +117,9 @@ def main(up):
             props = {**props, 'map_color': MAP[c]}
             extra = None
             if suffix == '_glow_panel':
-                shapes = {'property': 'facing', 'values': PANEL, 'default': PANEL['up']}
+                # Horizon shape boxes are in blocks (0..1); PANEL is in pixels like upstream.
+                blocks = {f: [[v / 16 for v in b] for b in boxes] for f, boxes in PANEL.items()}
+                shapes = {'property': 'facing', 'values': blocks, 'default': blocks['up']}
                 extra = {'shapes': shapes, 'collision_shapes': shapes}
             block(c + suffix, template, props, extra)
     # BlockObsidianTNT: vanilla TNT behaviour (see docs/ADDITIONS.md for the missing blast radius).

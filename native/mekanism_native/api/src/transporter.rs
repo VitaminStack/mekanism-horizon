@@ -407,10 +407,11 @@ pub fn arrived(t: &Transit, entered: usize) -> Transit {
 }
 
 /// The side a player's look picks on a transporter at `pos`, as Mekanism's per-side hit boxes do:
-/// the arm (`5/16..11/16` across, from the core to the block's face) the ray from `eye` along
-/// `dir` meets first. None when it meets the core first or misses: then the clicked face counts.
+/// the `joined` arm (`5/16..11/16` across, from the core to the block's face) the ray from `eye`
+/// along `dir` meets first. Only joined arms are in the block's shape, so only they can be
+/// clicked. None when it meets the core first or misses: then the clicked face counts.
 /// Lets a player pick the side that faces a chest, whose own face the chest hides.
-pub fn picked_side(pos: Pos, eye: [f64; 3], dir: [f64; 3]) -> Option<usize> {
+pub fn picked_side(pos: Pos, eye: [f64; 3], dir: [f64; 3], joined: [bool; 6]) -> Option<usize> {
     const LO: f64 = 5.0 / 16.0;
     const HI: f64 = 11.0 / 16.0;
     let local = [eye[0] - pos[0] as f64, eye[1] - pos[1] as f64, eye[2] - pos[2] as f64];
@@ -431,7 +432,7 @@ pub fn picked_side(pos: Pos, eye: [f64; 3], dir: [f64; 3]) -> Option<usize> {
     };
     let core = hit([LO; 3], [HI; 3]);
     let mut best: Option<(f64, usize)> = None;
-    for (side, offset) in cube::OFFSETS.iter().enumerate() {
+    for (side, offset) in cube::OFFSETS.iter().enumerate().filter(|&(side, _)| joined[side]) {
         let (mut min, mut max) = ([LO; 3], [HI; 3]);
         for a in 0..3 {
             match offset[a] {
@@ -718,13 +719,22 @@ mod tests {
         let eye = [-1.2, 1.6, 0.5];
         let target = [0.15, 0.5, 0.5];
         let dir = [target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]];
-        assert_eq!(picked_side([0, 0, 0], eye, dir), Some(4));
+        let all = [true; 6];
+        assert_eq!(picked_side([0, 0, 0], eye, dir, all), Some(4));
         // Straight down the north arm: north.
-        assert_eq!(picked_side([0, 0, 0], [0.5, 0.5, -2.0], [0.0, 0.0, 1.0]), Some(2));
+        assert_eq!(picked_side([0, 0, 0], [0.5, 0.5, -2.0], [0.0, 0.0, 1.0], all), Some(2));
         // Diagonally into the core, past every arm: the clicked face decides.
-        assert_eq!(picked_side([0, 0, 0], [-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]), None);
+        assert_eq!(picked_side([0, 0, 0], [-1.0, -1.0, -1.0], [1.0, 1.0, 1.0], all), None);
         // Missing the block entirely.
-        assert_eq!(picked_side([0, 0, 0], [5.0, 5.0, 5.0], [1.0, 0.0, 0.0]), None);
+        assert_eq!(picked_side([0, 0, 0], [5.0, 5.0, 5.0], [1.0, 0.0, 0.0], all), None);
+        // Seen from the north, grazing the top of an unjoined north arm on the way to the joined
+        // west arm (as in game): west, since the north arm is not there.
+        let (eye, target) = ([1.0, 1.27, -1.5], [0.24, 0.57, 0.31]);
+        let dir = [target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]];
+        let west_east = [false, false, false, false, true, true];
+        assert_eq!(picked_side([0, 0, 0], eye, dir, west_east), Some(4));
+        // Down the unjoined north arm into the core: the clicked face decides.
+        assert_eq!(picked_side([0, 0, 0], [0.5, 0.5, -2.0], [0.0, 0.0, 1.0], west_east), None);
     }
 
     #[test]
