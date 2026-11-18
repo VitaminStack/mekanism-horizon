@@ -10,15 +10,15 @@ README = ROOT / "README.md"
 TASK = re.compile(r"^\s*[-*]\s+\[([ xX])\](?:\s|$)")
 MILESTONE = re.compile(r"^##\s+(M\d{2})\s+-\s+")
 SECTION_GROUPS = [
-    ("Projektbasis", ("M00",)),
+    ("Project base", ("M00",)),
     ("Energy Cube", ("M01",)),
-    ("Rohstoffe & Energie", ("M02", "M03", "M04")),
-    ("Maschinen & Chemie", ("M05", "M06")),
-    ("Automation & Logistik", ("M07", "M08")),
-    ("Multiblocks & Reaktoren", ("M09", "M10")),
+    ("Resources & energy", ("M02", "M03", "M04")),
+    ("Machines & chemistry", ("M05", "M06")),
+    ("Automation & logistics", ("M07", "M08")),
+    ("Multiblocks & reactors", ("M09", "M10")),
     ("Tools & Additions", ("M11", "M12")),
-    ("Tests & Releases", ("M13", "DONE")),
-    ("Naechste Schritte", ("NEXT",)),
+    ("Tests & releases", ("M13", "DONE")),
+    ("Next steps", ("NEXT",)),
 ]
 PROGRESS = re.compile(
     r"<!-- progress:start -->.*?<!-- progress:end -->", re.DOTALL
@@ -33,7 +33,7 @@ def read_tasks(text: str) -> dict[str, tuple[int, int]]:
             milestone = MILESTONE.match(line)
             if milestone:
                 current = milestone.group(1)
-            elif line.startswith("## Die nächsten 10 "):
+            elif line.startswith("## Next 10 "):
                 current = "NEXT"
             elif line.startswith("## Definition of Done"):
                 current = "DONE"
@@ -76,7 +76,7 @@ def render_progress(counters: dict[str, tuple[int, int]]) -> str:
     lines = [
         "<!-- progress:start -->",
         fence + "text",
-        row("Gesamt", all_done, all_total),
+        row("Total", all_done, all_total),
         "",
     ]
     for name, keys in SECTION_GROUPS:

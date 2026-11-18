@@ -1,49 +1,49 @@
-# Erzverarbeitung (M06)
+# Ore processing (M06)
 
-Die Kette von Mekanisms 5x-Verarbeitung, wie sie hier läuft. Menge und Zeit der Maschinen stehen in
-`native/mekanism_native/api/src/machine.rs` (Werte aus Mekanism 26.3), die Rezepte in
-`content/mekanism/data/mekanism/recipe/processing/<Metall>/`.
+The chain of Mekanism's 5x processing as it runs here. The amount and time of the machines are in
+`native/mekanism_native/api/src/machine.rs` (values from Mekanism 26.3), the recipes in
+`content/mekanism/data/mekanism/recipe/processing/<metal>/`.
 
-## Kette (Eisen, 1 Erz)
+## Chain (iron, 1 ore)
 
-| Schritt | Maschine | Rezepttyp | Ein | Aus |
+| Step | Machine | Recipe type | In | Out |
 |---|---|---|---|---|
-| 1 | Chemical Dissolution Chamber (16 FE/t, 100 Ticks) | `dissolution` | 1 Erz + 1 mB Schwefelsäure je Tick (100 mB) | 1.000 mB schmutziger Schlamm (`dirty_iron`) |
-| 2 | Chemical Washer (5 FE/t, 1 Durchlauf je Tick) | `washing` | 1 mB schmutziger Schlamm + 5 mB Wasser | 1 mB sauberer Schlamm (`clean_iron`) |
-| 3 | Chemical Crystallizer (15 FE/t, 200 Ticks) | `crystallizing` | 200 mB sauberer Schlamm | 1 Kristall (`crystal_iron`) |
-| 4 | Chemical Injection Chamber | `injecting` | 1 Kristall + 1 mB Chlorwasserstoff je Tick | 1 Splitter (`shard_iron`) |
-| 5 | Purification Chamber | `purifying` | 1 Splitter + 1 mB Sauerstoff je Tick | 1 Klumpen (`clump_iron`) |
-| 6 | Crusher | `crushing` | 1 Klumpen | 1 schmutziger Staub (`dirty_dust_iron`) |
-| 7 | Enrichment Chamber | `enriching` | 1 schmutziger Staub | 1 Staub (`dust_iron`) |
-| 8 | Ofen / Blast Furnace (Energized Smelter fehlt, siehe unten) | `smelting` | 1 Staub | 1 Barren |
+| 1 | Chemical Dissolution Chamber (16 FE/t, 100 ticks) | `dissolution` | 1 ore + 1 mB sulfuric acid per tick (100 mB) | 1,000 mB dirty slurry (`dirty_iron`) |
+| 2 | Chemical Washer (5 FE/t, 1 pass per tick) | `washing` | 1 mB dirty slurry + 5 mB water | 1 mB clean slurry (`clean_iron`) |
+| 3 | Chemical Crystallizer (15 FE/t, 200 ticks) | `crystallizing` | 200 mB clean slurry | 1 crystal (`crystal_iron`) |
+| 4 | Chemical Injection Chamber | `injecting` | 1 crystal + 1 mB hydrogen chloride per tick | 1 shard (`shard_iron`) |
+| 5 | Purification Chamber | `purifying` | 1 shard + 1 mB oxygen per tick | 1 clump (`clump_iron`) |
+| 6 | Crusher | `crushing` | 1 clump | 1 dirty dust (`dirty_dust_iron`) |
+| 7 | Enrichment Chamber | `enriching` | 1 dirty dust | 1 dust (`dust_iron`) |
+| 8 | Furnace / Blast Furnace (Energized Smelter is missing, see below) | `smelting` | 1 dust | 1 ingot |
 
-Aus 1.000 mB Schlamm werden 5 Kristalle und am Ende **5 Barren je Erz** (Vanilla: 1; Enrichment-Weg: 2).
-Roherz-Blöcke geben 6.000 mB Schlamm bei 2 mB Säure je Tick. Ingame getestet am 11.11.2026
-([TESTLOG.md](TESTLOG.md), Abschnitt „Dissolution Chamber, Washer, Crystallizer und Erzkette“).
-Gold, Kupfer, Zinn, Blei, Osmium und Uran haben dieselben Rezepte (je 7 Metalle: Kristall, Splitter, Klumpen,
-schmutziger Staub); Uran gibt zusätzlich Flusssäure-Rezepte, die erst mit der Pressurized Reaction Chamber laufen.
+1,000 mB of slurry make 5 crystals and, in the end, **5 ingots per ore** (vanilla: 1; enrichment route: 2).
+Raw ore blocks give 6,000 mB of slurry at 2 mB acid per tick. Tested in game on 2026-11-11
+([TESTLOG.md](TESTLOG.md), section "Dissolution Chamber, Washer, Crystallizer and ore chain").
+Gold, copper, tin, lead, osmium and uranium have the same recipes (7 metals each: crystal, shard, clump,
+dirty dust); uranium also has hydrofluoric acid recipes, which only run with the Pressurized Reaction Chamber.
 
-## Schwefelsäure
+## Sulfuric acid
 
-Die Säure kommt wie im Original aus dem Chemical Infuser (Schwefeltrioxid + Wasserdampf), Schwefeltrioxid aus
-Schwefeldioxid + Sauerstoff, Schwefeldioxid aus Schwefelstaub im Chemical Oxidizer, Wasserdampf aus Wasser im
-Rotary Condensentrator (Modus Fluid zu Chemical), Sauerstoff aus dem Electrolytic Separator. Alle Stufen
-sind einzeln ingame getestet; die volle Kette von Wasser bis Säure ist es **nicht**: der Test füllte
-Dissolution und Washer per `/data merge` (Säure, Wasser).
+As in the original, the acid comes from the Chemical Infuser (sulfur trioxide + water vapor), sulfur trioxide from
+sulfur dioxide + oxygen, sulfur dioxide from sulfur dust in the Chemical Oxidizer, water vapor from water in the
+Rotary Condensentrator (mode fluid to chemical), oxygen from the Electrolytic Separator. Every stage
+is tested in game on its own; the full chain from water to acid is **not**: the test filled
+Dissolution and Washer with `/data merge` (acid, water).
 
-## Chemie und Fluids in diesen Maschinen
+## Chemicals and fluids in these machines
 
-- Dissolution: Tank 0 (Säure, 10.000 mB, füllbar von Nachbarn und Pipes), Tank 1 (Schlamm, 10.000 mB, wird in alle Nachbarn ausgeworfen).
-  Die Säure ist ein Tank, kein Puffer wie bei Purification/Injection (`Machine::chemical_tank`).
-- Washer: Tank 0 Wasser, Tank 1 schmutziger Schlamm, Tank 2 sauberer Schlamm (je 10.000 mB), `machine::wash`.
-- Crystallizer: ein Eingangs-Tank (10.000 mB), Item im Output-Slot.
+- Dissolution: tank 0 (acid, 10,000 mB, can be filled by neighbors and pipes), tank 1 (slurry, 10,000 mB, is ejected into all neighbors).
+  The acid is a tank, not a buffer as in Purification/Injection (`Machine::chemical_tank`).
+- Washer: tank 0 water, tank 1 dirty slurry, tank 2 clean slurry (10,000 mB each), `machine::wash`.
+- Crystallizer: one input tank (10,000 mB), item in the output slot.
 
-## Grenzen (Horizon / noch nicht gebaut)
+## Limits (Horizon / not built yet)
 
-- **Energized Smelter** blockiert (Horizon liefert Native-Mods keine `minecraft:smelting`-Rezepte, siehe TODO M05); Schritt 8 geht über einen Vanilla-Ofen.
-- Keine Pipes/Tubes: die Kette läuft über direkt benachbarte Maschinen (Auswurf in Nachbarn) oder per Hand.
-- Kein Wasser-Eimer für Maschinen (Horizons Eimer-Hook gilt nur für Tanks): Wasser kommt aus einem Fluid Tank neben dem Washer.
-- Chemie-Item-Slots (Tanks per Item füllen/leeren), Energie-Slot, Upgrades, Side-Config, Redstone fehlen wie bei den anderen Chemie-Maschinen.
-- Ein Tank nimmt jedes Chemical, das in einem Rezept der Maschine vorkommt (Horizons `accepts`-Hook kennt weder Position noch anderen Tank): ein falscher Schlamm im Washer-Eingang blockiert, bis er geleert ist.
-- Rezeptwechsel (Erz-Sorte) bei halbem Fortschritt: Dissolution und Crystallizer behalten bzw. setzen den Fortschritt nach dem Original-Muster, nicht gesondert getestet.
-- Crafting der drei Maschinen (Dissolution/Washer: Chemical/Fluid Tank, Crystallizer: Fluorit, Ultimate Circuit) ist per Import vorhanden, nicht ingame geprüft; `mek_data` wird zu normalem Shaped Crafting.
+- **Energized Smelter** is blocked (Horizon gives native mods no `minecraft:smelting` recipes, see TODO M05); step 8 goes through a vanilla furnace.
+- No pipes/tubes: the chain runs through directly adjacent machines (ejection into neighbors) or by hand.
+- No water bucket for machines (Horizon's bucket hook only applies to tanks): water comes from a Fluid Tank next to the Washer.
+- Chemical item slots (fill/empty tanks by item), energy slot, upgrades, side config and redstone are missing, as on the other chemistry machines.
+- A tank accepts every chemical that occurs in a recipe of the machine (Horizon's `accepts` hook knows neither the position nor the other tank): a wrong slurry in the Washer input blocks it until it is emptied.
+- Recipe change (ore type) at half progress: Dissolution and Crystallizer keep or set the progress following the original pattern, not tested separately.
+- Crafting of the three machines (Dissolution/Washer: Chemical/Fluid Tank, Crystallizer: fluorite, Ultimate Circuit) exists through the import, not checked in game; `mek_data` becomes normal shaped crafting.

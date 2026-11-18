@@ -22,7 +22,7 @@ foreach ($Candidate in @(
     if (-not $Launcher -and (Test-Path -LiteralPath $Candidate)) { $Launcher = $Candidate }
 }
 if (-not $Launcher) {
-    throw 'Horizon Launcher nicht gefunden. -Launcher PFAD angeben oder HORIZON_LAUNCHER setzen.'
+    throw 'Horizon Launcher not found. Pass -Launcher PATH or set HORIZON_LAUNCHER.'
 }
 
 function Remove-OldNativeVersions {
@@ -32,31 +32,31 @@ function Remove-OldNativeVersions {
     if ($Native.Count -eq 0) { return }
     # Make Play start the newest build (the launcher may keep an older one selected).
     & $Launcher instance version horizon $Native[0].Name | Out-Null
-    Write-Host "Neueste Native-Version: $($Native[0].Name)" -ForegroundColor Green
+    Write-Host "Newest native version: $($Native[0].Name)" -ForegroundColor Green
     foreach ($Old in $Native | Select-Object -Skip 1) {
         & $Launcher remove $Old.Name | Out-Null
         # The launcher's exit code is not reliable here; the folder tells.
         if (Test-Path -LiteralPath $Old.FullName) {
-            Write-Warning "$($Old.Name) nicht entfernt (laeuft Horizon noch?)."
+            Write-Warning "$($Old.Name) not removed (is Horizon still running?)."
         } else {
-            Write-Host "Alte Version entfernt: $($Old.Name)"
+            Write-Host "Old version removed: $($Old.Name)"
         }
     }
 }
 
 if ($CleanupOnly) { Remove-OldNativeVersions; return }
 if (-not (Test-Path -LiteralPath (Join-Path $NativeDir 'horizon-mixin.toml'))) {
-    throw 'Native Mod nicht gefunden.'
+    throw 'Native mod not found.'
 }
 if (-not $TrustNativeCode) {
-    throw 'Native Code braucht deine ausdrueckliche Freigabe: .\scripts\Build-Native.ps1 -TrustNativeCode'
+    throw 'Native code needs your explicit approval: .\scripts\Build-Native.ps1 -TrustNativeCode'
 }
-Write-Host 'WARNUNG: Horizon kompiliert und startet nativen Rust-Code mit deinen Benutzerrechten.' -ForegroundColor Yellow
+Write-Host 'WARNING: Horizon compiles and runs native Rust code with your user rights.' -ForegroundColor Yellow
 if (-not $Confirmed) {
-    $Confirm = Read-Host 'Quellcode geprueft? Zum Fortfahren BUILD eingeben'
-    if ($Confirm -cne 'BUILD') { throw 'Build abgebrochen.' }
+    $Confirm = Read-Host 'Source code reviewed? Type BUILD to continue'
+    if ($Confirm -cne 'BUILD') { throw 'Build cancelled.' }
 }
 & $Launcher native-build $NativeDir --trust-native-code
-if ($LASTEXITCODE -ne 0) { throw 'Horizon Native-Build fehlgeschlagen.' }
+if ($LASTEXITCODE -ne 0) { throw 'Horizon native build failed.' }
 Remove-OldNativeVersions
-Write-Host 'Native Companion gebaut. Horizon ueber den Launcher neu starten.' -ForegroundColor Green
+Write-Host 'Native companion built. Restart Horizon through the launcher.' -ForegroundColor Green

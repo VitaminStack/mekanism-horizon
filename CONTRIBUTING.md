@@ -1,18 +1,18 @@
-# Mitmachen
+# Contributing
 
-Mekanism Horizon ist ein inoffizieller Port von [Mekanism](https://github.com/mekanism/Mekanism) (Branch `26.3`) nach [Minecraft Horizon](https://github.com/horizon-rust/horizon). Das Repository ist öffentlich und steht unter MIT ([LICENSE](LICENSE), Details zu Fremdinhalten in [docs/LICENSES.md](docs/LICENSES.md)). Beiträge sind willkommen.
+Mekanism Horizon is an unofficial port of [Mekanism](https://github.com/mekanism/Mekanism) (branch `26.3`) to [Minecraft Horizon](https://github.com/horizon-rust/horizon). The repository is public and licensed under MIT ([LICENSE](LICENSE); details on third-party content in [docs/LICENSES.md](docs/LICENSES.md)). Contributions are welcome.
 
-## Ablauf: Fork und Pull Request
+## Workflow: fork and pull request
 
-1. Repository forken, Fork klonen, Branch von `main` anlegen. Namensschema: `feat/m06-...`, `fix/...`, `docs/...`.
-2. Änderung machen, lokal prüfen (siehe unten), in kleinen Commits einchecken. Commit-Stil: Conventional Commits mit Meilenstein, z. B. `feat(m06): Chemical Oxidizer and Chemical Infuser`.
-3. Branch pushen, Pull Request gegen `main` öffnen. Beschreibung: was, warum, wie getestet (Tests, Ingame-Nachweis, Log oder Screenshot).
-4. `main` ist geschützt: Änderungen nur per Pull Request. Es sind **0 Reviews** und **keine Status-Checks** vorgeschrieben. Prüfe deshalb selbst, ob CI (`.github/workflows/ci.yml`) grün ist, und warte nicht auf eine Freigabe, um ordentlich zu testen.
-5. Nach dem Merge aktualisiert ein Workflow den Fortschrittsblock in `README.md` aus `TODO.md`.
+1. Fork the repository, clone your fork, create a branch from `main`. Naming scheme: `feat/m06-...`, `fix/...`, `docs/...`.
+2. Make your change, check it locally (see below), commit in small commits. Commit style: Conventional Commits with the milestone, for example `feat(m06): Chemical Oxidizer and Chemical Infuser`.
+3. Push the branch, open a pull request against `main`. Description: what, why, how tested (tests, in-game evidence, log or screenshot).
+4. `main` is protected: changes only by pull request. **0 reviews** and **no status checks** are required. So check yourself that CI (`.github/workflows/ci.yml`) is green, and do not wait for an approval before you test properly.
+5. After the merge, a workflow updates the progress block in `README.md` from `TODO.md`.
 
-Regeln aus [TODO.md](TODO.md): Ein Punkt wird nur abgehakt, wenn er **bestätigt** ist, also ingame mit echten Inputs und Outputs getestet, nicht nur gebaut. Offene Lücken gehören als Notiz an den Punkt und in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Originalverhalten und Registry-IDs aus Mekanism 26.3 prüfen. Content (`.hmod`) und nativen Code trennen.
+Rules from [TODO.md](TODO.md): An item is ticked only when it is **confirmed**, that is, tested in game with real inputs and outputs, not just built. Put open gaps as a note on the item and in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Check original behavior and registry IDs against Mekanism 26.3. Keep content (`.hmod`) and native code separate.
 
-Lizenz: Wer Code oder Assets aus Mekanism übernimmt, bewahrt Copyright und Lizenztext ([docs/LICENSES.md](docs/LICENSES.md)). Keine Inhalte aus anderen Quellen ohne passende Lizenz.
+License: Anyone who takes code or assets from Mekanism keeps the copyright and license text ([docs/LICENSES.md](docs/LICENSES.md)). No content from other sources without a suitable license.
 
 ## Tests
 
@@ -21,57 +21,57 @@ python scripts/validate_content.py
 cargo test --manifest-path logic/energy/Cargo.toml
 ```
 
-Beides läuft auch in CI. `scripts/Test-Content.ps1` ruft die Validierung auf. Nach jeder Content-Änderung zusätzlich bauen (prüft mit `cargo horizon-mod check`):
+Both also run in CI. `scripts/Test-Content.ps1` calls the validation. After every content change, also build (this checks with `cargo horizon-mod check`):
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content.ps1"
 ```
 
-Die Crate `native/mekanism_native/api` enthält Unit-Tests, lässt sich aber nur über den Horizon Launcher bauen (hängt an Horizons Client). Native Änderungen baust du mit:
+The crate `native/mekanism_native/api` contains unit tests, but it can only be built through the Horizon Launcher (it depends on Horizon's client). Build native changes with:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Native.ps1" -TrustNativeCode
 ```
 
-Das führt nativen Code mit deinen Benutzerrechten aus, siehe [docs/INSTALL.md](docs/INSTALL.md). Das gilt auch für fremde Pull Requests: erst den Code lesen, dann bauen.
+This runs native code with your user rights, see [docs/INSTALL.md](docs/INSTALL.md). This also applies to pull requests from others: read the code first, then build.
 
-## Ingame-Test per Agent Control
+## In-game testing with Agent Control
 
-Der Launcher legt beim nativen Build das Werkzeug `horizon-ctl.exe` ab:
+On a native build, the launcher puts the tool `horizon-ctl.exe` in place:
 
 ```
 %APPDATA%\horizon-launcher\versions\<native-version>\horizon-ctl.exe   state | command | setblock | quit
 ```
 
-- Horizon über den Launcher starten, Testwelt öffnen (Kreativ, Energie aus Creative Energy Cubes).
-- Vor dem ersten Weltbefehl auf `player.block_pos` im `state` warten. Frühere Befehle stürzen Horizon ab.
-- Per `command`/`setblock` Maschinen platzieren, `/give`/`item replace` für Inputs, `/data get block` für Zustand. Neustart und Chunk-Unload (`tp` weit weg und zurück) prüfen.
-- Ergebnisse als Tabelle in [docs/TESTLOG.md](docs/TESTLOG.md) eintragen: Datum, Build-Name, Test, Ergebnis (`ok`, `Fehler`, `ausstehend`). Mehrere zusammengehörige Tests bündeln, nicht jeden Handgriff einzeln.
+- Start Horizon through the launcher, open a test world (Creative, energy from Creative Energy Cubes).
+- Before the first world command, wait for `player.block_pos` in `state`. Earlier commands crash Horizon.
+- Use `command`/`setblock` to place machines, `/give`/`item replace` for inputs, `/data get block` for state. Check restart and chunk unload (`tp` far away and back).
+- Record results as a table in [docs/TESTLOG.md](docs/TESTLOG.md): date, build name, test, result (`ok`, `failed`, `pending`). Bundle several related tests; do not log every single step.
 
-Neue Content-Mods starten in Horizon deaktiviert: in `horizon-mods.txt` als `mod.<id>:true` einschalten.
+New content mods start disabled in Horizon: enable them in `horizon-mods.txt` as `mod.<id>:true`.
 
-## Generierter Content: Reihenfolge der Skripte
+## Generated content: order of the scripts
 
-Ressourcen-Content ist **generiert**. Nicht von Hand ändern, sondern den Generator anpassen und neu laufen lassen. Reihenfolge:
+Resource content is **generated**. Do not change it by hand. Adjust the generator and run it again. Order:
 
 ```powershell
 python scripts/gen_resources.py
-python -I scripts/import_upstream.py <Pfad-zum-Mekanism-26.3-Checkout>
-python -I scripts/import_generator_models.py <Pfad-zum-Mekanism-26.3-Checkout>
+python -I scripts/import_upstream.py <path-to-Mekanism-26.3-checkout>
+python -I scripts/import_generator_models.py <path-to-Mekanism-26.3-checkout>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content.ps1"
 ```
 
-1. `gen_resources.py` schreibt den Horizon-Teil: Registry-Deklarationen, Loot, Ore-Generation, `scripts/registry.json`.
-2. `import_upstream.py` kopiert Assets, Rezepte, Tags, Sounds und Namen aus dem Upstream-Checkout (Sparse-Clone reicht, Pfade siehe Docstring des Skripts).
-3. `import_generator_models.py` baut die Generator-Modelle (Wind, Solar usw.) aus den Upstream-Modellen.
+1. `gen_resources.py` writes the Horizon part: registry declarations, loot, ore generation, `scripts/registry.json`.
+2. `import_upstream.py` copies assets, recipes, tags, sounds and names from the upstream checkout (a sparse clone is enough; paths are in the script's docstring).
+3. `import_generator_models.py` builds the generator models (wind, solar and so on) from the upstream models.
 
-Die Reihenfolge zählt, weil Schritt 2 die von Schritt 1 geschriebene `registry.json` liest und Schritt 3 auf den importierten Assets aufbaut. Weitere Generatoren: `gen_chemicals.py`, `import_energy_cube.py`, `gen_tools.py` (Tools, [docs/TOOLS.md](docs/TOOLS.md)) und `gen_additions.py` (Additions, [docs/ADDITIONS.md](docs/ADDITIONS.md)), jeweils mit Upstream-Checkout als Argument.
+The order matters because step 2 reads the `registry.json` that step 1 wrote, and step 3 builds on the imported assets. More generators: `gen_chemicals.py`, `import_energy_cube.py`, `gen_tools.py` (tools, [docs/TOOLS.md](docs/TOOLS.md)) and `gen_additions.py` (additions, [docs/ADDITIONS.md](docs/ADDITIONS.md)), each with the upstream checkout as an argument.
 
-Regeln für Horizon-Content: Tags nur in den Namespaces `mekanism`, `minecraft` und `c`. Loot nutzt Horizons `condition`-Objektform (`apply_bonus`/`match_tool` fehlen). Worldgen im flachen 26.3-Format. Siehe [AGENTS-WINDOWS.md](AGENTS-WINDOWS.md).
+Rules for Horizon content: tags only in the namespaces `mekanism`, `minecraft` and `c`. Loot uses Horizon's `condition` object form (`apply_bonus`/`match_tool` are missing). Worldgen in the flat 26.3 format. See [AGENTS-WINDOWS.md](AGENTS-WINDOWS.md).
 
-## Hinweise
+## Notes
 
-- Warnungen wie `warning: LF will be replaced by CRLF` bei `git add` unter Windows sind harmlos.
-- `README.md` zwischen `<!-- progress:start -->` und `<!-- progress:end -->` nicht von Hand ändern. Der Block wird aus `TODO.md` erzeugt (`python scripts/sync_readme_progress.py`).
-- Pfade zur Horizon-Instanz gehören nur in `scripts/horizon-game-dir.txt` (ignoriert), nie ins Repository.
-- Probleme melden: GitHub-Issue mit Horizon-Stand, Native-Build-Name, Mod-Versionen, Reproduktionsschritten und Log. Bekanntes steht in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
+- Warnings like `warning: LF will be replaced by CRLF` on `git add` under Windows are harmless.
+- Do not change `README.md` by hand between `<!-- progress:start -->` and `<!-- progress:end -->`. The block is generated from `TODO.md` (`python scripts/sync_readme_progress.py`).
+- Paths to the Horizon instance belong only in `scripts/horizon-game-dir.txt` (ignored), never in the repository.
+- Report problems: GitHub issue with the Horizon version, native build name, mod versions, reproduction steps and log. Known issues are in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).

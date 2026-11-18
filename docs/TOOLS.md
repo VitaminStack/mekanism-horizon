@@ -1,27 +1,27 @@
 # Mekanism: Tools (M12)
 
-Content-Mod `content/mekanismtools` (Namespace `mekanismtools`, braucht `mekanism` wegen der Barren). Rein Content, kein nativer Code: Horizon-Items sind eine Vanilla-Vorlage (`template`) plus `components`, und Werkzeugwerte, Rüstung, Schild und Speer sind Vanilla-Datenkomponenten.
+Content mod `content/mekanismtools` (namespace `mekanismtools`, needs `mekanism` for the ingots). Pure content, no native code: Horizon items are a vanilla template (`template`) plus `components`, and tool values, armor, shield and spear are vanilla data components.
 
-Erzeugt mit `python scripts/gen_tools.py <Mekanism-26.3-Checkout>` (Sparse-Clone von `src/tools` und `src/datagen/generated/mekanismtools` reicht). Die Materialtabellen im Skript sind Mekanisms Standardwerte (`*MaterialDefaults`, `ToolsMaterialConfig`); Assets, Rezepte, Tags und Namen werden aus dem Checkout kopiert. Lizenz: MIT, siehe `content/mekanismtools/LICENSE-MEKANISM`.
+Generated with `python scripts/gen_tools.py <Mekanism-26.3-checkout>` (a sparse clone of `src/tools` and `src/datagen/generated/mekanismtools` is enough). The material tables in the script are Mekanism's default values (`*MaterialDefaults`, `ToolsMaterialConfig`); assets, recipes, tags and names are copied from the checkout. License: MIT, see `content/mekanismtools/LICENSE-MEKANISM`.
 
-## Umfang (91 Items)
+## Scope (91 items)
 
-- Paxel: Wood, Stone, Copper, Iron, Gold, Diamond, Netherite (Haltbarkeit = 2x Vanilla, Schaden = Axtbasis + 1).
-- Je Bronze, Lapis Lazuli, Osmium, Refined Glowstone, Refined Obsidian, Steel: Axe, Hoe, Pickaxe, Shovel, Sword, Paxel, Spear, Shield, Helmet, Chestplate, Leggings, Boots, Horse Armor, Nautilus Armor.
-- Haltbarkeit, Abbaugeschwindigkeit, Angriffswerte, Verzauberbarkeit, Reparaturmaterial (`#c:ingots/...`), Rüstung, Zähigkeit, Rückstoßresistenz, Feuerfestigkeit (Refined Obsidian, Netherite-Paxel), Speerwerte und Schildwerte (Blockverzögerung, Schadensschwelle) stehen als Komponenten in `data/mekanismtools/horizon/item/`.
-- Mining-Stufe über die Block-Tags `mekanismtools:incorrect_for_<material>_tool` (Bronze/Osmium: Eisen, Lapis: Stein, Steel/Refined Glowstone: Diamant, Refined Obsidian: Netherite).
-- 107 Rezepte (Werkzeuge, Rüstung, Schilde, Paxel, Barren-Schmelzen), Tags (`c:tools/paxel`, `minecraft:pickaxes`, `piglin_safe_armor` ...), Rüstungs-Equipment-Assets mit Texturen, Items-Modelle, `en_us`/`de_de`-Namen.
+- Paxel: Wood, Stone, Copper, Iron, Gold, Diamond, Netherite (durability = 2x vanilla, damage = axe base + 1).
+- For each of Bronze, Lapis Lazuli, Osmium, Refined Glowstone, Refined Obsidian, Steel: Axe, Hoe, Pickaxe, Shovel, Sword, Paxel, Spear, Shield, Helmet, Chestplate, Leggings, Boots, Horse Armor, Nautilus Armor.
+- Durability, mining speed, attack values, enchantability, repair material (`#c:ingots/...`), armor, toughness, knockback resistance, fire resistance (Refined Obsidian, Netherite Paxel), spear values and shield values (block delay, damage threshold) are components in `data/mekanismtools/horizon/item/`.
+- Mining tier through the block tags `mekanismtools:incorrect_for_<material>_tool` (Bronze/Osmium: iron, Lapis: stone, Steel/Refined Glowstone: diamond, Refined Obsidian: netherite).
+- 107 recipes (tools, armor, shields, Paxel, ingot smelting), tags (`c:tools/paxel`, `minecraft:pickaxes`, `piglin_safe_armor` ...), armor equipment assets with textures, item models, `en_us`/`de_de` names.
 
-## Abweichungen vom Original (Horizon-Grenzen, nichts vorgetäuscht)
+## Differences from the original (Horizon limits, nothing faked)
 
-| Original | Hier | Grund |
+| Original | Here | Reason |
 |---|---|---|
-| Paxel wirkt als Axt **und** Schaufel (`PaxelItem.useOn`) | nur Axt-Aktion (Rinde schälen); Grasflächen werden nicht zu Pfaden | Content-Items haben keinen Code; `minecraft:block_transformer` nimmt eine Transformation. Braucht einen nativen Hook; `use_item_on` (API 13) existiert, siehe [ITEM_HOOKS.md](ITEM_HOOKS.md), ist hier aber noch nicht gebaut |
-| `mekanismtools:paxel`-Rezept mittelt die Haltbarkeit der Zutaten | `minecraft:crafting_shaped`, Paxel startet unbeschädigt | Kein eigener Rezepttyp in Horizon-Content |
-| Schild mit eigener Textur (`mekanismtools:shield` Special-Model) | Schild zeigt das Vanilla-Schild-Modell; Werte (Haltbarkeit, Blockverzögerung, Schwelle) stimmen | Eigener Item-Model-Typ ist NeoForge/Mekanism-Code |
-| Rüstungs-Trims mit Mekanism-Paletten (`neoforge:trimmed_armor`, `trim_overrides`) | Vanilla-Modell, keine Mekanism-Palette | NeoForge-only |
-| `ToolsDataComponents.DISPLAY_HP`, Haltbarkeits-Tooltip | fehlt (Vanilla-Haltbarkeitsleiste vorhanden) | Eigene Komponente braucht Code |
-| Mob-Spawn-Ausrüstung (`MobEquipmentHelper`), Konfiguration, Advancements, Rezeptbuch-Aliase | fehlt | Code bzw. Datentypen, die Horizon-Content nicht lädt |
-| Konfigurierbare Materialwerte | feste Standardwerte | Horizon-Content hat keine Config; Werte per Neugenerierung ändern |
+| Paxel acts as axe **and** shovel (`PaxelItem.useOn`) | axe action only (strip bark); grass is not turned into paths | Content items have no code; `minecraft:block_transformer` takes one transformation. Needs a native hook; `use_item_on` (API 13) exists, see [ITEM_HOOKS.md](ITEM_HOOKS.md), but is not built here yet |
+| `mekanismtools:paxel` recipe averages the durability of the ingredients | `minecraft:crafting_shaped`, Paxel starts undamaged | No custom recipe type in Horizon content |
+| Shield with its own texture (`mekanismtools:shield` special model) | shield shows the vanilla shield model; values (durability, block delay, threshold) are correct | A custom item model type is NeoForge/Mekanism code |
+| Armor trims with Mekanism palettes (`neoforge:trimmed_armor`, `trim_overrides`) | vanilla model, no Mekanism palette | NeoForge only |
+| `ToolsDataComponents.DISPLAY_HP`, durability tooltip | missing (vanilla durability bar present) | A custom component needs code |
+| Mob spawn equipment (`MobEquipmentHelper`), configuration, advancements, recipe book aliases | missing | Code, or data types that Horizon content does not load |
+| Configurable material values | fixed default values | Horizon content has no config; change values by regenerating |
 
-Ob Horizon die Items für Rüstungs-/Schildwerte im Multiplayer-Server identisch liest, ist nicht getestet.
+Whether Horizon reads the items for armor/shield values identically on a multiplayer server is not tested.

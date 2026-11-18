@@ -1,48 +1,48 @@
 # Mekanism Horizon
 
-Inoffizieller Port von [Mekanism](https://github.com/mekanism/Mekanism) für [Minecraft Horizon](https://github.com/horizon-rust/horizon).
+Unofficial port of [Mekanism](https://github.com/mekanism/Mekanism) for [Minecraft Horizon](https://github.com/horizon-rust/horizon).
 
-**v0.2.0 · Experimenteller Prototyp**
+**v0.2.0 · Experimental prototype**
 
-## Portierungsfortschritt
+## Porting progress
 
 <!-- progress:start -->
 ```text
-Gesamt                      ██████████░░░░░░░░░░  51%  (82/162)
+Total                       ███████████░░░░░░░░░  54%  (90/166)
 
-Projektbasis                ████████████████████ 100%  (10/10)
+Project base                ████████████████████ 100%  (10/10)
 Energy Cube                 ████████████████████ 100%  (10/10)
-Rohstoffe & Energie         █████████████░░░░░░░  65%  (15/23)
-Maschinen & Chemie          ██████████████░░░░░░  69%  (18/26)
-Automation & Logistik       ██░░░░░░░░░░░░░░░░░░  11%  (2/19)
-Multiblocks & Reaktoren     ░░░░░░░░░░░░░░░░░░░░   0%  (0/16)
-Tools & Additions           ██████████░░░░░░░░░░  48%  (14/29)
-Tests & Releases            ███░░░░░░░░░░░░░░░░░  16%  (3/19)
-Naechste Schritte           ████████████████████ 100%  (10/10)
+Resources & energy          █████████████░░░░░░░  65%  (15/23)
+Machines & chemistry        ██████████████░░░░░░  70%  (19/27)
+Automation & logistics      ████░░░░░░░░░░░░░░░░  20%  (4/20)
+Multiblocks & reactors      ████░░░░░░░░░░░░░░░░  19%  (3/16)
+Tools & Additions           ██████████░░░░░░░░░░  52%  (16/31)
+Tests & releases            ███░░░░░░░░░░░░░░░░░  16%  (3/19)
+Next steps                  ████████████████████ 100%  (10/10)
 ```
 <!-- progress:end -->
 
-[Zur vollständigen Roadmap](TODO.md) · Berechnet aus den abgehakten Aufgaben in `TODO.md`. Die Balken werden bei TODO-Änderungen automatisch aktualisiert.
+[Full roadmap](TODO.md) · Calculated from the checked tasks in `TODO.md`. The bars update automatically when TODO.md changes.
 
-## Projekt
+## Project
 
-- [Content-Mod](content/mekanism/) – Items, Blöcke, Modelle und Rezepte (`.hmod`)
-- [Native-Mod](native/mekanism_native/) – Block-Entity und Energie-Hooks (Rust)
-- [Energie-Tests](logic/energy/) – unabhängige Rust-Unit-Tests
+- [Content mod](content/mekanism/) – items, blocks, models and recipes (`.hmod`)
+- [Native mod](native/mekanism_native/) – block entities, machines and energy hooks (Rust)
+- [Energy tests](logic/energy/) – standalone Rust unit tests
 
-## Start unter Windows
+## Getting started on Windows
 
 ```powershell
 cargo test --manifest-path .\logic\energy\Cargo.toml
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Build-Content.ps1"
 ```
 
-Voraussetzungen, Spielordner-Konfiguration und separater Native-Build: **[Windows-Anleitung](README-WINDOWS.md)**.
+Requirements, game folder configuration and the separate native build: **[Windows guide](README-WINDOWS.md)**.
 
-> Im Spiel getestet: Rohstoffe und Erze, Energy Cubes und Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification und Chemical Injection Chamber, Chemical Oxidizer und Infuser, Electrolytic Separator, Rotary Condensentrator, Dissolution Chamber, Washer und Crystallizer (Erzkette), Heat-, Solar-, Advanced-Solar-, Bio- und Wind-Generator sowie Fluid und Chemical Tanks (`docs/TESTLOG.md`). Kabel, Pipes und die meisten Maschinen fehlen noch. Nur in Testwelten verwenden.
+> Tested in game: resources and ores, Energy Cubes and Energy Tablet, Metallurgic Infuser, Enrichment Chamber, Crusher, Osmium Compressor, Combiner, Precision Sawmill, Purification and Chemical Injection Chamber, Chemical Oxidizer and Infuser, Electrolytic Separator, Rotary Condensentrator, Dissolution Chamber, Washer and Crystallizer (ore chain), Heat, Solar, Advanced Solar, Bio, Wind and Gas-Burning Generator, Fluid and Chemical Tanks, Mechanical Pipes, Pressurized Tubes and Thermodynamic Conductors. Wave 1 added Oredictionificator, Digital Miner, Teleporter, Quantum Entangloporter (items and energy), Dynamic Tank, Induction Matrix, Flamethrower, Free Runners and Scuba gear (`docs/TESTLOG.md`). Use in test worlds only.
 
-[Installation](docs/INSTALL.md) · [Changelog](CHANGELOG.md) · [Known Issues](docs/KNOWN_ISSUES.md) · [Mitmachen](CONTRIBUTING.md) · [Lizenzen](docs/LICENSES.md)
+[Installation](docs/INSTALL.md) · [Changelog](CHANGELOG.md) · [Known Issues](docs/KNOWN_ISSUES.md) · [Contributing](CONTRIBUTING.md) · [Licenses](docs/LICENSES.md)
 
-[Technische Details](docs/ENERGY-CUBE.md) · [Aufgabenliste](TODO.md) · [Lizenz](LICENSE)
+[Technical details](docs/ENERGY-CUBE.md) · [Task list](TODO.md) · [License](LICENSE)
 
-*Inoffizielles Projekt, nicht mit Mekanism oder Horizon verbunden.*
+*Unofficial project, not affiliated with Mekanism or Horizon.*
