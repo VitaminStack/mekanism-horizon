@@ -146,7 +146,7 @@
 - [x] Bins (Basic to Ultimate and Creative): amount in the block entity NBT (Horizon slots end at 99), hoppers fill/empty through two slots, right-click on the front puts the hand in, left-click on the front takes 1 item (sneak: stack), sneak + empty hand locks the type (front) or toggles auto-eject (sides). The item keeps its content, the front shows item and amount. Capacities after `BinTier`, Creative `i32::MAX`. See `native/.../bin.rs`, `bins.rs`.
 - [x] Personal Chest and Personal Barrel: 9x6 menu, owner = placer (UUID in NBT), opening and breaking only for the owner or operators, hoppers locked out. No Security Desk (Robit/Security Desk open). See `storage.rs`, `storages.rs`.
 - [ ] Chargepad: not ported. The block needs player inventory access per tick and item energy of foreign items; Horizon only offers `player_tick` and `set_inventory_slot` for that, but no item energy helper. See `docs/KNOWN_ISSUES.md`.
-- [x] Digital Miner. *(Wave 1, accepted in game 18.11.2026: 17 bounding blocks + main block (3×3×2); without a filter and not inverted it mines nothing (as in the original); inverted with radius 2, Y 60 to 63 it mines, uses energy, shows the active model and ejects into the chest 2 behind and 1 above; Silk Touch gives stone instead of cobblestone at 12× energy; settings survive a restart. Not ported: redstone, side config, security, upgrades, XP, anchor.)*
+- [x] Digital Miner. *(Wave 1, accepted in game 18.11.2026: 17 bounding blocks + main block (3×3×2); without a filter and not inverted it mines nothing (as in the original); inverted with radius 2, Y 60 to 63 it mines, uses energy, shows the active model and ejects into the chest 2 behind and 1 above; Silk Touch gives stone instead of cobblestone at 12× energy; the radius survives a restart (only this setting checked). Not ported: redstone, side config, security, upgrades, XP, anchor.)*
 - [ ] Seismic Vibrator. *(Not built.)*
 - [x] Teleporter, Portable Teleporter, Teleporter Frames. *(Wave 1, accepted in game 18.11.2026: teleport A to B costs energy (-119 FE), too little energy means no teleport; Portable Teleporter teleports (-116 FE); frequencies survive a restart. Channel selection replaces the text entry GUI; GUI labels overlap.)*
 - [ ] Quantum Entangloporter with energy, items, fluids and chemicals. *(Wave 1. Accepted in game 18.11.2026 for items and energy: sharing between members, restarts without duplication, a member whose chunk unloads gives its window back. Fluids, chemicals and members in different dimensions not tested.)*
@@ -156,10 +156,10 @@
 
 ## M09 - Multiblocks and industry [P2]
 
-- [x] General multiblock structure system with forming, breaking, chunk borders and validation. *(Wave 1 (`docs/sessions/m09-multiblocks.md`), accepted in game 18.11.2026: forming, invalid structure without a provider, dissolving and re-forming keep the content, chunk unload keeps the structure. Polling: forming can take up to about 10 s.)*
+- [x] General multiblock structure system with forming, breaking, chunk borders and validation. *(Wave 1 (`docs/sessions/m09-multiblocks.md`), accepted in game 18.11.2026: forming, invalid structure without a provider, dissolving and re-forming keep the content, chunk unload keeps the structure. Not tested: a structure across a chunk border. Polling: forming can take up to about 10 s.)*
 - [x] Dynamic Tank and Dynamic Valve. *(Accepted in game 18.11.2026: 432,000 mB capacity, valve in Both mode takes inflow (fixed during acceptance).)*
 - [ ] Thermal Evaporation Plant (controller, valves, blocks). *(Only validator rules prepared, no host logic.)*
-- [x] Induction Matrix incl. cells/providers/ports for all tiers. *(Accepted in game 18.11.2026: 3×4×3 with cell and provider forms (8 G capacity, 256 k transfer); port input from a Creative Cube charges the matrix, port output charges a Basic Cube.)*
+- [x] Induction Matrix incl. cells/providers/ports for all tiers. *(Accepted in game 18.11.2026: 3×4×3 with a basic cell and provider forms (8 G capacity, 256 k transfer); higher cell/provider tiers untested; port input from a Creative Cube charges the matrix, port output charges a Basic Cube.)*
 - [ ] Thermoelectric Boiler incl. heat/steam processing.
 - [ ] Industrial Turbine: rotor, coil, vent, Saturating Condenser, logic.
 - [ ] Test multiblock GUI, status display, save/load and rebuild.
